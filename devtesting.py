@@ -49,23 +49,32 @@ def main():
     # plt.show()
     tw = 2
 
-    unit1_firingrate = arr["left"][0]
-    unit2_firingrate = arr["left"][1]
+    """
+    Use 'unitLabel' to find non NaN units that are more responsive
+
+    """
+
+    unit1_firingrate = arr["left"][7206]
+    unit2_firingrate = arr["left"][26387]
 
     unit1_firingrate = np.array(unit1_firingrate)
     unit2_firingrate = np.array(unit2_firingrate)
 
-    show_spline(unit1_firingrate)
+    print("Plotting basic spline")
+    show_spline(unit1_firingrate, save_to_file="spline.png")
 
-    trace_changemaps(unit1_firingrate, unit2_firingrate)
-    trace_changemaps(unit1_firingrate, unit2_firingrate, spline=True)
+    print("Plotting changemaps")
+    trace_changemaps(unit1_firingrate, unit2_firingrate, save_to_file="changemap.png")
+    trace_changemaps(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="changemap_spline.png")
 
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True)
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False)
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True)
+    print("Plotting shaped paths")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True, save_to_file="trace_hull.png")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False, save_to_file="trace_vanilla.png")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True, save_to_file="trace_spline.png")
 
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate)
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True)
+    print("Plotting 3d parametrics")
+    trace_3d_parametric(unit1_firingrate, unit2_firingrate, save_to_file="parametric.png")
+    trace_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="parametric_spline.png")
 
     # start = 1
     # count = session_unit_counts[0]

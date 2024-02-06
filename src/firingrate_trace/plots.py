@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -31,7 +32,7 @@ def _validate_trace_arrs(arr1: np.ndarray, arr2: np.ndarray):
         ))
 
 
-def trace_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline: bool = False):
+def trace_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline: bool = False, save_to_file: Union[bool, str] = False):
     _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
     if spline:
         pointlist = _gen_unitpath(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True)
@@ -60,10 +61,13 @@ def trace_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray,
 
     plot_with_color(0, unit1_firingrate, unit2_firingrate)
     plot_with_color(1, unit2_firingrate, unit1_firingrate)
-    plt.show()
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
 
 
-def show_spline(unit1_firingrate: np.ndarray):
+def show_spline(unit1_firingrate: np.ndarray, save_to_file: Union[bool, str] = False):
     u1_len = len(unit1_firingrate)
 
     x_samps = np.linspace(0, u1_len-1, 1000)
@@ -73,10 +77,13 @@ def show_spline(unit1_firingrate: np.ndarray):
 
     plt.plot(x_samps, u1_samps)
     plt.plot(list(range(u1_len)), unit1_firingrate)
-    plt.show()
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
 
 
-def trace_3d_parametric(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline=False):
+def trace_3d_parametric(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline=False, save_to_file: Union[bool, str] = False):
     _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
 
     if spline:
@@ -91,8 +98,12 @@ def trace_3d_parametric(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarr
     ax = plt.figure().add_subplot(projection='3d')
     colors = plt.get_cmap("hsv")
     for i in range(1, arr_len):
-        ax.plot(unit1_firingrate[i - 1:i + 1], unit2_firingrate[i - 1:i + 1], t[i - 1:i + 1], c=colors((t[i-1]*4) % colors.N)[:3])
-    plt.show()
+        ax.plot(unit1_firingrate[i - 1:i + 1], unit2_firingrate[i - 1:i + 1], t[i - 1:i + 1], c=colors((t[i-1]*3) % colors.N)[:3])
+
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
 
 
 def _gen_unitpath(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, use_convex_hull=True, fill=True, spline=False):
@@ -132,24 +143,33 @@ def _gen_unitpath(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, us
     return path
 
 
-def trace_shaped_path(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, **kwargs):
+def trace_shaped_path(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, save_to_file: Union[bool, str] = False, use_convex_hull=True, fill=True, spline=False):
     _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
 
-    path = _gen_unitpath(unit1_firingrate, unit2_firingrate, **kwargs)
+    path = _gen_unitpath(unit1_firingrate, unit2_firingrate, use_convex_hull=use_convex_hull, fill=fill, spline=spline)
 
     _, ax = plt.subplots()
     patch = patches.PathPatch(path, facecolor='orange', lw=2)
     ax.add_patch(patch)
 
-    plt.show()
-    tw = 2
+    u1 = np.array(path.vertices)[:, 0]
+    u2 = np.array(path.vertices)[:, 1]
+
+    bound = lambda x: (x.mean() - x.std()*3, x.mean() + x.std()*3)
+    ax.set_xlim(bound(u1))
+    ax.set_ylim(bound(u2))
+
+    if save_to_file:
+        plt.savefig(save_to_file)
+    else:
+        plt.show()
 
 
 def _check_nan(unitdata):
     return any(np.isnan(unitdata))
 
 
-def trace_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.ndarray, baseunit_num: int, other_unit_nums: list[int]):
+def trace_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.ndarray, baseunit_num: int, other_unit_nums: list[int], filename: str):
     assert len(compare_units) == len(other_unit_nums), "Unit numbers don't match given number of compare_units!"
 
     # Normalize
@@ -219,6 +239,6 @@ def trace_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.n
     ax.set_xlabel("Spikes / 20 ms (normalized)")
     ax.set_ylabel("Spikes / 20 ms (normalized)")
     ani = animation.FuncAnimation(fig=fig, func=update, frames=len(polys)*1)
-    ani.save(filename="tmp.gif", writer="pillow")
+    ani.save(filename="filename.gif", writer="pillow")
 
     tw = 2
