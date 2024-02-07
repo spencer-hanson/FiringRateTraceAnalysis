@@ -2,3 +2,4 @@ venv/
 .idea/
 testdata/
 *.pyc
+*.ipynb_checkpoints

@@ -61,20 +61,20 @@ def main():
     unit2_firingrate = np.array(unit2_firingrate)
 
     print("Plotting basic spline")
-    show_spline(unit1_firingrate, save_to_file="spline.png")
+    show_spline(unit1_firingrate, save_to_file="graphs/spline.png")
 
     print("Plotting changemaps")
-    trace_changemaps(unit1_firingrate, unit2_firingrate, save_to_file="changemap.png")
-    trace_changemaps(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="changemap_spline.png")
+    trace_changemaps(unit1_firingrate, unit2_firingrate, save_to_file="graphs/changemap.png")
+    trace_changemaps(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/changemap_spline.png")
 
     print("Plotting shaped paths")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True, save_to_file="trace_hull.png")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False, save_to_file="trace_vanilla.png")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True, save_to_file="trace_spline.png")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True, save_to_file="graphs/trace_hull.png")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False, save_to_file="graphs/trace_vanilla.png")
+    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True, save_to_file="graphs/trace_spline.png")
 
     print("Plotting 3d parametrics")
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate, save_to_file="parametric.png")
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="parametric_spline.png")
+    trace_3d_parametric(unit1_firingrate, unit2_firingrate, save_to_file="graphs/parametric.png")
+    trace_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/parametric_spline.png")
 
     # start = 1
     # count = session_unit_counts[0]
