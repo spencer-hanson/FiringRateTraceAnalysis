@@ -11,12 +11,12 @@ from scipy.interpolate import splrep, BSpline
 from scipy.spatial import ConvexHull
 
 
-def trace_correlogram(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray):
+def rate_correlogram(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray):
     plt.scatter(unit1_firingrate, unit2_firingrate)
     plt.show()
 
 
-def _validate_trace_arrs(arr1: np.ndarray, arr2: np.ndarray):
+def _validate_traj_arrs(arr1: np.ndarray, arr2: np.ndarray):
     arr_len = len(arr1)
 
     if len(arr1.shape) != 1 or len(arr2.shape) != 1:
@@ -32,8 +32,8 @@ def _validate_trace_arrs(arr1: np.ndarray, arr2: np.ndarray):
         ))
 
 
-def trace_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline: bool = False, save_to_file: Union[bool, str] = False):
-    _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
+def traj_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline: bool = False, save_to_file: Union[bool, str] = False):
+    _validate_traj_arrs(unit1_firingrate, unit2_firingrate)
     if spline:
         pointlist = _gen_unitpath(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True)
         pointlist = pointlist.vertices
@@ -83,8 +83,8 @@ def show_spline(unit1_firingrate: np.ndarray, save_to_file: Union[bool, str] = F
         plt.show()
 
 
-def trace_3d_parametric(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline=False, save_to_file: Union[bool, str] = False):
-    _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
+def traj_3d_parametric(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, spline=False, save_to_file: Union[bool, str] = False):
+    _validate_traj_arrs(unit1_firingrate, unit2_firingrate)
 
     if spline:
         pointlist = _gen_unitpath(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True)
@@ -143,8 +143,8 @@ def _gen_unitpath(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, us
     return path
 
 
-def trace_shaped_path(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, save_to_file: Union[bool, str] = False, use_convex_hull=True, fill=True, spline=False):
-    _validate_trace_arrs(unit1_firingrate, unit2_firingrate)
+def traj_shaped_path(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, save_to_file: Union[bool, str] = False, use_convex_hull=True, fill=True, spline=False):
+    _validate_traj_arrs(unit1_firingrate, unit2_firingrate)
 
     path = _gen_unitpath(unit1_firingrate, unit2_firingrate, use_convex_hull=use_convex_hull, fill=fill, spline=spline)
 
@@ -169,7 +169,7 @@ def _check_nan(unitdata):
     return any(np.isnan(unitdata))
 
 
-def trace_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.ndarray, baseunit_num: int, other_unit_nums: list[int], filename: str):
+def traj_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.ndarray, baseunit_num: int, other_unit_nums: list[int], filename: str):
     assert len(compare_units) == len(other_unit_nums), "Unit numbers don't match given number of compare_units!"
 
     # Normalize
@@ -239,6 +239,6 @@ def trace_animated_shaped_path(unit1_firingrate: np.ndarray, compare_units: np.n
     ax.set_xlabel("Spikes / 20 ms (normalized)")
     ax.set_ylabel("Spikes / 20 ms (normalized)")
     ani = animation.FuncAnimation(fig=fig, func=update, frames=len(polys)*1)
-    ani.save(filename="filename.gif", writer="pillow")
-
+    ani.save(filename=filename, writer="pillow")
     tw = 2
+

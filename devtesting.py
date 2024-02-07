@@ -24,8 +24,8 @@ def main():
     import matplotlib.pyplot as plt
     import numpy as np
 
-    from firingrate_trace.plots import trace_correlogram, trace_changemaps, trace_3d_parametric, trace_shaped_path
-    from firingrate_trace.plots import show_spline, trace_animated_shaped_path
+    from population_analysis.trajectory.plots import rate_correlogram, traj_changemaps, traj_3d_parametric, traj_shaped_path
+    from population_analysis.trajectory.plots import show_spline, traj_animated_shaped_path
 
     arr = data["rProbe"]["dg"]
 
@@ -64,17 +64,17 @@ def main():
     show_spline(unit1_firingrate, save_to_file="graphs/spline.png")
 
     print("Plotting changemaps")
-    trace_changemaps(unit1_firingrate, unit2_firingrate, save_to_file="graphs/changemap.png")
-    trace_changemaps(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/changemap_spline.png")
+    traj_changemaps(unit1_firingrate, unit2_firingrate, save_to_file="graphs/changemap.png")
+    traj_changemaps(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/changemap_spline.png")
 
     print("Plotting shaped paths")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True, save_to_file="graphs/trace_hull.png")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False, save_to_file="graphs/trace_vanilla.png")
-    trace_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True, save_to_file="graphs/trace_spline.png")
+    traj_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=True, save_to_file="graphs/trace_hull.png")
+    traj_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=False, save_to_file="graphs/trace_vanilla.png")
+    traj_shaped_path(unit1_firingrate, unit2_firingrate, use_convex_hull=False, fill=False, spline=True, save_to_file="graphs/trace_spline.png")
 
     print("Plotting 3d parametrics")
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate, save_to_file="graphs/parametric.png")
-    trace_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/parametric_spline.png")
+    traj_3d_parametric(unit1_firingrate, unit2_firingrate, save_to_file="graphs/parametric.png")
+    traj_3d_parametric(unit1_firingrate, unit2_firingrate, spline=True, save_to_file="graphs/parametric_spline.png")
 
     # start = 1
     # count = session_unit_counts[0]
