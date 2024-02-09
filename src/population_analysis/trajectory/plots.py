@@ -1,5 +1,5 @@
 import math
-from typing import Union
+from typing import Union, Any, Callable, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib import animation
@@ -9,6 +9,9 @@ import matplotlib.patches as patches
 import numpy as np
 from scipy.interpolate import splrep, BSpline
 from scipy.spatial import ConvexHull
+from sklearn.decomposition import PCA
+
+from population_analysis.util import make_colormap
 
 
 def rate_correlogram(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray):
