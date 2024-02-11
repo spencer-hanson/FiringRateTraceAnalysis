@@ -3,3 +3,5 @@ venv/
 testdata/
 *.pyc
 *.ipynb_checkpoints
+ignore_*
+graphs/*

@@ -26,10 +26,12 @@ def main():
     from population_analysis.trajectory.plots import rate_correlogram, traj_changemaps, traj_3d_parametric
     from population_analysis.trajectory.plots import show_spline, traj_animated_shaped_path
     from population_analysis.trajectory.plots import traj_shaped_path
-    from population_analysis.trajectory.population.plots import pop_vec_traj_clusters, pop_vec_traj
+    from population_analysis.trajectory.population.plots import pop_vec_traj_clusters, pop_vec_traj, pop_vec_pcas
+    from population_analysis.trajectory.population.plots import pop_vec_pca_variances, unit_pca_bar, unit_graph
 
-    filename = "2023-04-11.hdf"
+    # filename = "2023-04-11.hdf"
     # filename = "2023-05-15.hdf"
+    filename = "units_2024-02-08_f1.hdf"
 
     date_fn = filename.split(".")[0]
 
@@ -37,7 +39,19 @@ def main():
 
     # dd = dictify_hd5(data)
     # dg is drifing grating, fg..?
-    all_units = data["rProbe"]["dg"]["left"]
+    # all_units = data["rProbe"]["dg"]["left"]
+
+    baseline_num = 8
+
+    all_units = data["rProbe"]["dg"]["left"]["fr"]  # Mean unit firing rates across trials
+    units_len = len(all_units)
+    # Unit means of first 8 timepoints to account for baseline
+    all_units_mean = np.mean(all_units[:, :baseline_num], axis=1).reshape(units_len, 1)
+    # Unit standard deviations of first 8 timepoints to account for baseline
+    all_units_sd = np.mean(data["rProbe"]["dg"]["left"]["sd"][:, :baseline_num], axis=1).reshape(units_len, 1)
+    all_units = (all_units - all_units_mean)/all_units_sd  # calc zscore
+
+    tw = 2
     all_unit_labels = data["unitLabel"]
     # for p in plots:
     #     p(arr["left"][0], arr["left"][1])
@@ -69,7 +83,7 @@ def main():
     clustered_units = []
     for label in session_cluster_labels:
         clustered_units.append(
-            filter_by_unitlabel(session_units, session_units_cluster_labels, label).T  # TODO transpose thingy
+            filter_by_unitlabel(session_units, session_units_cluster_labels, label)
         )
 
     save_prefix = f"graphs\\{date_fn}"
@@ -85,13 +99,22 @@ def main():
     unit1_firingrate = np.array(unit1_firingrate)
     unit2_firingrate = np.array(unit2_firingrate)
 
-    session_units = filter_by_unitlabel(session_units, session_units_cluster_labels, session_cluster_labels[0])
+    # print("Plotting cluster PCA trajectories gif")
+    # pop_vec_traj_clusters(clustered_units, save_filename=f"{save_prefix}\\pop_vec_traj_clusters.gif")
 
-    print("Plotting cluster PCA trajectories gif")
-    pop_vec_traj_clusters(clustered_units, save_filename=f"{save_prefix}\\pop_vec_traj_clusters.gif")
+    filtered_session_units = filter_by_unitlabel(session_units, session_units_cluster_labels, session_cluster_labels[1])
 
-    print("Plotting PCA trajectory for a session")
-    pop_vec_traj(session_units.T, save_to_file=f"{save_prefix}\\pop_vec_traj.png")  # TODO transpose thingy
+    pop_vec_pcas(filtered_session_units, save_to_file=f"{save_prefix}\\d_pcas.png")
+    pop_vec_pca_variances(filtered_session_units, save_to_file=f"{save_prefix}\\pca_variances.png")
+    unit_pca_bar(filtered_session_units, 0, save_to_file=f"{save_prefix}\\unit_pca_bar.png")
+    unit_graph(filtered_session_units[0], save_to_file=f"{save_prefix}\\unit_graph.png")
+
+
+    dasfadjgalskdjf
+    # print("Plotting PCA trajectory for a session")
+    # for i in range(len(session_cluster_labels)):
+    #     session_units2 = filter_by_unitlabel(session_units, session_units_cluster_labels, session_cluster_labels[i])
+    #     pop_vec_traj(session_units2.T, save_to_file=f"{save_prefix}\\pop_vec_traj_{i}.png")  # TODO transpose thingy
     # pop_vec_traj(session_units.T, save_to_file=False)
 
     print("Plotting basic spline")

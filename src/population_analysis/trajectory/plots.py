@@ -10,7 +10,6 @@ import numpy as np
 from scipy.interpolate import splrep, BSpline
 from scipy.spatial import ConvexHull
 from sklearn.decomposition import PCA
-
 from population_analysis.util import make_colormap
 
 

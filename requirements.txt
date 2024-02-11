@@ -5,3 +5,7 @@ scikit-learn
 jupyterlab
 ipympl
 matplotlib
+
+numexpr
+llvmlite
+numba
