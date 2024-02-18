@@ -70,6 +70,7 @@ def traj_changemaps(unit1_firingrate: np.ndarray, unit2_firingrate: np.ndarray, 
 
 
 def show_spline(unit1_firingrate: np.ndarray, save_to_file: Union[bool, str] = False):
+    plt.clf()
     u1_len = len(unit1_firingrate)
 
     x_samps = np.linspace(0, u1_len-1, 1000)
