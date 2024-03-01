@@ -1,16 +1,18 @@
-import time
 import os
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 from population_analysis.util import filter_by_unitlabel
-from population_analysis.trajectory.plots import rate_correlogram, traj_changemaps, traj_3d_parametric
+
+from population_analysis.population.plots.dpca import pop_vec_dpca_fixed_comp_ani, pop_vec_dpca_component_iter_ani
+
+from population_analysis.population.plots.pca_meta import pop_vec_pcas, pop_vec_pca_variances
+from population_analysis.population.plots.pca_meta import unit_pca_bar, pop_vec_show_pca_reconstruction
+
+from population_analysis.trajectory.plots import traj_changemaps, traj_3d_parametric
 from population_analysis.trajectory.plots import show_spline, traj_animated_shaped_path
 from population_analysis.trajectory.plots import traj_shaped_path
-from population_analysis.trajectory.population.plots import pop_vec_traj_clusters, pop_vec_traj, pop_vec_pcas, \
-    pop_vec_dpca_component_iter_ani, pop_vec_dpca_fixed_comp_ani
-from population_analysis.trajectory.population.plots import pop_vec_pca_variances, unit_pca_bar
-from population_analysis.trajectory.population.plots import pop_vec_show_pca_reconstruction, pop_vec_dpca
+
 
 
 def dictify_hd5(data):
@@ -55,6 +57,7 @@ def parametric_plots(u1: np.ndarray, u2: np.ndarray, save_prefix: str):
 
 
 def trajectory_animated_plots():  # TODO?
+    t = traj_animated_shaped_path  # show as used import
     # start = 1
     # count = session_unit_counts[0]
     # # count = 10
@@ -86,6 +89,9 @@ def _hoist(data, keys: list[str]):
 
 def dpca_plots(data, save_prefix: str):
     # data["rProbe"]["dg"]["left"]["sd"]
+
+    print("Plotting dPCA plots")
+
     stim_type = "dg"
     stim_list = [  # List of stimuli
         ["rProbe", stim_type, "left"],
@@ -97,7 +103,7 @@ def dpca_plots(data, save_prefix: str):
     # aaaa = _pull_data(data["rProbe"]["dg"]["left"], data["unitLabel"], data["unitNumber"])
     for stim in stim_list:
         stim_datas.append(
-            _pull_data(_hoist(data, stim), data["unitLabel"], data["unitNumber"])
+            _pull_data(_hoist(data, stim), data["unitLabel"], data["unitNumber"], session_num=1)
         )
     num_neurons = len(stim_datas[0])
     num_stim = len(stim_list)
@@ -118,7 +124,7 @@ def dpca_plots(data, save_prefix: str):
 
 def plots(data, save_prefix):
     data_u = data["rProbe"]["dg"]["left"]
-    units = _pull_data(data_u, data["unitLabel"], data["unitNumber"])
+    units = _pull_data(data_u, data["unitLabel"], data["unitNumber"], session_num=1)
 
     pca_example_unit_idx = 0
     u1 = units[0]  # 7206  # Good units for 2023-04-11
@@ -126,6 +132,7 @@ def plots(data, save_prefix):
 
     # basic_plots(units[pca_example_unit_idx], save_prefix)
     # changemap_plots(u1, u2, save_prefix)
+    # trajectory_animated_plots()  # TODO?
     # shaped_plots(u1, u2, save_prefix)
     # parametric_plots(u1, u2, save_prefix)
     # pca_plots(units, pca_example_unit_idx, save_prefix)
@@ -136,6 +143,8 @@ def _get_session_idxs(units: np.ndarray) -> (list, list):
     session_unit_counts = []
     session_idxs = []
     previous = -1
+
+    # Get the indicies for each session, based on the unit count
     for idx, u in enumerate(units):
         if u > previous:
             previous = u
@@ -143,6 +152,7 @@ def _get_session_idxs(units: np.ndarray) -> (list, list):
             session_unit_counts.append(units[idx - 1][0])
             session_idxs.append(max(idx - 1, 0))
             previous = 0
+
     session_idxs.insert(0, 0)  # Insert 0 into the indexes since the 0th session has nothing
     session_unit_counts = np.array(session_unit_counts)
     return session_unit_counts, session_idxs
@@ -163,7 +173,6 @@ def _get_unitdata(all_units_frs, all_units_sds, unit_labels, baseline_num_points
 
     # Unit means of first 8 timepoints to account for baseline
     all_units_mean = np.mean(all_units[:, :baseline_num_points], axis=1).reshape((-1, 1))
-
 
     # Unit standard deviations of first 8 timepoints to account for baseline
     all_units_sd = np.mean(all_units_sds[:, :baseline_num_points], axis=1).reshape((-1, 1))
@@ -194,7 +203,7 @@ def _get_clusters(units_data: np.ndarray, cluster_labels: np.ndarray) -> (np.nda
     return session_cluster_labels, clustered_units
 
 
-def _pull_data(data, all_unit_labels, unit_nums):
+def _pull_data(data, all_unit_labels, unit_nums, session_num):
     data_frs = data["fr"]
     data_sds = data["sd"]
 
@@ -207,7 +216,6 @@ def _pull_data(data, all_unit_labels, unit_nums):
     # _plot_unit_nums(unit_nums, session_idxs)
 
     # Session units
-    session_num = 1
     session_units = all_units[session_idxs[session_num-1]: session_idxs[session_num]]
     session_units_cluster_labels = all_unit_labels[session_idxs[session_num-1]: session_idxs[session_num]]
     session_cluster_labels, clustered_units = _get_clusters(session_units, session_units_cluster_labels)
