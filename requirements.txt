@@ -5,7 +5,7 @@ scikit-learn
 jupyterlab
 ipympl
 matplotlib
-
+simply-nwb
 numexpr
 llvmlite
 numba
