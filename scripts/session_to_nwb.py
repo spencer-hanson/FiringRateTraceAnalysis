@@ -45,16 +45,17 @@ def main():
     for folder in os.listdir(SESSION_DATA_PATH):
         check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
-    filename = list(data_files.items())[0][1]
+    # filename = list(data_files.items())[0][1]
 
-    try:
-        print(f"Processing '{filename}'")
-        sess = RawSessionProcessor(filename)
-        # +1 for leading \\, -4 for '.hdf'
-        nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
-        sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
-    except Exception as e:
-        warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")
+    for filename in list(data_files.values()):
+        try:
+            print(f"Processing '{filename}'")
+            sess = RawSessionProcessor(filename)
+            # +1 for leading \\, -4 for '.hdf'
+            nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
+            sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
+        except Exception as e:
+            warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")
 
 
 if __name__ == "__main__":

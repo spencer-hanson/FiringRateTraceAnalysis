@@ -93,11 +93,11 @@ class RawSessionProcessor(object):
         probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001)
         saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001)
 
-        trial_types = self.unit_pop.get_trial_labels()
+        trial_types = np.array(self.unit_pop.get_trial_labels())
         unique_trial_types = np.unique(trial_types)
         for trial_type in unique_trial_types:
             behavior_events.add(TimeSeries(name=f"trial-{trial_type}",
-                                           data=np.where(trial_types == trial_type), rate=1.0, unit="idx"))
+                                           data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx"))
         behavior_events.add(probe_ts)
         behavior_events.add(saccade_ts)
         print("Writing to file, may take a while..")
