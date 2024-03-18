@@ -1,7 +1,27 @@
+import math
+
+import numpy as np
 from pynwb import NWBHDF5IO
 
 from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
+
+import matplotlib.pyplot as plt
+
+
+def _filter_out_zeros(arr):
+    epsilon = 0.00001
+    sums = np.sum(arr, axis=1)
+    filtered_idxs = np.where(np.logical_not(sums < epsilon))
+    val = arr[filtered_idxs]
+    return val
+
+
+def _calc_num_bins(arr):
+    q75, q25 = np.percentile(arr, [72, 25])
+    iqr = q75 - q25
+    bins = math.ceil((np.max(arr) - np.min(arr)) / (2 * iqr * np.power(len(arr), -1 / 3)))
+    return bins
 
 
 def main():
@@ -16,16 +36,49 @@ def main():
     probe_units = nwb.units["trial_firing_rates"].data[:, probe_trial_idxs]
     saccade_units = nwb.units["trial_firing_rates"].data[:, saccade_trial_idxs]
 
-    # TODO Filter out 0's? Also do we concat trials? idk
+    # Do we concat trials? idk doing that currently
     probe_units = probe_units.reshape((-1, 35))
-    saccade_units = probe_units.reshape((-1, 35))
+    saccade_units = saccade_units.reshape((-1, 35))
 
-    epsilon = 0.00001  # TODO filter out 0s by filtering out the entries that sum up to lt or eq epsilon
+    probe_units = _filter_out_zeros(probe_units)
+    saccade_units = _filter_out_zeros(saccade_units)
+
+    tw = 2
 
     quan_dist = QuanDistribution(probe_units, saccade_units, EuclidianQuantification())
     dists = quan_dist.calculate()
 
     tw = 2
+
+    bins = _calc_num_bins(dists)
+    hist = np.histogram(dists, bins=bins, density=True)
+    plt.bar(range(len(hist[0])), hist[0] / np.sum(hist[0]))
+
+    tick_width = 10
+    x_labels = np.round(hist[1][0::tick_width], decimals=5)
+    x_ticks = range(0, len(hist[0]), tick_width)
+
+    plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
+    plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
+
+    """
+    
+    # Scaled out version to include original value
+    v = EuclidianQuantification().calculate(probe_units, saccade_units)
+    dists2 = list(dists)
+    dists2.append(v)
+    
+    bins = _calc_num_bins(dists2)
+    hist = np.histogram(dists2, bins=bins, density=True)
+    plt.bar(range(len(hist[0])), hist[0]/np.sum(hist[0]))
+    plt.xticks(ticks=range(0, len(hist[0]), 1000), labels=np.round(hist[1][0::1000], decimals=5), rotation=90)
+    plt.subplots_adjust(bottom=0.25)
+    plt.vlines(len(hist[0]), 0, .01, color="red", label="Separated Value", linestyles="dashed")
+    plt.legend()
+    plt.show()
+    
+    """
+    plt.show()
 
 
 if __name__ == "__main__":
