@@ -13,6 +13,11 @@ class Trial(object):
     def __str__(self):
         return f"Trial({self.trial_label}, start={self.start}, end={self.end}, events_count={len(list(self.events.items()))})"
 
+    def copy(self):
+        tr = Trial(self.start, self.end, self.trial_label)
+        tr.events = self.events.copy()
+        return tr
+
     def add_event(self, timestamp, label):
         self.events[label] = timestamp
 
@@ -58,6 +63,13 @@ class UnitPopulation(object):
     def __str__(self):
         return f"UnitPopulation(num_units={self.num_units}, num_trials={len(self._trials)})"
 
+    def get_mixed_trials(self):
+        trials = []
+        for tr in self._trials:
+            if tr.trial_label == "mixed":
+                trials.append(tr.copy())
+        return trials
+
     def add_saccade_trials(self, saccade_idx_list: list[list[int]]):
         # Format [[start, event, end], ..] Where start is the index -200ms before the trial, event is the timestamps at
         # and end is the idx 500ms after the trial
@@ -83,7 +95,7 @@ class UnitPopulation(object):
         one_tenth_of_trials = int(num_trials / 10)
         for trial_idx, trial in enumerate(self._trials):
             if trial_idx % one_tenth_of_trials == 0:
-                print(f" {round(trial_idx/num_trials, 2)} %", end="")
+                print(f" {round(100 * (trial_idx/num_trials), 2)} %", end="")
 
             trial_spike_times = self.spike_timestamps[trial.start:trial.end]
             trial_start = self.spike_timestamps[trial.start]
@@ -105,7 +117,6 @@ class UnitPopulation(object):
             bins = bins[:NUM_FIRINGRATE_SAMPLES + 1]  # Ensure that there are only 35 bins
 
             num_unique_units = len(unique_units)
-            abs_unit_idxs = []
             for unique_unit_num in range(num_unique_units):
                 single_unit_spike_times = unique_unit_spike_times[unique_unit_num]
                 single_unit_spike_times = single_unit_spike_times.compressed()
@@ -114,7 +125,6 @@ class UnitPopulation(object):
                 )[0] / SPIKE_BIN_MS  # Normalize by bin size
                 # Calculate the absolute unit index
                 absolute_unit_idx = np.where(self.unique_spike_clusters == unique_units[unique_unit_num])[0][0]
-                abs_unit_idxs.append(absolute_unit_idx)
                 firing_rates[trial_idx, absolute_unit_idx, :] = single_unit_firing_rate[:]
 
         self._firing_rates = firing_rates

@@ -18,7 +18,7 @@ class RawSessionProcessor(object):
         self.spike_clusters = np.array(data["spikes"]["clusters"])
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
-        self.saccade_timestamps = np.array(data["saccades"]["predicted"]["left"]["nasal"]["timestamps"])
+        self.saccade_timestamps = np.array(data["saccades"]["predicted"]["left"]["nasal"]["timestamps"])  # TODO others?
         self._unit_pop: Optional[UnitPopulation] = None
 
     def calc_unit_population_stats(self):
@@ -83,23 +83,44 @@ class RawSessionProcessor(object):
             spike_times = self.unit_pop.spike_timestamps[unit_spike_idxs]
             nwb.add_unit(
                 spike_times=spike_times,
-                trial_firing_rates=self.unit_pop.unit_firingrates[unit_num]
+                trial_firing_rates=self.unit_pop.unit_firingrates[:, unit_num]
             )
 
         # Add probe and saccade event timings, trial types
         behavior_events = nwb.create_processing_module(name="behavior",
                                                        description="Contains saccade and probe event timings")
 
-        probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001)
-        saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001)
+        probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe")
+        saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
 
         trial_types = np.array(self.unit_pop.get_trial_labels())
         unique_trial_types = np.unique(trial_types)
         for trial_type in unique_trial_types:
-            behavior_events.add(TimeSeries(name=f"trial-{trial_type}",
-                                           data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx"))
+            behavior_events.add(TimeSeries(name=f"unit-trial-{trial_type}",
+                                           data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx",
+                                           description=f"Indices into all trials that are {trial_type} trials. Use nwbfile.units['trial_firing_rates'][unit_number][<idx goes here>] to get the firing rate of a unit in a given trial using these indicies"))
         behavior_events.add(probe_ts)
         behavior_events.add(saccade_ts)
+
+        # Want to specify when the saccade happened for the mixed trials (probe is always centered at 10ms)
+
+        relative_saccade_times_for_mixed_trials = []
+
+        for trial in self.unit_pop.get_mixed_trials():
+            if trial.trial_label == "mixed":
+                sac_idx = trial.events["saccade_event"]
+                probe_idx = trial.events["probe_start"]
+                sac_timestamp = self.unit_pop.spike_timestamps[sac_idx]
+                probe_window_start_timestamp = self.unit_pop.spike_timestamps[probe_idx]
+                relative_time = sac_timestamp - probe_window_start_timestamp
+                relative_saccade_times_for_mixed_trials.append(relative_time)
+
+        behavior_events.add(
+            TimeSeries(
+                name=f"mixed-trial-saccade-relative-timestamps",
+                data=relative_saccade_times_for_mixed_trials, rate=0.001, unit="s",
+                description=f"Timestamps of saccades in the mixed trials relative to the start of the probe start window"))
+
         print("Writing to file, may take a while..")
         SimpleNWB.write(nwb, filename)
         print("Done!")
@@ -124,6 +145,29 @@ class RawSessionProcessor(object):
         # return indices into spike_timestamps within a window of -200ms to +700ms for trials times in other_timestamps
         idx_ranges = []
 
+        def limit_spike_timestamps(timestamp, higher=False):
+            # Find an approximate index that's close to the timestamp, so calculating the exact will be faster
+            # If higher = True, then return an index that is higher than the timestamp, otherwise will return a lower
+            # Start approximate around index equal to the number of the timestamp
+            # Won't be accurate because of duplicated entries, will scale up a modifier until it is about it
+            estimated_timestamp_idx = timestamp * 1000 - 1
+            multiplier = 1.0
+            done = False
+            while not done:
+                to_check_idx = int(estimated_timestamp_idx * multiplier)
+                if to_check_idx > len(spike_timestamps):
+                    done = True
+                    to_check_idx = len(spike_timestamps) - 1
+
+                actual_value = spike_timestamps[to_check_idx]
+                if actual_value < timestamp:
+                    multiplier = multiplier + 0.1
+                else:
+                    done = True
+                    if not higher:
+                        multiplier = multiplier - 0.1  # Last estimate was lower, this estimate was too high
+            return int(estimated_timestamp_idx * multiplier)
+
         other_len = len(other_timestamps)
         other_one_tenth = int(1 / 10 * other_len)
         for idx, ts in enumerate(other_timestamps):
@@ -132,11 +176,17 @@ class RawSessionProcessor(object):
             if np.isnan(ts):
                 # idx_ranges.append(None)
                 continue
-            start_idx = np.where(ts - (PRE_TRIAL_MS / 1000) < spike_timestamps)[0][
-                0]  # First index in tuple, first index is the edge
-            end_idx = np.where(ts + (POST_TRIAL_MS / 1000) <= spike_timestamps)[0][0]
-            ts_idx = np.where(ts >= spike_timestamps)[0][-1]  # Index of the event timestamp itself, next smallest value
-            idx_ranges.append([start_idx, ts_idx, end_idx])
+            pre_window_ts = ts - (PRE_TRIAL_MS / 1000)
+            post_window_ts = ts + (POST_TRIAL_MS / 1000)
+            # Grab approximate indicies around the timestamp window to limit the timestamp search for speed
+            lower_limit = limit_spike_timestamps(pre_window_ts)
+            upper_limit = limit_spike_timestamps(post_window_ts, higher=True)
+
+            start_idx = np.where(pre_window_ts < spike_timestamps[lower_limit:upper_limit])[0][0]  # First index in tuple, first index is the edge
+            end_idx = np.where(post_window_ts <= spike_timestamps[lower_limit:upper_limit])[0][0]
+            ts_idx = np.where(ts >= spike_timestamps[lower_limit:upper_limit])[0][-1]  # Index of the event timestamp itself, next smallest value
+            # Add the lower limit back on since the np.where statements return relative to the array passed in
+            idx_ranges.append([lower_limit + start_idx, lower_limit + ts_idx, lower_limit + end_idx])
         print("")
         return idx_ranges
 

@@ -45,7 +45,7 @@ def main():
     for folder in os.listdir(SESSION_DATA_PATH):
         check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
-    # filename = list(data_files.items())[0][1]
+    data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
 
     for filename in list(data_files.values()):
         try:
@@ -55,7 +55,8 @@ def main():
             nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
             sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
         except Exception as e:
-            warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")
+            raise e
+            # warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")
 
 
 if __name__ == "__main__":
