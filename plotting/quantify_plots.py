@@ -1,9 +1,11 @@
+import json
 import math
 
 import numpy as np
+import pendulum
 from pynwb import NWBHDF5IO
 
-from population_analysis.quantification import QuanDistribution
+from population_analysis.quantification import QuanDistribution, TestQuantification, SlowQuantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
 
 import matplotlib.pyplot as plt
@@ -19,9 +21,23 @@ def _filter_out_zeros(arr):
 
 def _calc_num_bins(arr):
     q75, q25 = np.percentile(arr, [72, 25])
-    iqr = q75 - q25
-    bins = math.ceil((np.max(arr) - np.min(arr)) / (2 * iqr * np.power(len(arr), -1 / 3)))
+    iqr = q75 - q25 + 0.0000001
+    bins = math.ceil((np.max(arr) - np.min(arr) + 0.000001) / (2 * iqr * np.power(len(arr), -1 / 3)))
     return bins
+
+
+def graph_dists(dists, original):
+    bins = _calc_num_bins(dists)
+    hist = np.histogram(dists, bins=bins, density=True)
+    plt.bar(range(len(hist[0])), hist[0] / np.sum(hist[0]))
+
+    tick_width = 10
+    x_labels = np.round(hist[1][0::tick_width], decimals=5)
+    x_ticks = range(0, len(hist[0]), tick_width)
+
+    plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
+    plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
+    plt.show()
 
 
 def main():
@@ -43,23 +59,31 @@ def main():
     probe_units = _filter_out_zeros(probe_units)
     saccade_units = _filter_out_zeros(saccade_units)
 
-    tw = 2
+    quans_to_run = [
+        # Test Quan
+        # (*TestQuantification.DATA, TestQuantification())
+        # (*TestQuantification.DATA, SlowQuantification())
 
-    quan_dist = QuanDistribution(probe_units, saccade_units, EuclidianQuantification())
-    dists = quan_dist.calculate()
+        # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
+        # (probe_units, saccade_units, EuclidianQuantification()),
 
-    tw = 2
+        # Sanity check that there should be no difference between same 'cloud'
+        (probe_units, probe_units, EuclidianQuantification("probe")),
+        (saccade_units, saccade_units, EuclidianQuantification("saccade")),
+    ]
 
-    bins = _calc_num_bins(dists)
-    hist = np.histogram(dists, bins=bins, density=True)
-    plt.bar(range(len(hist[0])), hist[0] / np.sum(hist[0]))
+    for quan_params in quans_to_run:
+        quan_dist = QuanDistribution(*quan_params)
+        calculated_dists = quan_dist.calculate()
 
-    tick_width = 10
-    x_labels = np.round(hist[1][0::tick_width], decimals=5)
-    x_ticks = range(0, len(hist[0]), tick_width)
+        now = pendulum.now()
+        fp = open(f"{quan_dist.get_name()}-dists-{now.month}-{now.day}_{now.hour}-{now.minute}-{now.second}.json", "w")
+        json.dump(calculated_dists, fp)
+        fp.close()
 
-    plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
-    plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
+        graph_dists(calculated_dists, quan_dist.original())
+    # quan_dist = QuanDistribution(probe_units, saccade_units, quantification())
+    # graph_dists(quan_dist.calculate())
 
     """
     
@@ -83,4 +107,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
