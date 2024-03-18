@@ -29,7 +29,9 @@ def _calc_num_bins(arr):
 def graph_dists(dists, original):
     bins = _calc_num_bins(dists)
     hist = np.histogram(dists, bins=bins, density=True)
-    plt.bar(range(len(hist[0])), hist[0] / np.sum(hist[0]))
+    bar_y = hist[0] / np.sum(hist[0])
+    plt.title("Probability Density of Quantification Value")
+    plt.bar(range(len(hist[0])), bar_y, label="value probability")
 
     tick_width = 10
     x_labels = np.round(hist[1][0::tick_width], decimals=5)
@@ -37,6 +39,10 @@ def graph_dists(dists, original):
 
     plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
     plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
+    # To find which bin original is in - the first entry of where the original < hist bins
+    line_x = np.where(original < hist[1])[0][0]
+    plt.vlines(line_x, np.min(bar_y), np.max(bar_y), linestyles="dashed", color="red", label="original value")
+    plt.legend()
     plt.show()
 
 
@@ -61,8 +67,8 @@ def main():
 
     quans_to_run = [
         # Test Quan
-        # (*TestQuantification.DATA, TestQuantification())
-        # (*TestQuantification.DATA, SlowQuantification())
+        (*TestQuantification.DATA, TestQuantification()),
+        # (*TestQuantification.DATA, SlowQuantification()),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
         # (probe_units, saccade_units, EuclidianQuantification()),
@@ -74,35 +80,14 @@ def main():
 
     for quan_params in quans_to_run:
         quan_dist = QuanDistribution(*quan_params)
-        calculated_dists = quan_dist.calculate()
+        calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original()}
 
         now = pendulum.now()
         fp = open(f"{quan_dist.get_name()}-dists-{now.month}-{now.day}_{now.hour}-{now.minute}-{now.second}.json", "w")
         json.dump(calculated_dists, fp)
         fp.close()
 
-        graph_dists(calculated_dists, quan_dist.original())
-    # quan_dist = QuanDistribution(probe_units, saccade_units, quantification())
-    # graph_dists(quan_dist.calculate())
-
-    """
-    
-    # Scaled out version to include original value
-    v = EuclidianQuantification().calculate(probe_units, saccade_units)
-    dists2 = list(dists)
-    dists2.append(v)
-    
-    bins = _calc_num_bins(dists2)
-    hist = np.histogram(dists2, bins=bins, density=True)
-    plt.bar(range(len(hist[0])), hist[0]/np.sum(hist[0]))
-    plt.xticks(ticks=range(0, len(hist[0]), 1000), labels=np.round(hist[1][0::1000], decimals=5), rotation=90)
-    plt.subplots_adjust(bottom=0.25)
-    plt.vlines(len(hist[0]), 0, .01, color="red", label="Separated Value", linestyles="dashed")
-    plt.legend()
-    plt.show()
-    
-    """
-    plt.show()
+        graph_dists(**calculated_dists)
 
 
 if __name__ == "__main__":
