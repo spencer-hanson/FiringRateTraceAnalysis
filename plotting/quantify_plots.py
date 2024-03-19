@@ -1,5 +1,7 @@
 import json
 import math
+import sys
+import random
 
 import numpy as np
 import pendulum
@@ -40,13 +42,38 @@ def graph_dists(dists, original):
     plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
     plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
     # To find which bin original is in - the first entry of where the original < hist bins
-    line_x = np.where(original < hist[1])[0][0]
+    line_x = np.where(original < hist[1])[0]
+    if not line_x.size > 0:
+        line_x = original / (hist[1][1] - hist[1][0])
+    else:
+        line_x = line_x[0]
     plt.vlines(line_x, np.min(bar_y), np.max(bar_y), linestyles="dashed", color="red", label="original value")
     plt.legend()
     plt.show()
 
 
+def _create_test_data():
+    func1 = lambda x: 1.5*x
+    func2 = lambda x: 1.6*x
+    jitter = lambda x: random.uniform(0, 2) * 1 if random.randint(0, 1) % 2 else -1
+
+    class1 = [[func1(x)+jitter(x) for x in range(35)] for _ in range(10)]
+    class2 = [[func2(x)+jitter(x) for x in range(35)] for _ in range(10)]
+
+    # plt.plot(range(35), class1[0], color="red")
+    # plt.plot(range(35), class2[0], color="green")
+    # plt.show()
+    return class1, class2
+
+
 def main():
+    _create_test_data()
+
+    # dist_json_filepath = "saccade-dists-3-18_15-58-57.json"
+    # dist_json_filepath = "probe-dists-3-18_15-1-38.json"
+    # dist_fp = open(dist_json_filepath, "r")
+    # dist_data = json.load(dist_fp)
+    # graph_dists(dist_data["dists"], dist_data["original"])
     filepath = "../scripts/2023-05-15_mlati7_output.nwb"
 
     nwbio = NWBHDF5IO(filepath)
@@ -67,19 +94,23 @@ def main():
 
     quans_to_run = [
         # Test Quan
-        (*TestQuantification.DATA, TestQuantification()),
+        # (*TestQuantification.DATA, TestQuantification()),
         # (*TestQuantification.DATA, SlowQuantification()),
+
+        # Sanity check the sanity check
+        (*_create_test_data(), EuclidianQuantification("sanity")),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
         # (probe_units, saccade_units, EuclidianQuantification()),
 
         # Sanity check that there should be no difference between same 'cloud'
-        (probe_units, probe_units, EuclidianQuantification("probe")),
-        (saccade_units, saccade_units, EuclidianQuantification("saccade")),
+        # (probe_units, probe_units, EuclidianQuantification("probe")),
+        # (saccade_units, saccade_units, EuclidianQuantification("saccade")),
     ]
 
     for quan_params in quans_to_run:
         quan_dist = QuanDistribution(*quan_params)
+        org = quan_dist.original()
         calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original()}
 
         now = pendulum.now()
