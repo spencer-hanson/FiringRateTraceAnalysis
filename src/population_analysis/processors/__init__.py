@@ -8,7 +8,8 @@ from pynwb.file import Subject
 from simply_nwb import SimpleNWB
 
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
-    EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER
+    EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
+    NUM_BASELINE_POINTS
 from population_analysis.population.units import UnitPopulation
 
 
@@ -40,7 +41,7 @@ class RawSessionProcessor(object):
         self._unit_pop = unit_pop
 
     def save_to_nwb(self, filename, mouse_name, session_id):
-        print(f"Saving to NWB file '{filename}'")
+
 
         if self._unit_pop is None:
             self.calc_unit_population_stats()
@@ -77,13 +78,25 @@ class RawSessionProcessor(object):
 
         # Add units
         nwb.add_unit_column(name="trial_firing_rates",
-                            description="trials x waveform length array for each unit's presence in a trial")
+                            description="trials x waveform length array for each unit's presence in a trial, zscored "
+                                        + f"with a baseline of the first {NUM_BASELINE_POINTS} timepoints subtracted")
+        nwb.add_unit_column(
+            name="r_p_peri_trials",
+            description="Waveforms of each unit in each trial for mixed (perisaccadic) trials. "
+                        + "Probe waveform responses have been subtracted by the average saccadic response for that unit"
+                        + " (average across all saccadic trials)")
+
+        # Get z-scored, subtracted average saccade shifted responses for perisaccadic responses
+        # (when probe and saccade, mixed)
+        r_p_peri_trialdata = self.unit_pop.calc_rp_peri_trials()  # (trials, units, t)
+
         for unit_num in range(self.unit_pop.num_units):
             unit_spike_idxs = np.where(self.unit_pop.spike_clusters == unit_num)
             spike_times = self.unit_pop.spike_timestamps[unit_spike_idxs]
             nwb.add_unit(
                 spike_times=spike_times,
-                trial_firing_rates=self.unit_pop.unit_firingrates[:, unit_num]
+                trial_firing_rates=self.unit_pop.unit_firingrates[:, unit_num],
+                r_p_peri_trials=r_p_peri_trialdata[:, unit_num]
             )
 
         # Add probe and saccade event timings, trial types

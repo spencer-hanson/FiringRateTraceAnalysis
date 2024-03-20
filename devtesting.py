@@ -168,9 +168,6 @@ def _plot_unit_nums(unit_nums: np.ndarray, session_idxs: list[int]):
 def _get_unitdata(all_units_frs, all_units_sds, unit_labels, baseline_num_points: int) -> np.ndarray:
     all_units = all_units_frs  # All unit firing rates
 
-    # Mean unit firing rates across trials
-    units_len = len(all_units)
-
     # Unit means of first 8 timepoints to account for baseline
     all_units_mean = np.mean(all_units[:, :baseline_num_points], axis=1).reshape((-1, 1))
 

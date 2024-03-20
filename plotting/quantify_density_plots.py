@@ -37,7 +37,8 @@ def graph_dists(dists, original):
 
     tick_width = 10
     x_labels = np.round(hist[1][0::tick_width], decimals=5)
-    x_ticks = range(0, len(hist[0]), tick_width)
+    x_ticks = list(range(0, len(hist[0]), tick_width))
+    x_labels = x_labels[:len(x_ticks)]
 
     plt.xticks(ticks=x_ticks, labels=x_labels, rotation=90)
     plt.subplots_adjust(bottom=0.25)  # Add 25% space to the bottom for the label size
@@ -54,7 +55,7 @@ def graph_dists(dists, original):
 
 def _create_test_data():
     func1 = lambda x: 1.5*x
-    func2 = lambda x: 1.6*x
+    func2 = lambda x: 1.51*x
     jitter = lambda x: random.uniform(0, 2) * 1 if random.randint(0, 1) % 2 else -1
 
     class1 = [[func1(x)+jitter(x) for x in range(35)] for _ in range(10)]
@@ -110,7 +111,6 @@ def main():
 
     for quan_params in quans_to_run:
         quan_dist = QuanDistribution(*quan_params)
-        org = quan_dist.original()
         calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original()}
 
         now = pendulum.now()
