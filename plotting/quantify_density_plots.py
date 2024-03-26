@@ -13,14 +13,6 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
 
-def _filter_out_zeros(arr):
-    epsilon = 0.00001
-    sums = np.sum(arr, axis=1)
-    filtered_idxs = np.where(np.logical_not(sums < epsilon))
-    val = arr[filtered_idxs]
-    return val
-
-
 def _calc_num_bins(arr):
     q75, q25 = np.percentile(arr, [72, 25])
     iqr = q75 - q25 + 0.0000001
@@ -28,11 +20,11 @@ def _calc_num_bins(arr):
     return bins
 
 
-def graph_dists(dists, original):
+def graph_dists(dists, original, name):
     bins = _calc_num_bins(dists)
     hist = np.histogram(dists, bins=bins, density=True)
     bar_y = hist[0] / np.sum(hist[0])
-    plt.title("Probability Density of Quantification Value")
+    plt.title(f"Probability Density of Quantification Value {name}")
     plt.bar(range(len(hist[0])), bar_y, label="value probability")
 
     tick_width = 10
@@ -54,13 +46,22 @@ def graph_dists(dists, original):
 
 
 def _create_test_data():
-    func1 = lambda x: 1.5*x
-    func2 = lambda x: 1.51*x
-    jitter = lambda x: random.uniform(0, 2) * 1 if random.randint(0, 1) % 2 else -1
+    # func1 = lambda x: 1.5*x
+    func1 = lambda x: np.random.normal()
+    func2 = lambda x: np.random.normal(loc=0.5)
+    # func2 = lambda x: 1.5*x
+
+    jitter = lambda x: 0
+    # jitter = lambda x: random.uniform(0, 2) * 1 if random.randint(0, 1) % 2 else -1
 
     class1 = [[func1(x)+jitter(x) for x in range(35)] for _ in range(10)]
     class2 = [[func2(x)+jitter(x) for x in range(35)] for _ in range(10)]
-
+    """
+    TODO
+    Take each neuron fr as a dimension, use 100ms after the probe and average the fr, concat for all neurons
+    
+    
+    """
     # plt.plot(range(35), class1[0], color="red")
     # plt.plot(range(35), class2[0], color="green")
     # plt.show()
@@ -83,15 +84,12 @@ def main():
     probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
     saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
 
-    probe_units = nwb.units["trial_firing_rates"].data[:, probe_trial_idxs]
-    saccade_units = nwb.units["trial_firing_rates"].data[:, saccade_trial_idxs]
+    probe_units = nwb.units["trial_response_firing_rates"].data[:, probe_trial_idxs]
+    saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
 
-    # Do we concat trials? idk doing that currently
+    # TODO Do we concat trials? idk doing that currently
     probe_units = probe_units.reshape((-1, 35))
     saccade_units = saccade_units.reshape((-1, 35))
-
-    probe_units = _filter_out_zeros(probe_units)
-    saccade_units = _filter_out_zeros(saccade_units)
 
     quans_to_run = [
         # Test Quan
@@ -111,7 +109,7 @@ def main():
 
     for quan_params in quans_to_run:
         quan_dist = QuanDistribution(*quan_params)
-        calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original()}
+        calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original(), "name": quan_dist.get_name()}
 
         now = pendulum.now()
         fp = open(f"{quan_dist.get_name()}-dists-{now.month}-{now.day}_{now.hour}-{now.minute}-{now.second}.json", "w")

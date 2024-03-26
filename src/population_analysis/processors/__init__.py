@@ -77,32 +77,36 @@ class RawSessionProcessor(object):
         )
 
         # Add units
-        nwb.add_unit_column(name="trial_firing_rates",
-                            description="trials x waveform length array for each unit's presence in a trial, zscored "
-                                        + f"with a baseline of the first {NUM_BASELINE_POINTS} timepoints subtracted")
+        firing_rate_description = f"trials x waveform length array for each unit's presence in a trial with a baseline of the first {NUM_BASELINE_POINTS} timepoints subtracted"
+        nwb.add_unit_column(name="trial_response_firing_rates",
+                            description=firing_rate_description + " raw, NOT zscored")
+        nwb.add_unit_column(name="trial_response_zscored",
+                            description=firing_rate_description + " zscored")
+
         nwb.add_unit_column(
             name="r_p_peri_trials",
             description="Waveforms of each unit in each trial for mixed (perisaccadic) trials. "
                         + "Probe waveform responses have been subtracted by the average saccadic response for that unit"
-                        + " (average across all saccadic trials)")
+                        + " (average across all saccadic trials) NOT zscored")
 
-        # Get z-scored, subtracted average saccade shifted responses for perisaccadic responses
+        # Get subtracted average saccade shifted responses for perisaccadic responses
         # (when probe and saccade, mixed)
         r_p_peri_trialdata = self.unit_pop.calc_rp_peri_trials()  # (trials, units, t)
 
-        for unit_num in range(self.unit_pop.num_units):
+        for unit_idx, unit_num in enumerate(self.unit_pop.filtered_unit_nums):
             unit_spike_idxs = np.where(self.unit_pop.spike_clusters == unit_num)
             spike_times = self.unit_pop.spike_timestamps[unit_spike_idxs]
             nwb.add_unit(
                 spike_times=spike_times,
-                trial_firing_rates=self.unit_pop.unit_firingrates[:, unit_num],
-                r_p_peri_trials=r_p_peri_trialdata[:, unit_num]
+                trial_response_firing_rates=self.unit_pop.unit_firingrates[:, unit_idx],
+                trial_response_zscored=self.unit_pop.unit_zscores[:, unit_idx],
+                r_p_peri_trials=r_p_peri_trialdata[:, unit_idx]
             )
 
         # Add probe and saccade event timings, trial types
         behavior_events = nwb.create_processing_module(name="behavior",
                                                        description="Contains saccade and probe event timings")
-
+        unit_labels = TimeSeries(name="unit-labels", data=self.unit_pop.filtered_unit_nums, unit="num", rate=1.0, description="Unit number from kilosort for each unit")
         probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe")
         saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
 
@@ -112,6 +116,7 @@ class RawSessionProcessor(object):
             behavior_events.add(TimeSeries(name=f"unit-trial-{trial_type}",
                                            data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx",
                                            description=f"Indices into all trials that are {trial_type} trials. Use nwbfile.units['trial_firing_rates'][unit_number][<idx goes here>] to get the firing rate of a unit in a given trial using these indicies"))
+        behavior_events.add(unit_labels)
         behavior_events.add(probe_ts)
         behavior_events.add(saccade_ts)
 

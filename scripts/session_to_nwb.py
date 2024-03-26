@@ -42,17 +42,20 @@ def check_for_data(folder_path, data_files):
 
 def main():
     data_files = {}
-    for folder in os.listdir(SESSION_DATA_PATH):
-        check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
+    # TODO Re-enable to process all sessions
+    # for folder in os.listdir(SESSION_DATA_PATH):
+    #     check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
-    data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
+    # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
+    data_files = {"idk": "output.hdf"}
 
     for filename in list(data_files.values()):
         try:
             print(f"Processing '{filename}'")
             sess = RawSessionProcessor(filename)
             # +1 for leading \\, -4 for '.hdf'
-            nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
+            # nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
+            nwb_filename = "2023-05-15_mlati7_output.nwb"  # TODO Remove me
             sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
         except Exception as e:
             raise e

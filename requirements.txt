@@ -6,6 +6,7 @@ jupyterlab
 ipympl
 matplotlib
 simply-nwb
+pynwb
 numexpr
 llvmlite
 numba
