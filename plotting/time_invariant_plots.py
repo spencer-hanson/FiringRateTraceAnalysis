@@ -19,8 +19,10 @@ def main():
 
     timepoint = 0  # Start by looking at timepoint 0 in the response
 
-    probe_timepoints = 0  # TODO get the points of the first timebin for all units, for each trial for probe and saccade
-    saccade_timepoints = 0
+    # TODO get the points of the first timebin for all units, for each trial for probe and saccade
+    probe_timepoints = probe_units[:, :, timepoint].swapaxes(0, 1)
+    saccade_timepoints = saccade_units[:, :, timepoint].swapaxes(0, 1)
+
     quan_name = "timepoints" + str(timepoint)
 
     quan = QuanDistribution(probe_timepoints, saccade_timepoints, EuclidianQuantification(quan_name))

@@ -9,7 +9,7 @@ from simply_nwb import SimpleNWB
 
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
-    NUM_BASELINE_POINTS
+    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE
 from population_analysis.population.units import UnitPopulation
 
 
@@ -20,10 +20,18 @@ class RawSessionProcessor(object):
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
         self.saccade_timestamps = np.array(data["saccades"]["predicted"]["left"]["nasal"]["timestamps"])  # TODO others?
+        self.p_value_truth = self._calc_p_value_truth(data)
         self._unit_pop: Optional[UnitPopulation] = None
 
+    def _calc_p_value_truth(self, data):
+        # Calculate a bool array of if the units pass the p-value zeta test
+        probe = np.array(data["population"]["zeta"]["probe"]["left"]["p"]) < UNIT_ZETA_P_VALUE  # TODO others?
+        saccade = np.array(data["population"]["zeta"]["saccade"]["nasal"]["p"]) < UNIT_ZETA_P_VALUE
+        combined = np.logical_or(probe, saccade)  # A unit can pass probe or saccade to be included
+        return combined
+
     def calc_unit_population_stats(self):
-        unit_pop = UnitPopulation(self.spike_timestamps, self.spike_clusters)
+        unit_pop = UnitPopulation(self.spike_timestamps, self.spike_clusters, self.p_value_truth)
 
         print("Extracting saccade spike timestamps..")
         saccade_spike_range_idxs = self._extract_timestamp_idxs(self.spike_timestamps, self.saccade_timestamps)
@@ -41,8 +49,6 @@ class RawSessionProcessor(object):
         self._unit_pop = unit_pop
 
     def save_to_nwb(self, filename, mouse_name, session_id):
-
-
         if self._unit_pop is None:
             self.calc_unit_population_stats()
 

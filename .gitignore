@@ -3,6 +3,7 @@ venv/
 testdata/
 *.pyc
 *.ipynb_checkpoints
+*.hdf
 ignore_*
 graphs/*
 *.nwb

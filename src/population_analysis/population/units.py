@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.ma as ma
-from population_analysis.consts import TOTAL_TRIAL_MS, SPIKE_BIN_MS, NUM_FIRINGRATE_SAMPLES, NUM_BASELINE_POINTS, \
-    TRIAL_THRESHOLD_SUM, UNIT_TRIAL_PERCENTAGE
+from population_analysis.consts import TOTAL_TRIAL_MS, SPIKE_BIN_MS, NUM_FIRINGRATE_SAMPLES, NUM_BASELINE_POINTS
 
 
 class Trial(object):
@@ -53,7 +52,7 @@ class Trial(object):
 
 
 class UnitPopulation(object):
-    def __init__(self, spike_timestamps: np.ndarray, spike_clusters: np.ndarray):
+    def __init__(self, spike_timestamps: np.ndarray, spike_clusters: np.ndarray, p_value_truth: np.ndarray):
         self.spike_timestamps = spike_timestamps
         self.spike_clusters = spike_clusters
         self._trials = []
@@ -63,6 +62,7 @@ class UnitPopulation(object):
         self._num_prefiltered_units = len(self.unique_spike_clusters)
         self._filtered_unit_nums = None
         self.unique_unit_nums = np.unique(spike_clusters)
+        self._p_value_truth = p_value_truth
 
     def __str__(self):
         return f"UnitPopulation(num_units={self._num_prefiltered_units}, num_trials={len(self._trials)})"
@@ -127,26 +127,33 @@ class UnitPopulation(object):
 
     def _threshold_trials(self, firing_rates):
         # Remove units that do not meet a threshold firing rate across trials.
-        # must have at least a total of 0.01 firing rate in 20% of the trials of Saccade OR Probe trials
-        # OR is used to include units that are only responsive in one trial
+        # uses p-values from a zeta test from the source data hdf
         # firing_rates is trials x units x t
 
-        units = firing_rates.swapaxes(0, 1)  # Swap trials and units
-        # units arr should be units x trials x t
-        num_trials = units.shape[1]
+        units = firing_rates.swapaxes(0, 1)  # Swap trials and units axes
+        # units arr is (units, trials, t)
+        unit_idxs = np.where(self._p_value_truth)
+        new_units = units[unit_idxs]
+        self._filtered_unit_nums = self.unique_unit_nums[unit_idxs]
+        new_firing_rates = new_units.swapaxes(0, 1)  # Swap back units and trials to (trials, units, t)
+        return new_firing_rates
 
+        # Old thresholding code
+        # must have at least a total of 0.01 firing rate in 20% of the trials of Saccade OR Probe trials
+        # OR is used to include units that are only responsive in one trial
+        # units = firing_rates.swapaxes(0, 1)  # Swap trials and units
+        # units arr should be units x trials x t
+        # num_trials = units.shape[1]
         # The unit must have at least 0.01 activity on average in 20% of the trials
         # divide by 2 to account for units that only fire in saccade or probe trials
-        threshold = TRIAL_THRESHOLD_SUM * (num_trials/2) * UNIT_TRIAL_PERCENTAGE
-        unit_all_trial_activity = np.sum(np.sum(units, axis=2), axis=1)  # Sum across all trials of the same unit, all responses
-        unit_mask = unit_all_trial_activity > threshold
-        unit_idxs = np.where(unit_mask)
-        new_units = units[unit_idxs]
-
-        self._filtered_unit_nums = self.unique_unit_nums[unit_idxs]
-
-        new_firing_rates = new_units.swapaxes(0, 1)  # Swap units and trials back to that it is (trials, units, t)
-        return new_firing_rates
+        # threshold = TRIAL_THRESHOLD_SUM * (num_trials/2) * UNIT_TRIAL_PERCENTAGE
+        # unit_all_trial_activity = np.sum(np.sum(units, axis=2), axis=1)  # Sum across all trials of the same unit, all responses
+        # unit_mask = unit_all_trial_activity > threshold
+        # unit_idxs = np.where(unit_mask)
+        # new_units = units[unit_idxs]
+        # self._filtered_unit_nums = self.unique_unit_nums[unit_idxs]
+        # new_firing_rates = new_units.swapaxes(0, 1)  # Swap units and trials back to that it is (trials, units, t)
+        # return new_firing_rates
 
     def calc_firingrates(self):
         # Calculate the firing rate of each unit for all trials

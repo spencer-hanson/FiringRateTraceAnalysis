@@ -11,9 +11,9 @@ NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)
 NUM_BASELINE_POINTS = 8  # First 8 points in a waveform will be used for z-scoring / baselining the waveform
 
 # Unit filtering consts
-TRIAL_THRESHOLD_SUM = 0.01  # Sum of all firing rates in all trials for a unit
-UNIT_TRIAL_PERCENTAGE = .2  # Minimum percentage of trials that meet the threshold for a unit to include it
-
+# TRIAL_THRESHOLD_SUM = 0.01  # NOT USED CURRENTLY Sum of all firing rates in all trials for a unit
+# UNIT_TRIAL_PERCENTAGE = .2  # NOT USED CURRENTLY Minimum percentage of trials that meet the threshold for a unit to include it
+UNIT_ZETA_P_VALUE = 0.01  # p-value of a unit using the zeta test must be lower than this threshold
 
 MOUSE_DETAILS = {
     "mlati9": {  # TODO Correct these values
