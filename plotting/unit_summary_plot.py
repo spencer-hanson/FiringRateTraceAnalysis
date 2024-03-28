@@ -5,6 +5,12 @@ from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+"""
+NOT FINISHED
+Plot the response waveforms of each mixed trial alongside eachother
+TODO add a line where the saccade was, align with time
+"""
+
 
 def main():
 
@@ -15,7 +21,7 @@ def main():
     nwb = nwbio.read()
 
     mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
-    mixed_units = nwb.units["trial_firing_rates"].data[:, mixed_trial_idxs]
+    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
     rel_saccades = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
 
     unit_data = mixed_units[unit_to_view]
@@ -31,8 +37,8 @@ def main():
     # xdata = range(total_size)
     xdata = range(35)
 
-    trials_to_graph = len(mixed_trial_idxs)
-    # trials_to_graph = 5
+    # trials_to_graph = len(mixed_trial_idxs)
+    trials_to_graph = 5
     fig, ax = plt.subplots(trials_to_graph, 1, sharex=True)
 
     for i in range(trials_to_graph):

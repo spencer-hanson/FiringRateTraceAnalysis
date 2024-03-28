@@ -10,7 +10,7 @@ Meta information about PCA
 """
 
 
-def _pop_pca(units: np.ndarray, components: Optional[int] = 3):
+def run_pca(units: np.ndarray, components: Optional[int] = 3):
     # units is n x t (time by num units)
     pca = PCA(n_components=components)
     pca.fit(units)
@@ -22,7 +22,7 @@ def pop_vec_pca_variances(units: np.ndarray, save_to_file: Union[bool, str] = Fa
     # Variance of the PCA fit as the number of components are included, ie how much of the data is explained by the
     # the first N PCs
 
-    pca, data = _pop_pca(units, None)
+    pca, data = run_pca(units, None)
     variance = pca.explained_variance_ratio_
     variance = np.cumsum(variance)
     fig, ax = plt.subplots()
@@ -38,7 +38,7 @@ def pop_vec_pca_variances(units: np.ndarray, save_to_file: Union[bool, str] = Fa
 def unit_pca_bar(units: np.ndarray, unit_idx: int, save_to_file: Union[bool, str] = False):
     # The first 3 PCs for a single unit, just to see it's 3d value as a bar graph
 
-    pca, data = _pop_pca(units)
+    pca, data = run_pca(units)
 
     # Bar graph of the values of the PCA embeddings for unit 'unit_idx'
     fig, ax = plt.subplots()
@@ -60,7 +60,7 @@ def pop_vec_pcas(units: np.ndarray, save_to_file: Union[bool, str] = False):
     # units is n x t (time by num units)
     # Graph of V x t (voltage by time) of the waveforms of the PCs that are the most important
 
-    pca, data = _pop_pca(units)
+    pca, data = run_pca(units)
 
     fig, ax = plt.subplots()
     colors = plt.get_cmap("Set1")
@@ -84,7 +84,7 @@ def pop_vec_show_pca_reconstruction(units: np.ndarray, unit_idx: int, save_to_fi
 
     def reconstruct(num_comps):
 
-        pca, data = _pop_pca(units, components=num_comps)
+        pca, data = run_pca(units, components=num_comps)
 
         pl = lambda d, n, c: ax.plot(list(range(len(d))), d, label=n, color=c)
 

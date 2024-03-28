@@ -2,6 +2,11 @@ from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
 import numpy as np
 
+"""
+Plot all response waveforms of each trial averaged, to see how the general responses look, if they can be
+useful for analysis or if they contain too much noise
+"""
+
 
 def main():
     filepath = "../scripts/2023-05-15_mlati7_output.nwb"
@@ -25,7 +30,7 @@ def main():
         plt.title(title)
         plt.show()
 
-    plot_data(np.average(nwb.units["trial_firing_rates"].data[:], axis=1), "All Averaged")
+    plot_data(np.average(nwb.units["trial_response_firing_rates"].data[:], axis=1), "All Averaged")
 
     trial_idxs = [
         ("Saccades", nwb.processing["behavior"]["unit-trial-saccade"].data[:]),
@@ -34,10 +39,7 @@ def main():
     ]
 
     for name, idx_list in trial_idxs:
-        plot_data(np.average(nwb.units["trial_firing_rates"].data[:, idx_list], axis=1), name)
-
-
-    tw = 2
+        plot_data(np.average(nwb.units["trial_response_firing_rates"].data[:, idx_list], axis=1), name)
 
 
 if __name__ == "__main__":

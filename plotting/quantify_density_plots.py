@@ -100,7 +100,7 @@ def main():
         (*_create_test_data(), EuclidianQuantification("sanity")),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
-        # (probe_units, saccade_units, EuclidianQuantification()),
+        # (probe_units, saccade_units, EuclidianQuantification("sanity2")),
 
         # Sanity check that there should be no difference between same 'cloud'
         # (probe_units, probe_units, EuclidianQuantification("probe")),
