@@ -167,10 +167,7 @@ def mean_trajectories_3d(pca_units, probe_units, saccade_units):
     probe_avgs = np.array([np.mean(pca.transform(probe_units[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
 
     arr_len = len(saccade_avgs)
-    # Parametric 3d plot
-    t = [i for i in range(arr_len)]
     ax = plt.figure().add_subplot(projection='3d')
-    colors = plt.get_cmap("hsv")
     for i in range(1, arr_len):
         ax.plot(*saccade_avgs[i - 1:i + 1].T, c="blue")
 
