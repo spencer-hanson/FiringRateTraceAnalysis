@@ -134,11 +134,59 @@ def ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix):
     ani.save(filename=f"{filename_prefix}/timepoint_mean_trajectory.gif", writer="pillow")
 
 
+def trial_trajectories_3d(pca_units, probe_units, saccade_units):
+    print("Plotting each trial's trajectories in 3d")
+
+    pca, data = run_pca(pca_units, components=3)
+    num_timepoints = 35
+
+    saccade_vals = np.array([pca.transform(saccade_units[:, :, tp].swapaxes(0, 1)) for tp in range(num_timepoints)])
+    probe_vals = np.array([pca.transform(probe_units[:, :, tp].swapaxes(0, 1)) for tp in range(num_timepoints)])
+
+    ax = plt.figure().add_subplot(projection='3d')
+    colors = plt.get_cmap("hsv")
+    for j in range(len(saccade_vals)):
+        for i in range(1, num_timepoints):
+            ax.plot(*saccade_vals[j][i - 1:i + 1].T, c="blue")
+
+    for j in range(len(probe_vals)):
+        for i in range(1, num_timepoints):
+            ax.plot(*probe_vals[j][i - 1:i + 1].T, c="orange")
+
+    plt.show()
+    tw = 2
+
+
+def mean_trajectories_3d(pca_units, probe_units, saccade_units):
+    print("Plotting mean trajectories in 3d")
+
+    pca, data = run_pca(pca_units, components=3)
+    num_timepoints = 35
+
+    saccade_avgs = np.array([np.mean(pca.transform(saccade_units[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
+    probe_avgs = np.array([np.mean(pca.transform(probe_units[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
+
+    arr_len = len(saccade_avgs)
+    # Parametric 3d plot
+    t = [i for i in range(arr_len)]
+    ax = plt.figure().add_subplot(projection='3d')
+    colors = plt.get_cmap("hsv")
+    for i in range(1, arr_len):
+        ax.plot(*saccade_avgs[i - 1:i + 1].T, c="blue")
+
+    for i in range(1, arr_len):
+        ax.plot(*probe_avgs[i - 1:i + 1].T, c="orange")
+
+    plt.show()
+    tw = 2
+
+
 def main():
     filename = "2023-05-15_mlati7_output"
     filepath = "../scripts/" + filename + ".nwb"
     filename_prefix = f"../graphs/{filename}"
-    os.makedirs(filename_prefix)
+    if not os.path.exists(filename_prefix):
+        os.makedirs(filename_prefix)
 
     nwbio = NWBHDF5IO(filepath)
     nwb = nwbio.read()
@@ -158,9 +206,11 @@ def main():
     pca, data = run_pca(pca_units, components=2)
 
     # Plots
-    ani_all_pca_plot(probe_units, saccade_units, pca, filename_prefix)
-    ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix)
+    # ani_all_pca_plot(probe_units, saccade_units, pca, filename_prefix)
+    # ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix)
     # quantify_timepoints(probe_units, saccade_units)  # Prob dist
+    mean_trajectories_3d(pca_units, probe_units, saccade_units)
+    # trial_trajectories_3d(pca_units, probe_units, saccade_units)
 
 
 if __name__ == "__main__":
