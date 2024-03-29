@@ -178,6 +178,26 @@ def mean_trajectories_3d(pca_units, probe_units, saccade_units):
     tw = 2
 
 
+def pca_variance_explained(pca_units):
+    pca, _ = run_pca(pca_units, None)
+    variance = pca.explained_variance_ratio_
+    variance = np.cumsum(variance)
+    fig, ax = plt.subplots()
+    plt.title("PCA Explained Variance")
+    plt.xlabel("Number of components")
+    plt.ylabel("Percent of variance described")
+    ax.plot(list(range(len(variance))), variance)
+    plt.show()
+
+
+def pca_components(pca):
+    fig, ax = plt.subplots()
+    colors = plt.get_cmap("Set1")
+    for idx, component in enumerate(pca.components_):
+        ax.plot(list(range(len(component))), component, color=colors(idx), label=f"{idx} PC")
+    plt.show()
+
+
 def main():
     filename = "2023-05-15_mlati7_output"
     filepath = "../scripts/" + filename + ".nwb"
@@ -206,9 +226,10 @@ def main():
     # ani_all_pca_plot(probe_units, saccade_units, pca, filename_prefix)
     # ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix)
     # quantify_timepoints(probe_units, saccade_units)  # Prob dist
-    mean_trajectories_3d(pca_units, probe_units, saccade_units)
+    # mean_trajectories_3d(pca_units, probe_units, saccade_units)
     # trial_trajectories_3d(pca_units, probe_units, saccade_units)
-
+    pca_variance_explained(pca_units)
+    pca_components(pca)
 
 if __name__ == "__main__":
     main()
