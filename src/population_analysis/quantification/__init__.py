@@ -69,7 +69,7 @@ class QuanDistribution(object):
             print("Calculating quantification 10k times -", end="")
 
         one_tenth = int(num_samples / 10)
-        start = pendulum.now()
+        # start = pendulum.now()
         for progress in range(num_samples):  # Calculate quan 10k times
 
             if display and progress % one_tenth == 0:

@@ -68,6 +68,13 @@ def _create_test_data():
     return class1, class2
 
 
+def _make_sanity_datatset(data):
+    np.random.shuffle(data)
+    split_percentage = 0.5
+    split_len = int(len(data)*split_percentage)
+    return [data[:split_len], data[split_len:]]
+
+
 def main():
     _create_test_data()
 
@@ -88,8 +95,13 @@ def main():
     saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
 
     # TODO Do we concat trials? idk doing that currently
-    probe_units = probe_units.reshape((-1, 35))
-    saccade_units = saccade_units.reshape((-1, 35))
+    probe_unit_timepoints = probe_units.swapaxes(0, 2)[0]
+    saccade_unit_timepoints = saccade_units.swapaxes(0, 2)[0]
+
+    flattened_probe_units = probe_units.reshape((-1, 35))
+    flattened_saccade_units = saccade_units.reshape((-1, 35))
+
+
 
     quans_to_run = [
         # Test Quan
@@ -97,7 +109,7 @@ def main():
         # (*TestQuantification.DATA, SlowQuantification()),
 
         # Sanity check the sanity check
-        (*_create_test_data(), EuclidianQuantification("sanity")),
+        # (*_create_test_data(), EuclidianQuantification("sanity")),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
         # (probe_units, saccade_units, EuclidianQuantification("sanity2")),
@@ -105,6 +117,7 @@ def main():
         # Sanity check that there should be no difference between same 'cloud'
         # (probe_units, probe_units, EuclidianQuantification("probe")),
         # (saccade_units, saccade_units, EuclidianQuantification("saccade")),
+        (*_make_sanity_datatset(np.copy(saccade_unit_timepoints)), EuclidianQuantification("SaccadeSanity")),
     ]
 
     for quan_params in quans_to_run:

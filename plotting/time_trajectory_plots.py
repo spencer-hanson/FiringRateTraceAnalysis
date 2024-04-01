@@ -210,12 +210,18 @@ def main():
 
     probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
     saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
+    mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
+
+    # Filter out mixed trials that saccades are more than 20ms away from the probe
+    mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
+    mixed_filtered_idxs = np.abs(mixed_rel_timestamps) <= 0.2  # 20 ms
+    mixed_trial_idxs = mixed_trial_idxs[mixed_filtered_idxs]
 
     # (units, trials, t)
     probe_units = nwb.units["trial_response_firing_rates"].data[:, probe_trial_idxs]
     saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
+    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]  # TODO include mixed trials in below plot funcs
 
-    # pca_units should be a
     num_units = probe_units.shape[0]
     pca_probe_units = probe_units.swapaxes(0, 2).reshape((-1, num_units))
     pca_saccade_units = saccade_units.swapaxes(0, 2).reshape((-1, num_units))
@@ -230,6 +236,7 @@ def main():
     # trial_trajectories_3d(pca_units, probe_units, saccade_units)
     pca_variance_explained(pca_units)
     pca_components(pca)
+
 
 if __name__ == "__main__":
     main()
