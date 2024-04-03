@@ -12,16 +12,11 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 
 import matplotlib.pyplot as plt
 
-
-def _calc_num_bins(arr):
-    q75, q25 = np.percentile(arr, [72, 25])
-    iqr = q75 - q25 + 0.0000001
-    bins = math.ceil((np.max(arr) - np.min(arr) + 0.000001) / (2 * iqr * np.power(len(arr), -1 / 3)))
-    return bins
+from population_analysis.util import calc_num_bins
 
 
 def graph_dists(dists, original, name):
-    bins = _calc_num_bins(dists)
+    bins = calc_num_bins(dists)
     hist = np.histogram(dists, bins=bins, density=True)
     bar_y = hist[0] / np.sum(hist[0])
     plt.title(f"Probability Density of Quantification Value {name}")
@@ -101,8 +96,6 @@ def main():
     flattened_probe_units = probe_units.reshape((-1, 35))
     flattened_saccade_units = saccade_units.reshape((-1, 35))
 
-
-
     quans_to_run = [
         # Test Quan
         # (*TestQuantification.DATA, TestQuantification()),
@@ -112,22 +105,22 @@ def main():
         # (*_create_test_data(), EuclidianQuantification("sanity")),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
-        # (probe_units, saccade_units, EuclidianQuantification("sanity2")),
+        (probe_units, saccade_units, EuclidianQuantification("sanity2")),
 
         # Sanity check that there should be no difference between same 'cloud'
         # (probe_units, probe_units, EuclidianQuantification("probe")),
         # (saccade_units, saccade_units, EuclidianQuantification("saccade")),
-        (*_make_sanity_datatset(np.copy(saccade_unit_timepoints)), EuclidianQuantification("SaccadeSanity")),
+        # (*_make_sanity_datatset(np.copy(saccade_unit_timepoints)), EuclidianQuantification("SaccadeSanity")),
     ]
 
     for quan_params in quans_to_run:
         quan_dist = QuanDistribution(*quan_params)
         calculated_dists = {"dists": quan_dist.calculate(), "original": quan_dist.original(), "name": quan_dist.get_name()}
 
-        now = pendulum.now()
-        fp = open(f"{quan_dist.get_name()}-dists-{now.month}-{now.day}_{now.hour}-{now.minute}-{now.second}.json", "w")
-        json.dump(calculated_dists, fp)
-        fp.close()
+        # now = pendulum.now()
+        # fp = open(f"{quan_dist.get_name()}-dists-{now.month}-{now.day}_{now.hour}-{now.minute}-{now.second}.json", "w")
+        # json.dump(calculated_dists, fp)
+        # fp.close()
 
         graph_dists(**calculated_dists)
 

@@ -10,6 +10,8 @@ from matplotlib.patches import Ellipse
 from matplotlib import animation
 import matplotlib.pyplot as plt
 
+from population_analysis.util import calc_num_bins
+
 
 # def interpolate(pt1, pt2) -> np.ndarray:
 #     x1, y1 = pt1[0], pt1[1]
@@ -84,12 +86,13 @@ def ani_all_pca_plot(probe_units, saccade_units, pca, filename_prefix):
     ani.save(filename=f"{filename_prefix}/pca_timepoint_responses.gif", writer="pillow")
 
 
-def ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix):
+def ani_mean_trajectories(unit_dict, pca, filename_prefix, colormap, filename_suffix=""):
     print("Plotting mean trajectories..")
     num_timepoints = 35
 
-    saccade_avgs = np.array([np.mean(pca.transform(saccade_units[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
-    probe_avgs = np.array([np.mean(pca.transform(probe_units[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
+    unit_avgs = {}
+    for k, v in unit_dict.items():
+        unit_avgs[k] = np.array([np.mean(pca.transform(v[:, :, tp].swapaxes(0, 1)), axis=0) for tp in range(num_timepoints)])
 
     pca_line_data = {"data": []}
 
@@ -104,34 +107,39 @@ def ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix):
         for pt in range(pca_timepoint + 1):
             if pt > 34 or pt == 0:
                 continue
-            to_plot.extend(ax.plot(
-                [saccade_avgs[pt - 1][0], saccade_avgs[pt][0]],
-                [saccade_avgs[pt - 1][1], saccade_avgs[pt][1]],
-                color="blue",
-                linestyle="dashed"
-            ))
-            to_plot.extend(ax.plot(
-                [probe_avgs[pt - 1][0], probe_avgs[pt][0]],
-                [probe_avgs[pt - 1][1], probe_avgs[pt][1]],
-                color="orange",
-                linestyle="dashed"
-            ))
-        xmax = max(probe_avgs[:, 0].max(), saccade_avgs[:, 0].max())
-        xmin = min(probe_avgs[:, 0].min(), saccade_avgs[:, 0].min())
-        ymax = max(probe_avgs[:, 1].max(), saccade_avgs[:, 1].max())
-        ymin = min(probe_avgs[:, 1].min(), saccade_avgs[:, 1].min())
+
+            for unit_name, unit_avg in unit_avgs.items():
+                to_plot.extend(ax.plot(
+                    [unit_avg[pt - 1][0], unit_avg[pt][0]],
+                    [unit_avg[pt - 1][1], unit_avg[pt][1]],
+                    color=colormap[unit_name],
+                    linestyle="dashed"
+                ))
+
+        xmax = 0
+        xmin = 0
+        ymax = 0
+        ymin = 0
+
+        for unit_name, unit_avg in unit_avgs.items():
+            xmax = max(unit_avg[:, 0].max(), xmax)
+            xmin = min(unit_avg[:, 0].min(), xmin)
+            ymax = max(unit_avg[:, 1].max(), ymax)
+            ymin = min(unit_avg[:, 1].min(), ymin)
+
         ax.set_xlim([xmin, xmax])
         ax.set_ylim([ymin, ymax])
 
-        to_plot.append(ax.scatter(*probe_avgs[pca_timepoint], color="orange", label="Probe"))
-        to_plot.append(ax.scatter(*saccade_avgs[pca_timepoint], color="blue", label="Saccade"))
+        for unit_name, unit_avg in unit_avgs.items():
+            to_plot.append(ax.scatter(*unit_avg[pca_timepoint], color=colormap[unit_name], label=unit_name))
+
         fig.legend()
         pca_line_data["data"] = to_plot
         return to_plot
 
     fig.suptitle("Mean PCA response trajectory of Probe vs Saccade")
     ani = animation.FuncAnimation(fig=fig, func=pca_line_ani, frames=35)
-    ani.save(filename=f"{filename_prefix}/timepoint_mean_trajectory.gif", writer="pillow")
+    ani.save(filename=f"{filename_prefix}/timepoint_mean_trajectory{filename_suffix}.gif", writer="pillow")
 
 
 def trial_trajectories_3d(pca_units, probe_units, saccade_units):
@@ -198,6 +206,33 @@ def pca_components(pca):
     plt.show()
 
 
+def unit_histograms(all_unit_data, timepoint, filename_prefix):
+    # unit_data [(units,trials, t), ..]
+    print("Plotting unit histogram animation")
+    num_units = all_unit_data[0].shape[0]
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    to_remove = {"d": []}
+
+    def update(frame):
+        plotted = []
+        [v.remove() for v in to_remove["d"]]
+        if frame % 10 == 0:
+            print(f"{frame}/{num_units}")
+
+        unit_num = frame % num_units
+        udata = [u[unit_num][:, timepoint] for u in all_unit_data]
+        unit_data = np.hstack(udata)
+        hist = np.histogram(unit_data, bins=calc_num_bins(unit_data), density=True)
+        plotted.append(ax.stairs(hist[0], hist[1]))
+        fig.suptitle(f"Unit {unit_num} hist at timepoint {timepoint}")
+        to_remove["d"] = plotted
+        return plotted
+
+    ani = animation.FuncAnimation(fig=fig, func=update, frames=num_units)
+    ani.save(filename=f"{filename_prefix}/unit_hist.gif", writer="pillow")
+    tw = 2
+
 def main():
     filename = "2023-05-15_mlati7_output"
     filepath = "../scripts/" + filename + ".nwb"
@@ -214,23 +249,56 @@ def main():
 
     # Filter out mixed trials that saccades are more than 20ms away from the probe
     mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
-    mixed_filtered_idxs = np.abs(mixed_rel_timestamps) <= 0.2  # 20 ms
+    mixed_filtered_idxs = np.abs(mixed_rel_timestamps) <= 0.02  # 20 ms
     mixed_trial_idxs = mixed_trial_idxs[mixed_filtered_idxs]
 
     # (units, trials, t)
     probe_units = nwb.units["trial_response_firing_rates"].data[:, probe_trial_idxs]
     saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
-    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]  # TODO include mixed trials in below plot funcs
+    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
+    rp_peri_units = nwb.units["r_p_peri_trials"].data[:]
+    tw = 2
 
     num_units = probe_units.shape[0]
-    pca_probe_units = probe_units.swapaxes(0, 2).reshape((-1, num_units))
-    pca_saccade_units = saccade_units.swapaxes(0, 2).reshape((-1, num_units))
-    pca_units = np.vstack([pca_probe_units, pca_saccade_units])
+    to_pca_units = [probe_units, saccade_units, mixed_units, rp_peri_units]
+    pca_units = [x.swapaxes(0, 2).reshape((-1, num_units)) for x in to_pca_units]
+    pca_units = np.vstack(pca_units)
+
     pca, data = run_pca(pca_units, components=2)
+
+    # pca_probe_units = probe_units.swapaxes(0, 2).reshape((-1, num_units))
+    # pca_saccade_units = saccade_units.swapaxes(0, 2).reshape((-1, num_units))
+    # pca_mixed_units = mixed_units.swapaxes(0, 2).reshape((-1, num_units))
 
     # Plots
     # ani_all_pca_plot(probe_units, saccade_units, pca, filename_prefix)
-    # ani_mean_trajectories(probe_units, saccade_units, pca, filename_prefix)
+    colormap = {
+        "Rp(Extra)": "red",
+        "Rs": "blue",
+        "Rmixed": "purple",
+        "Rp(Peri)": "orange"
+    }
+
+    timepoint = 0
+    unit_trial_data = [probe_units, saccade_units, mixed_units]
+    # unit_histograms(unit_trial_data, timepoint, filename_prefix)  # TODO Sorta broken?
+
+    ani_mean_trajectories(
+        {"Rp(Extra)": probe_units, "Rs": saccade_units, "Rmixed": mixed_units, "Rp(Peri)": rp_peri_units}, pca,
+        filename_prefix, colormap)
+
+    ani_mean_trajectories(
+        {"Rp(Extra)": probe_units, "Rp(Peri)": rp_peri_units}, pca,
+        filename_prefix, colormap, filename_suffix="rpe_v_rpp")
+
+    ani_mean_trajectories(
+        {"Rmixed": mixed_units, "Rp(Peri)": rp_peri_units}, pca,
+        filename_prefix, colormap, filename_suffix="rm_v_rpp")
+
+    ani_mean_trajectories(
+        {"Rs": saccade_units, "Rp(Peri)": rp_peri_units}, pca,
+        filename_prefix, colormap, filename_suffix="rs_v_rpp")
+
     # quantify_timepoints(probe_units, saccade_units)  # Prob dist
     # mean_trajectories_3d(pca_units, probe_units, saccade_units)
     # trial_trajectories_3d(pca_units, probe_units, saccade_units)
