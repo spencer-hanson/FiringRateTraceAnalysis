@@ -7,7 +7,7 @@ POST_TRIAL_MS = TOTAL_TRIAL_MS - PRE_TRIAL_MS
 SPIKE_BIN_MS = 20
 
 # Baseline consts
-NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)
+NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)  # Should be 35
 NUM_BASELINE_POINTS = 8  # First 8 points in a waveform will be used for z-scoring / baselining the waveform
 
 # Unit filtering consts
