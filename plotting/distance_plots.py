@@ -9,36 +9,71 @@ import matplotlib.pyplot as plt
 
 
 def _calc_dists(data_dict):
+    # Calculate the mean euclidian distance between datasets, pairwise
     # data_dict is {"Rp(Extra)": <rp data>, ..}
+    # returns like {"Rp(Extra)-Rp(Peri)": [dist_t_0, dist_t_1, ..], ..}
     euclid_dist = EuclidianQuantification("Pairwise")
-    dists = {}
 
-    for t in range(NUM_FIRINGRATE_SAMPLES):
-        data_pairs = list(data_dict.items())
-        for i in range(len(data_pairs)):
-            name, data = data_pairs.pop()
-            for name1, data1 in data_pairs:
-                if name == name1:
-                    continue
-                k = f"{name}-{name1}"
-                if k not in dists:
-                    dists[k] = []
-                dists[k].append(euclid_dist.calculate(
-                    data[:, :, t].swapaxes(0, 1),
-                    data1[:, :, t].swapaxes(0, 1)
-                ))
-    return dists
+    def dist_func(name, data, name1, data1):
+        dist_data = []
+        dist_name = f"{name}-{name1}"
+
+        for t in range(NUM_FIRINGRATE_SAMPLES):
+            dist_data.append(euclid_dist.calculate(
+                data[:, :, t].swapaxes(0, 1),
+                data1[:, :, t].swapaxes(0, 1)
+            ))
+        return dist_name, dist_data
+    result = _pairwise_iter(data_dict, dist_func)
+    d = {}
+    for k, v in result:
+        d[k] = v
+    return d
 
 
-def calculate_pairwise_mean_distances(data_dict):
+def _pairwise_iter(data_dict, func):
+    # func is f(name, data, name2, data2) -> result: Any
+    results = []
+    data_pairs = list(data_dict.items())
+    for i in range(len(data_pairs)):
+        name, data = data_pairs.pop()
+        for name1, data1 in data_pairs:
+            if name == name1:
+                continue
+            results.append(func(name, data, name1, data1))
+    return results
+
+
+def pairwise_mean_distances(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
-
     dists = _calc_dists(data_dict)
     for pair_name, vals in dists.items():
         plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
         plt.title(pair_name)
         plt.show()
     tw = 2
+
+
+def pairwise_scaled_mean_distances_bootstrapped(data_dict):
+    # iterate over a space of scales to determine distance between means
+
+    def iter_func(name1, data1, name2, data2):
+        data1_mean = np.mean(data1, axis=1)  # (units, t) avg trials out
+        data2_mean = np.mean(data2, axis=1)
+        for t in range(NUM_FIRINGRATE_SAMPLES):
+            t1 = data1_mean[:, t]
+            t2 = data2_mean[:, t]
+
+        # for unit_num in range(data1_mean.shape[0]):
+        #     unit1 = data1_mean[unit_num]
+        #     unit2 = data2_mean[unit_num]
+        #     umin = min(np.min(unit1), np.min(unit2))
+        #     umax = max(np.max(unit2), np.max(unit2))
+        #     scale_range = np.linspace(umin, umax)
+
+        # dmax =
+        # dmin =
+    pass
 
 
 def main():
@@ -68,15 +103,14 @@ def main():
     tw = 2
 
     data_dict = {
-            "Rp(Extra)": probe_units,
+            "Rp(Extra)": probe_units,  # (units, trials, t)
             "Rs": saccade_units,
             "Rmixed": mixed_units,
             "Rp(Peri)": rp_peri_units
         }
 
-    calculate_pairwise_mean_distances(
-        data_dict
-    )
+    # pairwise_mean_distances(data_dict)
+    pairwise_scaled_mean_distances_bootstrapped(data_dict)
 
 
 if __name__ == "__main__":
