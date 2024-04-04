@@ -95,7 +95,7 @@ class UnitPopulation(object):
         mean_baselines = np.mean(unit_trial_waveforms[:, :, :NUM_BASELINE_POINTS], axis=2)[:, :, None]  # Add axis for broadcasting
         std_baselines = np.std(unit_trial_waveforms[:, :, :NUM_BASELINE_POINTS], axis=2)[:, :, None]  # Shape is trials x units x 1(new axis)
 
-        # Replace 0's with 1's so that the divide doesn't cause nan and inf
+        # Replace 0's with 1's so that the divide doesn't cause nan and inf TODO Fix?
         np.place(std_baselines, std_baselines == 0, 1)
 
         zscored = (unit_trial_waveforms - mean_baselines) / std_baselines
@@ -164,7 +164,7 @@ class UnitPopulation(object):
         one_tenth_of_trials = int(num_trials / 10)
         for trial_idx, trial in enumerate(self._trials):
             if trial_idx % one_tenth_of_trials == 0:
-                print(f" {round(100 * (trial_idx/num_trials), 2)} %", end="")
+                print(f" {round(100 * (trial_idx/num_trials), 2)}%", end="")
 
             trial_spike_times = self.spike_timestamps[trial.start:trial.end]
             trial_start = self.spike_timestamps[trial.start]

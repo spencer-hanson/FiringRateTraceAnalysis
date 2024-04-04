@@ -25,8 +25,8 @@ class RawSessionProcessor(object):
 
     def _calc_p_value_truth(self, data):
         # Calculate a bool array of if the units pass the p-value zeta test
-        probe = np.array(data["population"]["zeta"]["probe"]["left"]["p"]) < UNIT_ZETA_P_VALUE  # TODO others?
-        saccade = np.array(data["population"]["zeta"]["saccade"]["nasal"]["p"]) < UNIT_ZETA_P_VALUE
+        probe = np.array(data["population"]["zeta"]["probe"]["left"]["p"]) <= UNIT_ZETA_P_VALUE  # TODO others?
+        saccade = np.array(data["population"]["zeta"]["saccade"]["nasal"]["p"]) <= UNIT_ZETA_P_VALUE
         combined = np.logical_or(probe, saccade)  # A unit can pass probe or saccade to be included
         return combined
 
@@ -100,7 +100,7 @@ class RawSessionProcessor(object):
         r_p_peri_trialdata = self.unit_pop.calc_rp_peri_trials()  # (trials, units, t)
 
         for unit_idx, unit_num in enumerate(self.unit_pop.filtered_unit_nums):
-            unit_spike_idxs = np.where(self.unit_pop.spike_clusters == unit_num)
+            unit_spike_idxs = np.where(self.unit_pop.spike_clusters == unit_num)[0]
             spike_times = self.unit_pop.spike_timestamps[unit_spike_idxs]
             nwb.add_unit(
                 spike_times=spike_times,
@@ -133,17 +133,17 @@ class RawSessionProcessor(object):
         for trial in self.unit_pop.get_mixed_trials():
             if trial.trial_label == "mixed":
                 sac_idx = trial.events["saccade_event"]
-                probe_idx = trial.events["probe_start"]
+                probe_idx = trial.events["probe_event"]
                 sac_timestamp = self.unit_pop.spike_timestamps[sac_idx]
-                probe_window_start_timestamp = self.unit_pop.spike_timestamps[probe_idx]
-                relative_time = sac_timestamp - probe_window_start_timestamp
+                probe_window_event_timestamp = self.unit_pop.spike_timestamps[probe_idx]
+                relative_time = sac_timestamp - probe_window_event_timestamp
                 relative_saccade_times_for_mixed_trials.append(relative_time)
 
         behavior_events.add(
             TimeSeries(
                 name=f"mixed-trial-saccade-relative-timestamps",
                 data=relative_saccade_times_for_mixed_trials, rate=0.001, unit="s",
-                description=f"Timestamps of saccades in the mixed trials relative to the start of the probe start window"))
+                description=f"Timestamps of saccades in the mixed trials relative to the probe time"))
 
         print("Writing to file, may take a while..")
         SimpleNWB.write(nwb, filename)
@@ -192,6 +192,8 @@ class RawSessionProcessor(object):
                         multiplier = multiplier - 0.1  # Last estimate was lower, this estimate was too high
             return int(estimated_timestamp_idx * multiplier)
 
+        # _testing = {"lower": [], "upper": [], "event": []}  # TODO comment me out
+
         other_len = len(other_timestamps)
         other_one_tenth = int(1 / 10 * other_len)
         for idx, ts in enumerate(other_timestamps):
@@ -206,12 +208,25 @@ class RawSessionProcessor(object):
             lower_limit = limit_spike_timestamps(pre_window_ts)
             upper_limit = limit_spike_timestamps(post_window_ts, higher=True)
 
-            start_idx = np.where(pre_window_ts < spike_timestamps[lower_limit:upper_limit])[0][0]  # First index in tuple, first index is the edge
+            start_idx = np.where(pre_window_ts <= spike_timestamps[lower_limit:upper_limit])[0][0]  # First index in tuple, first index is the edge
             end_idx = np.where(post_window_ts <= spike_timestamps[lower_limit:upper_limit])[0][0]
             ts_idx = np.where(ts >= spike_timestamps[lower_limit:upper_limit])[0][-1]  # Index of the event timestamp itself, next smallest value
             # Add the lower limit back on since the np.where statements return relative to the array passed in
             idx_ranges.append([lower_limit + start_idx, lower_limit + ts_idx, lower_limit + end_idx])
+
+            # _testing["lower"].append(pre_window_ts - spike_timestamps[lower_limit + start_idx])
+            # _testing["upper"].append(post_window_ts - spike_timestamps[lower_limit + end_idx])
+            # _testing["event"].append(ts - spike_timestamps[lower_limit + ts_idx])
+
         print("")
+        # import matplotlib.pyplot as plt
+        # plt.stairs(_testing["lower"])
+        # plt.show()
+        # plt.stairs(_testing["upper"])
+        # plt.show()
+        # plt.stairs(_testing["event"])
+        # plt.show()
+        tw = 2
         return idx_ranges
 
     def _demix_trials(self, saccade_idxs: list[list[float]], probe_idxs: list[list[float]]):
@@ -250,14 +265,14 @@ class RawSessionProcessor(object):
 
         # Find saccades that occur within 500ms of a probe
         print("Demixing saccades within 500ms from a probe")
-        saccade_idxs, probe_idxs, both = within_window(saccade_idxs, probe_idxs, "saccade", "probe")
+        saccade_idxs1, probe_idxs1, both = within_window(saccade_idxs, probe_idxs, "saccade", "probe")
 
         # Find probes that occur within 500ms of a saccade
         print("Demixing probes within 500ms of a saccade")
-        probe_idxs, saccade_idxs, both2 = within_window(probe_idxs, saccade_idxs, "probe", "saccade")
+        probe_idxs2, saccade_idxs2, both2 = within_window(probe_idxs1, saccade_idxs1, "probe", "saccade")
 
-        trials["saccade"] = saccade_idxs
-        trials["probe"] = probe_idxs
+        trials["saccade"] = saccade_idxs2
+        trials["probe"] = probe_idxs2
         trials["mixed"] = [*both, *both2]
 
         return trials

@@ -105,12 +105,12 @@ def main():
         # (*_create_test_data(), EuclidianQuantification("sanity")),
 
         # Quantification between R_p(Extra) and R_s  (sanity check that there should be a difference)
-        (probe_units, saccade_units, EuclidianQuantification("sanity2")),
+        # (probe_units, saccade_units, EuclidianQuantification("sanity2")),
 
         # Sanity check that there should be no difference between same 'cloud'
         # (probe_units, probe_units, EuclidianQuantification("probe")),
         # (saccade_units, saccade_units, EuclidianQuantification("saccade")),
-        # (*_make_sanity_datatset(np.copy(saccade_unit_timepoints)), EuclidianQuantification("SaccadeSanity")),
+        (*_make_sanity_datatset(np.copy(saccade_unit_timepoints)), EuclidianQuantification("SaccadeSanity")),
     ]
 
     for quan_params in quans_to_run:

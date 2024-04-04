@@ -300,9 +300,9 @@ def main():
         {"Rs": saccade_units, "Rp(Peri)": rp_peri_units}, pca,
         filename_prefix, colormap, filename_suffix="rs_v_rpp")
 
-    # quantify_timepoints(probe_units, saccade_units)  # Prob dist
-    # mean_trajectories_3d(pca_units, probe_units, saccade_units)
-    # trial_trajectories_3d(pca_units, probe_units, saccade_units)
+    quantify_timepoints(probe_units, saccade_units)  # Prob dist
+    mean_trajectories_3d(pca_units, probe_units, saccade_units)
+    trial_trajectories_3d(pca_units, probe_units, saccade_units)
     pca_variance_explained(pca_units)
     pca_components(pca)
 

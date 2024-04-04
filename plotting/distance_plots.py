@@ -31,32 +31,14 @@ def _calc_dists(data_dict):
 
 
 def calculate_pairwise_mean_distances(data_dict):
+    # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
+
     dists = _calc_dists(data_dict)
     for pair_name, vals in dists.items():
         plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
         plt.title(pair_name)
         plt.show()
     tw = 2
-
-
-def plot_responses(data_dict):
-    num_units = data_dict[list(data_dict.keys())[0]].shape[0]
-    # fig, axs = plt.subplots(num_units, len(data_dict.keys()))
-    data = []
-    uidx = 0
-    for uname, udata in data_dict.items():
-        means = np.mean(udata, axis=1)
-        data.append(means)
-        # for i, m in enumerate(means):
-        #     axs[i, uidx].plot(range(NUM_FIRINGRATE_SAMPLES), m)
-
-        uidx = uidx + 1
-    v = 1
-    aa = np.array(data)
-    plt.figure(figsize=(10, 40), dpi=140)
-    plt.title(names[v])
-    plt.imshow(aa[v])
-    plt.show()
 
 
 def main():
@@ -92,15 +74,9 @@ def main():
             "Rp(Peri)": rp_peri_units
         }
 
-    # calculate_pairwise_mean_distances(
-    #     data_dict
-    # )
-    plot_responses(data_dict)
-
-    # num_units = probe_units.shape[0]
-    # to_pca_units = [probe_units, saccade_units, mixed_units, rp_peri_units]
-    # pca_units = [x.swapaxes(0, 2).reshape((-1, num_units)) for x in to_pca_units]
-    # pca_units = np.vstack(pca_units)
+    calculate_pairwise_mean_distances(
+        data_dict
+    )
 
 
 if __name__ == "__main__":
