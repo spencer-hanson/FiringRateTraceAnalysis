@@ -233,6 +233,7 @@ def unit_histograms(all_unit_data, timepoint, filename_prefix):
     ani.save(filename=f"{filename_prefix}/unit_hist.gif", writer="pillow")
     tw = 2
 
+
 def main():
     filename = "2023-05-15_mlati7_output"
     filepath = "../scripts/" + filename + ".nwb"
