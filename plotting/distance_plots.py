@@ -57,12 +57,23 @@ def pairwise_mean_distances(data_dict):
 def pairwise_scaled_mean_distances_bootstrapped(data_dict):
     # iterate over a space of scales to determine distance between means
 
+    scale_range = np.linspace(-2, 2)
+
     def iter_func(name1, data1, name2, data2):
-        data1_mean = np.mean(data1, axis=1)  # (units, t) avg trials out
-        data2_mean = np.mean(data2, axis=1)
-        for t in range(NUM_FIRINGRATE_SAMPLES):
-            t1 = data1_mean[:, t]
-            t2 = data2_mean[:, t]
+        timepoint = 8
+        data1_mean = np.mean(data1, axis=1)[:, timepoint]  # (units, t) avg trials out
+        data2_mean = np.mean(data2, axis=1)[:, timepoint]
+
+        data1_mean = scale_range * data1_mean[:, None]
+        data2_mean = scale_range * data2_mean[:, None]
+
+        euclid_dist = EuclidianQuantification("Scaled")
+        dists = [euclid_dist.calculate(data1_mean[:, i], data2_mean[:, i]) for i in range(len(scale_range))]
+        return f"{name1}-{name2}", dists
+
+        # for t in range(NUM_FIRINGRATE_SAMPLES):
+        #     t1 = data1_mean[:, t]
+        #     t2 = data2_mean[:, t]
 
         # for unit_num in range(data1_mean.shape[0]):
         #     unit1 = data1_mean[unit_num]
@@ -74,6 +85,13 @@ def pairwise_scaled_mean_distances_bootstrapped(data_dict):
         # dmax =
         # dmin =
     pass
+    result = _pairwise_iter(data_dict, iter_func)
+
+    for k, v in result:
+        plt.plot(scale_range[range(len(v))], v)
+        plt.title(k)
+        plt.show()
+    tw = 2
 
 
 def main():
