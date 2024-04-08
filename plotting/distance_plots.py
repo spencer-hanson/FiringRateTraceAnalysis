@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 from pynwb import NWBHDF5IO
@@ -8,8 +9,9 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
 
-def _calc_dists(data_dict):
+def _calc_dists(data_dict, shuffled=False):
     # Calculate the mean euclidian distance between datasets, pairwise
+    # if shuffled=True, then randomize the points between the two datasets before calculating mean
     # data_dict is {"Rp(Extra)": <rp data>, ..}
     # returns like {"Rp(Extra)-Rp(Peri)": [dist_t_0, dist_t_1, ..], ..}
     euclid_dist = EuclidianQuantification("Pairwise")
@@ -17,6 +19,12 @@ def _calc_dists(data_dict):
     def dist_func(name, data, name1, data1):
         dist_data = []
         dist_name = f"{name}-{name1}"
+        if shuffled:
+            shuf = np.hstack([data, data1]).swapaxes(0, 1)
+            np.random.shuffle(shuf)
+            shuf = shuf.swapaxes(0, 1)
+            data = shuf[:, :data.shape[1], :]
+            data1 = shuf[:, data.shape[1]:, :]
 
         for t in range(NUM_FIRINGRATE_SAMPLES):
             dist_data.append(euclid_dist.calculate(
@@ -25,10 +33,7 @@ def _calc_dists(data_dict):
             ))
         return dist_name, dist_data
     result = _pairwise_iter(data_dict, dist_func)
-    d = {}
-    for k, v in result:
-        d[k] = v
-    return d
+    return result
 
 
 def _pairwise_iter(data_dict, func):
@@ -47,55 +52,69 @@ def _pairwise_iter(data_dict, func):
 def pairwise_mean_distances(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
     dists = _calc_dists(data_dict)
-    for pair_name, vals in dists.items():
+    shuffled_dists = [_calc_dists(data_dict, shuffled=True) for _ in range(1000)]
+
+    for idx in range(len(dists)):
+        pair_name, vals = dists[idx]
+
         plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
+        for shuf_data in shuffled_dists:
+            _, shuf_vals = shuf_data[idx]
+            plt.plot(range(NUM_FIRINGRATE_SAMPLES), shuf_vals, color="orange")
+
         plt.title(pair_name)
         plt.show()
-    tw = 2
 
 
-def pairwise_scaled_mean_distances_bootstrapped(data_dict):
+def pairwise_scaled_mean_distances(data_dict):
     # iterate over a space of scales to determine distance between means
-
     scale_range = np.linspace(-2, 2)
 
-    def iter_func(name1, data1, name2, data2):
-        timepoint = 8
-        data1_mean = np.mean(data1, axis=1)[:, timepoint]  # (units, t) avg trials out
-        data2_mean = np.mean(data2, axis=1)[:, timepoint]
+    def wrapper(timepoint):
+        def iter_func(name1, data1, name2, data2):
+            data1_mean = np.mean(data1, axis=1)[:, timepoint]  # (units, t) avg trials out
+            data2_mean = np.mean(data2, axis=1)[:, timepoint]
 
-        data1_mean = scale_range * data1_mean[:, None]
-        data2_mean = scale_range * data2_mean[:, None]
+            data1_mean = scale_range[:, None] * np.broadcast_to(data1_mean, (len(scale_range), *data1_mean.shape))
+            data2_mean = np.broadcast_to(data2_mean, (len(scale_range), *data2_mean.shape))
 
-        euclid_dist = EuclidianQuantification("Scaled")
-        dists = [euclid_dist.calculate(data1_mean[:, i], data2_mean[:, i]) for i in range(len(scale_range))]
-        return f"{name1}-{name2}", dists
+            euclid_dist = EuclidianQuantification("Scaled")
+            dists = [euclid_dist.calculate([data1_mean[i, :]], [data2_mean[i, :]]) for i in range(len(scale_range))]
+            return f"{name1}-{name2}", dists
 
-        # for t in range(NUM_FIRINGRATE_SAMPLES):
-        #     t1 = data1_mean[:, t]
-        #     t2 = data2_mean[:, t]
+        return iter_func
 
-        # for unit_num in range(data1_mean.shape[0]):
-        #     unit1 = data1_mean[unit_num]
-        #     unit2 = data2_mean[unit_num]
-        #     umin = min(np.min(unit1), np.min(unit2))
-        #     umax = max(np.max(unit2), np.max(unit2))
-        #     scale_range = np.linspace(umin, umax)
+    all_results = [_pairwise_iter(data_dict, wrapper(i)) for i in range(NUM_FIRINGRATE_SAMPLES)]
 
-        # dmax =
-        # dmin =
-    pass
-    result = _pairwise_iter(data_dict, iter_func)
+    for pair_idx in range(len(all_results[0])):
+        count = 0
+        name = None
+        fig = plt.figure()
+        three_d = False
+        if three_d:
+            ax = fig.add_subplot(projection='3d')
+        else:
+            ax = fig.add_subplot()
 
+        for result in all_results:
+            k, v = result[pair_idx]
+            name = k
+            args = [scale_range[range(len(v))], v]
+            if three_d:
+                args.append(count)
 
-    for k, v in result:
-        ax = plt.figure().add_subplot(projection='3d')
-        x = scale_range
-        y = v
-        # z =
-        plt.plot(scale_range[range(len(v))], v)
-        plt.title(k)
+            ax.plot(*args, color=plt.get_cmap("hsv")(count))
+            count = count + 1
+            # plt.show()
+            # ax = plt.figure().add_subplot()
+            # time.sleep(1)
+        plt.title(name)
         plt.show()
+
+    # y = np.array(all_data[0][0])[:, 36]
+    # plt.figure()
+    # plt.plot(range(len(y)), y)
+    # plt.show()
     tw = 2
 
 
@@ -132,31 +151,8 @@ def main():
             "Rp(Peri)": rp_peri_units
         }
 
-    import matplotlib.pyplot as plt
-
-    from mpl_toolkits.mplot3d import axes3d
-
-    ax = plt.figure().add_subplot(projection='3d')
-    X, Y, Z = axes3d.get_test_data(0.05)
-
-    # Plot the 3D surface
-    ax.plot_surface(X, Y, Z, edgecolor='royalblue', lw=0.5, rstride=8, cstride=8,
-                    alpha=0.3)
-
-    # Plot projections of the contours for each dimension.  By choosing offsets
-    # that match the appropriate axes limits, the projected contours will sit on
-    # the 'walls' of the graph
-    # ax.contourf(X, Y, Z, zdir='z', offset=-100, cmap='coolwarm')
-    # ax.contourf(X, Y, Z, zdir='x', offset=-40, cmap='coolwarm')
-    # ax.contourf(X, Y, Z, zdir='y', offset=40, cmap='coolwarm')
-
-    ax.set(xlim=(-40, 40), ylim=(-40, 40), zlim=(-100, 100),
-           xlabel='X', ylabel='Y', zlabel='Z')
-
-    plt.show()
-    tw = 2
-    # pairwise_mean_distances(data_dict)
-    # pairwise_scaled_mean_distances_bootstrapped(data_dict)
+    pairwise_mean_distances(data_dict)
+    # pairwise_scaled_mean_distances(data_dict)
 
 
 if __name__ == "__main__":
