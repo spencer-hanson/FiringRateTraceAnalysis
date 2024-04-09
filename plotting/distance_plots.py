@@ -5,6 +5,7 @@ import numpy as np
 from pynwb import NWBHDF5IO
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
+from population_analysis.population.plots.pca_meta import run_pca
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
@@ -52,18 +53,30 @@ def _pairwise_iter(data_dict, func):
 def pairwise_mean_distances(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
     dists = _calc_dists(data_dict)
-    shuffled_dists = [_calc_dists(data_dict, shuffled=True) for _ in range(1000)]
-
+    shuffled_dists = [_calc_dists(data_dict, shuffled=True) for _ in range(10)]
+    # dist data - dists[0][1]
+    # [s[0][1] for s in shuffled_dists]
     for idx in range(len(dists)):
         pair_name, vals = dists[idx]
 
-        plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
         for shuf_data in shuffled_dists:
             _, shuf_vals = shuf_data[idx]
             plt.plot(range(NUM_FIRINGRATE_SAMPLES), shuf_vals, color="orange")
+        plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals, color="blue")
 
         plt.title(pair_name)
         plt.show()
+
+
+def pairwise_mean_distances_single_plot(data_dict):
+    # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
+    dists = _calc_dists(data_dict)
+
+    for idx in range(len(dists)):
+        pair_name, vals = dists[idx]
+        plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
+
+    plt.show()
 
 
 def pairwise_scaled_mean_distances(data_dict):
@@ -118,6 +131,23 @@ def pairwise_scaled_mean_distances(data_dict):
     tw = 2
 
 
+def mean_pca_response(data_dict):
+    # all_values = np.hstack(list(data_dict.values()))
+    # all_values = all_values.swapaxes(0,2).reshape((-1, all_values.shape[0]))
+    # pca, data = run_pca(all_values, components=2)
+    count = 0
+    for name, val in data_dict.items():
+        avg = np.mean(val, axis=1)
+        avg = np.mean(avg, axis=0)
+        plt.plot(range(len(avg)), avg, color=plt.get_cmap("Set1")(count))
+        # for unit in avg:
+        #     plt.plot(range(len(unit)), unit, color=plt.get_cmap("Set1")(count))
+        count = count + 1
+    plt.show()
+    tw = 2
+    pass
+
+
 def main():
     filename = "2023-05-15_mlati7_output"
     filepath = "../scripts/" + filename + ".nwb"
@@ -143,15 +173,32 @@ def main():
     mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
     rp_peri_units = nwb.units["r_p_peri_trials"].data[:]
     tw = 2
+    # probe_units = probe_units.swapaxes(0, 1)
+    # np.random.shuffle(probe_units)
+    # probe_units = probe_units.swapaxes(0, 1)
+
+    split_data = rp_peri_units
+    num_split = int(split_data.shape[1] * .1)
 
     data_dict = {
-            "Rp(Extra)": probe_units,  # (units, trials, t)
-            "Rs": saccade_units,
-            "Rmixed": mixed_units,
-            "Rp(Peri)": rp_peri_units
-        }
+            # "Rp(Extra)": probe_units[:, :num_split, :],  # (units, trials, t)
+            # "Rp(Extra)2": probe_units[:, num_split:, :],
 
-    pairwise_mean_distances(data_dict)
+            # "Rp(Extra)": probe_units,  # (units, trials, t)
+            # "Rs": saccade_units,
+            # "Rmixed": mixed_units,
+            # "Rp(Peri)": rp_peri_units
+        }
+    idxs = []
+    for i in range(1, 9):
+        start_idx = (i - 1) * num_split
+        end_idx = i * num_split
+        idxs.append((start_idx, end_idx))
+        data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
+
+    mean_pca_response(data_dict)
+    # pairwise_mean_distances_single_plot(data_dict)
+    # pairwise_mean_distances(data_dict)
     # pairwise_scaled_mean_distances(data_dict)
 
 
