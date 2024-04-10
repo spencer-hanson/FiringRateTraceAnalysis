@@ -4,6 +4,11 @@ from pynwb import NWBHDF5IO
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
+Create a heatmap-like view of the average firing rate of each neuron (trial-averaged)
+Useful for visualizing a bunch of neurons all at once
+"""
+
 
 def plot_responses(data_dict):
     num_units = data_dict[list(data_dict.keys())[0]].shape[0]

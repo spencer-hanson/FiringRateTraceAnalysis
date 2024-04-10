@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 
 from population_analysis.util import calc_num_bins
 
+"""
+Visualized PCA trajectories for different response types
+"""
 
 # def interpolate(pt1, pt2) -> np.ndarray:
 #     x1, y1 = pt1[0], pt1[1]

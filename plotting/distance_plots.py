@@ -9,6 +9,10 @@ from population_analysis.population.plots.pca_meta import run_pca
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
+"""
+Plots relating to distance between response types, eg Rs, Rp(Peri), etc..
+"""
+
 
 def _calc_dists(data_dict, shuffled=False):
     # Calculate the mean euclidian distance between datasets, pairwise
