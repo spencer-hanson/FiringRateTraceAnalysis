@@ -190,7 +190,8 @@ def main():
        "Rp(Extra)": probe_units[:, :500, :],  # (units, trials, t)
        "Rp(Extra)2": probe_units[:, 500:, :],
     }
-
+    # TODO debug distance, make a plot of the distances for each dimension? (units that make the most diff)
+    # ???
     mean_pca_response(data_dict)
     pairwise_mean_distances_single_plot(data_dict)
     # pairwise_mean_distances(data_dict)
