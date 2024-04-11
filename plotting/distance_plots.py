@@ -6,6 +6,7 @@ from pynwb import NWBHDF5IO
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.population.plots.pca_meta import run_pca
+from population_analysis.processors.nwb import NWBSessionProcessor
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
@@ -154,57 +155,61 @@ def mean_pca_response(data_dict):
 
 def main():
     filename = "2023-05-15_mlati7_output"
-    filepath = "../scripts/" + filename + ".nwb"
-    filename_prefix = f"../graphs/{filename}"
-    if not os.path.exists(filename_prefix):
-        os.makedirs(filename_prefix)
+    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-    nwbio = NWBHDF5IO(filepath)
-    nwb = nwbio.read()
+    probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()
 
-    probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
-    saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
-    mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
+    # shuffle = False
+    # split_data = probe_units
+    # if shuffle:
+    #     split_data = split_data.swapaxes(0, 1)
+    #     np.random.shuffle(split_data)
+    #     split_data = split_data.swapaxes(0, 1)
+    #
+    # num_split = int(split_data.shape[1] * .1)
+    #
+    # data_dict = {}
+    #
+    # # Comparing distance to self in groups of sequential trials for sanity check
+    # idxs = []
+    # for i in range(1, 9):
+    #     start_idx = (i - 1) * num_split
+    #     end_idx = i * num_split
+    #     idxs.append((start_idx, end_idx))
+    #     data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
 
-    # Filter out mixed trials that saccades are more than 20ms away from the probe
-    mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
-    mixed_filtered_idxs = np.abs(mixed_rel_timestamps) <= 0.02  # 20 ms
-    mixed_trial_idxs = mixed_trial_idxs[mixed_filtered_idxs]
-
-    # (units, trials, t)
-    probe_units = nwb.units["trial_response_firing_rates"].data[:, probe_trial_idxs]
-    saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
-    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
-    rp_peri_units = nwb.units["r_p_peri_trials"].data[:]
-    tw = 2
-    # probe_units = probe_units.swapaxes(0, 1)
-    # np.random.shuffle(probe_units)
-    # probe_units = probe_units.swapaxes(0, 1)
-
-    split_data = rp_peri_units
-    num_split = int(split_data.shape[1] * .1)
+    # data_dict = {
+    #
+    #     "Rp(Extra)": probe_units,  # (units, trials, t)
+    #     "Rs": saccade_units,
+    #     "Rmixed": mixed_units,
+    #     "Rp(Peri)": rp_peri_units
+    # }
 
     data_dict = {
-            # "Rp(Extra)": probe_units[:, :num_split, :],  # (units, trials, t)
-            # "Rp(Extra)2": probe_units[:, num_split:, :],
-
-            # "Rp(Extra)": probe_units,  # (units, trials, t)
-            # "Rs": saccade_units,
-            # "Rmixed": mixed_units,
-            # "Rp(Peri)": rp_peri_units
-        }
-    idxs = []
-    for i in range(1, 9):
-        start_idx = (i - 1) * num_split
-        end_idx = i * num_split
-        idxs.append((start_idx, end_idx))
-        data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
+       "Rp(Extra)": probe_units[:, :500, :],  # (units, trials, t)
+       "Rp(Extra)2": probe_units[:, 500:, :],
+    }
 
     mean_pca_response(data_dict)
-    # pairwise_mean_distances_single_plot(data_dict)
+    pairwise_mean_distances_single_plot(data_dict)
     # pairwise_mean_distances(data_dict)
     # pairwise_scaled_mean_distances(data_dict)
 
 
 if __name__ == "__main__":
     main()
+
+
+"""
+code for unit filtering stuff
+
+fr = firing_rate
+sums = np.sum(np.sum(fr, axis=2), axis=1)
+get_threshold = lambda x: x * (num_trials/2)*.2
+unums = []
+for i in np.linspace(0, 2, 200):
+    unums.append(len(np.where(sums > get_threshold(i))[0]))
+    
+
+"""

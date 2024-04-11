@@ -60,7 +60,7 @@ class UnitPopulation(object):
         self._zscores = None
         self.unique_spike_clusters = np.unique(self.spike_clusters)
         self._num_prefiltered_units = len(self.unique_spike_clusters)
-        self._filtered_unit_nums = None
+        self._unit_filters = None
         self.unique_unit_nums = np.unique(spike_clusters)
         self._p_value_truth = p_value_truth
 
@@ -125,27 +125,25 @@ class UnitPopulation(object):
 
         return mixed_peri_waveforms
 
-    def _threshold_trials(self, firing_rates):
+    def _gen_threshold_trials(self, fr):
         # Remove units that do not meet a threshold firing rate across trials.
-        # uses p-values from a zeta test from the source data hdf
-        # firing_rates is trials x units x t
 
-        units = firing_rates.swapaxes(0, 1)  # Swap trials and units axes
-        # units arr is (units, trials, t)
-        unit_idxs = np.where(self._p_value_truth)
-        new_units = units[unit_idxs]
-        self._filtered_unit_nums = self.unique_unit_nums[unit_idxs]
-        new_firing_rates = new_units.swapaxes(0, 1)  # Swap back units and trials to (trials, units, t)
-        return new_firing_rates
+        self._unit_filters = {
+            # Name of threshold: list of bool for each unit passing or not, str description
+            "zeta_passes": (self._p_value_truth, "True or false if the unit passes the zeta test for p < 0.01 for either saccade or probe")
+        }
+        return
 
         # Old thresholding code
-        # must have at least a total of 0.01 firing rate in 20% of the trials of Saccade OR Probe trials
-        # OR is used to include units that are only responsive in one trial
+        # from population_analysis.consts import TRIAL_THRESHOLD_SUM, UNIT_TRIAL_PERCENTAGE
+        #
+        # # must have at least a total of 0.01 firing rate in 20% of the trials of Saccade OR Probe trials
+        # # OR is used to include units that are only responsive in one trial
         # units = firing_rates.swapaxes(0, 1)  # Swap trials and units
-        # units arr should be units x trials x t
+        # # units arr should be units x trials x t
         # num_trials = units.shape[1]
-        # The unit must have at least 0.01 activity on average in 20% of the trials
-        # divide by 2 to account for units that only fire in saccade or probe trials
+        # # The unit must have at least 0.01 activity on average in 20% of the trials
+        # # divide by 2 to account for units that only fire in saccade or probe trials
         # threshold = TRIAL_THRESHOLD_SUM * (num_trials/2) * UNIT_TRIAL_PERCENTAGE
         # unit_all_trial_activity = np.sum(np.sum(units, axis=2), axis=1)  # Sum across all trials of the same unit, all responses
         # unit_mask = unit_all_trial_activity > threshold
@@ -194,12 +192,12 @@ class UnitPopulation(object):
                 single_unit_firing_rate = np.histogram(
                     single_unit_spike_times, bins=bins, density=False
                 )[0] / SPIKE_BIN_MS  # Normalize by bin size
-                # Calculate the absolute unit index
+                # Calculate the absolute unit index (not used anymore since all units are included)
                 # absolute_unit_idx = np.where(self.unique_spike_clusters == self.unique_unit_nums[unique_unit_num])[0][0]
                 firing_rates[trial_idx, unique_unit_num, :] = single_unit_firing_rate[:]
 
-        # Filter out units using a threshold
-        firing_rates = self._threshold_trials(firing_rates)
+        # Mark units to be filtered out units using a threshold
+        self._gen_threshold_trials(firing_rates)
 
         self._firing_rates = firing_rates  # (trials, units, t)
         self._zscores = self._zscore_unit_trial_waveforms(firing_rates)
@@ -219,10 +217,10 @@ class UnitPopulation(object):
         return self._zscores
 
     @property
-    def filtered_unit_nums(self):
-        if self._filtered_unit_nums is None:
+    def unit_filters(self):
+        if self._unit_filters is None:
             self.calc_firingrates()
-        return self._filtered_unit_nums  # trials x units x t
+        return self._unit_filters  # trials x units x t
 
     def get_trial_labels(self):
         return [tr.trial_label for tr in self._trials]
