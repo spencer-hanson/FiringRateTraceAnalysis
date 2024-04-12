@@ -30,13 +30,15 @@ def _calc_dists(data_dict, shuffled=False):
             np.random.shuffle(shuf)
             shuf = shuf.swapaxes(0, 1)
             data = shuf[:, :data.shape[1], :]
-            data1 = shuf[:, data.shape[1]:, :]
+            data1 = shuf[:, data1.shape[1]:, :]
 
         for t in range(NUM_FIRINGRATE_SAMPLES):
             dist_data.append(euclid_dist.calculate(
                 data[:, :, t].swapaxes(0, 1),
                 data1[:, :, t].swapaxes(0, 1)
             ))
+        euclid_dist.ani()
+
         return dist_name, dist_data
     result = _pairwise_iter(data_dict, dist_func)
     return result
@@ -188,11 +190,11 @@ def main():
 
     data_dict = {
        "Rp(Extra)": probe_units[:, :500, :],  # (units, trials, t)
-       "Rp(Extra)2": probe_units[:, 500:, :],
+       "Rp(Extra)2": probe_units[:, 500:1000, :],
     }
     # TODO debug distance, make a plot of the distances for each dimension? (units that make the most diff)
     # ???
-    mean_pca_response(data_dict)
+    # mean_pca_response(data_dict)
     pairwise_mean_distances_single_plot(data_dict)
     # pairwise_mean_distances(data_dict)
     # pairwise_scaled_mean_distances(data_dict)
