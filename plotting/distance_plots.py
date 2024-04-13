@@ -10,6 +10,8 @@ from population_analysis.processors.nwb import NWBSessionProcessor
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
+from population_analysis.quantification.spectral import SpectralQuantification
+
 """
 Plots relating to distance between response types, eg Rs, Rp(Peri), etc..
 """
@@ -20,7 +22,8 @@ def _calc_dists(data_dict, shuffled=False):
     # if shuffled=True, then randomize the points between the two datasets before calculating mean
     # data_dict is {"Rp(Extra)": <rp data>, ..}
     # returns like {"Rp(Extra)-Rp(Peri)": [dist_t_0, dist_t_1, ..], ..}
-    euclid_dist = EuclidianQuantification("Pairwise")
+    # quan = EuclidianQuantification("Pairwise")
+    quan = SpectralQuantification("Pairwise")
 
     def dist_func(name, data, name1, data1):
         dist_data = []
@@ -33,11 +36,11 @@ def _calc_dists(data_dict, shuffled=False):
             data1 = shuf[:, data1.shape[1]:, :]
 
         for t in range(NUM_FIRINGRATE_SAMPLES):
-            dist_data.append(euclid_dist.calculate(
+            dist_data.append(quan.calculate(
                 data[:, :, t].swapaxes(0, 1),
                 data1[:, :, t].swapaxes(0, 1)
             ))
-        euclid_dist.ani()
+        # quan.ani()  # For euclid dist testing
 
         return dist_name, dist_data
     result = _pairwise_iter(data_dict, dist_func)
@@ -138,17 +141,28 @@ def pairwise_scaled_mean_distances(data_dict):
     tw = 2
 
 
-def mean_pca_response(data_dict):
-    # all_values = np.hstack(list(data_dict.values()))
-    # all_values = all_values.swapaxes(0,2).reshape((-1, all_values.shape[0]))
-    # pca, data = run_pca(all_values, components=2)
+# def mean_pca_response(data_dict): TODO?
+#     all_values = np.hstack(list(data_dict.values()))
+#     all_values = all_values.swapaxes(0,2).reshape((-1, all_values.shape[0]))
+#     pca, data = run_pca(all_values, components=2)
+#     count = 0
+#     for name, val in data_dict.items():
+#         avg = np.mean(val, axis=1)
+#         avg = np.mean(avg, axis=0)
+#         for unit in avg:
+#             plt.plot(range(len(unit)), unit, color=plt.get_cmap("Set1")(count))
+#         count = count + 1
+#     plt.show()
+#     tw = 2
+#     pass
+
+
+def mean_response(data_dict):
     count = 0
     for name, val in data_dict.items():
         avg = np.mean(val, axis=1)
         avg = np.mean(avg, axis=0)
         plt.plot(range(len(avg)), avg, color=plt.get_cmap("Set1")(count))
-        # for unit in avg:
-        #     plt.plot(range(len(unit)), unit, color=plt.get_cmap("Set1")(count))
         count = count + 1
     plt.show()
     tw = 2
@@ -161,15 +175,15 @@ def main():
 
     probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()
 
-    # shuffle = False
+    # shuffle = True
     # split_data = probe_units
+    # # split_data = np.hstack([probe_units, rp_peri_units])
     # if shuffle:
     #     split_data = split_data.swapaxes(0, 1)
     #     np.random.shuffle(split_data)
     #     split_data = split_data.swapaxes(0, 1)
     #
     # num_split = int(split_data.shape[1] * .1)
-    #
     # data_dict = {}
     #
     # # Comparing distance to self in groups of sequential trials for sanity check
@@ -178,25 +192,18 @@ def main():
     #     start_idx = (i - 1) * num_split
     #     end_idx = i * num_split
     #     idxs.append((start_idx, end_idx))
-    #     data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
-
-    # data_dict = {
-    #
-    #     "Rp(Extra)": probe_units,  # (units, trials, t)
-    #     "Rs": saccade_units,
-    #     "Rmixed": mixed_units,
-    #     "Rp(Peri)": rp_peri_units
-    # }
+    #     data_dict[f"Split{i}"] = split_data[:, start_idx:end_idx]
 
     data_dict = {
-       "Rp(Extra)": probe_units[:, :500, :],  # (units, trials, t)
-       "Rp(Extra)2": probe_units[:, 500:1000, :],
+        "Rp(Extra)": probe_units,  # (units, trials, t)
+        "Rs": saccade_units,
+        "Rmixed": mixed_units,
+        "Rp(Peri)": rp_peri_units
     }
-    # TODO debug distance, make a plot of the distances for each dimension? (units that make the most diff)
-    # ???
-    # mean_pca_response(data_dict)
-    pairwise_mean_distances_single_plot(data_dict)
-    # pairwise_mean_distances(data_dict)
+
+    mean_response(data_dict)
+    # pairwise_mean_distances_single_plot(data_dict)
+    pairwise_mean_distances(data_dict)
     # pairwise_scaled_mean_distances(data_dict)
 
 
