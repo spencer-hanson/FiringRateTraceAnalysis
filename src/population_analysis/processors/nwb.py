@@ -26,6 +26,7 @@ class NWBSessionProcessor(object):
             self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
 
         self.nwb = nwb
+        tw = 2
 
     def unfiltered_units(self):
         # (units, trials, t)

@@ -185,6 +185,7 @@ class UnitPopulation(object):
 
             bins = np.arange(trial_start, trial_end + SPIKE_BIN_MS / 1000, SPIKE_BIN_MS / 1000)
             bins = bins[:NUM_FIRINGRATE_SAMPLES + 1]  # Ensure that there are only 35 bins
+            spike_bins = np.arange(trial_start, trial_start + TOTAL_TRIAL_MS/1000 + .001, .001)[:TOTAL_TRIAL_MS + 1]
 
             for unique_unit_num in range(self._num_prefiltered_units):
                 single_unit_spike_times = unique_unit_spike_times[unique_unit_num]
@@ -195,6 +196,13 @@ class UnitPopulation(object):
                 # Calculate the absolute unit index (not used anymore since all units are included)
                 # absolute_unit_idx = np.where(self.unique_spike_clusters == self.unique_unit_nums[unique_unit_num])[0][0]
                 firing_rates[trial_idx, unique_unit_num, :] = single_unit_firing_rate[:]
+
+                # TODO use this for spikes? Also include single unit spike times in NWB?
+                # Probably include trial start times and trial start index into the spike_times arr
+                
+                # Get an array of size (700,) with counts for spikes at that ms, essentially single spike times
+                single_unit_spike_array = np.histogram(single_unit_spike_times, bins=spike_bins, density=False)[0]
+
 
         # Mark units to be filtered out units using a threshold
         self._gen_threshold_trials(firing_rates)

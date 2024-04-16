@@ -5,6 +5,8 @@ from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
+from population_analysis.processors.nwb import NWBSessionProcessor
+
 """
 NOT FINISHED
 Plot the response waveforms of each mixed trial alongside eachother
@@ -12,7 +14,7 @@ TODO add a line where the saccade was, align with time
 """
 
 
-def plot_responses(unit_data, responses_to_plot=None):
+def unfinished_plot_responses(unit_data, responses_to_plot=None):
     # response list should be (n, t) where n can be trials or units
 
     # TODO order by saccade dist?
@@ -60,7 +62,8 @@ def plot_responses(unit_data, responses_to_plot=None):
     plt.show()
 
 
-def unit_starting_firingrate(unit_data):
+def units_baseline_firingrate(unit_data):
+    # Compare the first 8 timepoints for each unit against the mean of the entire response for each timepoint
     # unit data is (units, trials, t)
     # means = np.mean(unit_data[:, :, :8], axis=2)
     # means = np.mean(unit_data, axis=1)
@@ -71,41 +74,26 @@ def unit_starting_firingrate(unit_data):
     plt.show()
 
 
+def raster_plot(nwb_session, name):
+    fig, ax = plt.subplot()
+
+    # axs[0, 0].eventplot(data1, colors=colors1, lineoffsets=lineoffsets1, linelengths=linelengths1)
+
+    pass
+
+
 def main():
+    filename = "2023-05-15_mlati7_output"
+    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-    filepath = "../scripts/2023-05-15_mlati7_output.nwb"
-    # unit_to_view = 0
+    probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()
 
-    nwbio = NWBHDF5IO(filepath)
-    nwb = nwbio.read()
+    # units_baseline_firingrate(mixed_units)
+    # units_baseline_firingrate(probe_units)
+    # units_baseline_firingrate(saccade_units)
 
-    probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
-    saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
-    mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
+    raster_plot(sess, "Rp(Extra)")
 
-    # Filter out mixed trials that saccades are more than 20ms away from the probe
-    mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
-    mixed_filtered_idxs = np.abs(mixed_rel_timestamps) <= 0.02  # 20 ms
-    mixed_trial_idxs = mixed_trial_idxs[mixed_filtered_idxs]
-
-    # (units, trials, t)
-    probe_units = nwb.units["trial_response_firing_rates"].data[:, probe_trial_idxs]
-    saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
-    mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
-    rp_peri_units = nwb.units["r_p_peri_trials"].data[:]
-
-    # unit_num = 0
-    # data = mixed_units[unit_num, :]
-    # data = np.mean(data, axis=0)[None, :]
-    # plot_responses(data, num_responses_to_plot=5)
-
-    # data = np.mean(mixed_units, axis=1)
-    # plot_responses(data, responses_to_plot=range(200, 250))
-    # plot_responses(data, responses_to_plot=range(250, data.shape[0]))
-
-    unit_starting_firingrate(mixed_units)
-    unit_starting_firingrate(probe_units)
-    unit_starting_firingrate(saccade_units)
     tw = 2
 
 

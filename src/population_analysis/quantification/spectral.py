@@ -9,6 +9,7 @@ class SpectralQuantification(Quantification):
         for i in range(dataset.shape[0]):
             hist = np.histogram(dataset[i], bins=np.arange(0, 1, .01))
             hist_data.append(hist[0])
+            tw = 2
         hist_data = np.array(hist_data)
         avgd = np.mean(hist_data, axis=0)
         # import matplotlib.pyplot as plt

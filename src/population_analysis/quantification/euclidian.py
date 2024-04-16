@@ -86,7 +86,7 @@ class EuclidianQuantification(Quantification):
         create_ani(d1p, d2p, "problemed.gif")
 
         # Sort by highest summed total change in firing rate
-        summed_diffs = np.sum([np.diff(d1[:, i]) for i in range(d1.shape[1])], axis=1)
+        summed_diffs = np.sum([np.diff(np.abs(d1[:, i])) for i in range(d1.shape[1])], axis=1)
 
         d1z = list(zip(summed_diffs, d1.swapaxes(0, 1)))
         d2z = list(zip(summed_diffs, d2.swapaxes(0, 1)))

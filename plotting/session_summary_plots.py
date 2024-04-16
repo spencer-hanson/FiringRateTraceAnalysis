@@ -19,8 +19,8 @@ def main():
         num_units = len(nwb.units)
         time_len = data_to_plot.shape[1]
 
-        units_to_plot = num_units
-        # units_to_plot = 30
+        # units_to_plot = num_units
+        units_to_plot = 30
         for unit_num in range(units_to_plot):
             unit_firingrate = data_to_plot[unit_num]
             plt.plot(range(time_len), unit_firingrate)

@@ -40,7 +40,7 @@ def _calc_dists(data_dict, shuffled=False):
                 data[:, :, t].swapaxes(0, 1),
                 data1[:, :, t].swapaxes(0, 1)
             ))
-        # quan.ani()  # For euclid dist testing
+        quan.ani()  # For euclid dist testing
 
         return dist_name, dist_data
     result = _pairwise_iter(data_dict, dist_func)
@@ -195,16 +195,18 @@ def main():
     #     data_dict[f"Split{i}"] = split_data[:, start_idx:end_idx]
 
     data_dict = {
-        "Rp(Extra)": probe_units,  # (units, trials, t)
-        "Rs": saccade_units,
-        "Rmixed": mixed_units,
-        "Rp(Peri)": rp_peri_units
+        "Rp(Extra)": probe_units[:, :500],  # (units, trials, t)
+        "Rp(Extra)2": probe_units[:, 500:1000, :],  # (units, trials, t)
+        # "Rs": saccade_units,
+        # "Rmixed": mixed_units,
+        # "Rp(Peri)": rp_peri_units
     }
 
-    mean_response(data_dict)
-    # pairwise_mean_distances_single_plot(data_dict)
-    pairwise_mean_distances(data_dict)
+    # mean_response(data_dict)
+    pairwise_mean_distances_single_plot(data_dict)
+    # pairwise_mean_distances(data_dict)
     # pairwise_scaled_mean_distances(data_dict)
+
 
 
 if __name__ == "__main__":
