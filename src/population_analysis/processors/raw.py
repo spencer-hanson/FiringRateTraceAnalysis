@@ -9,7 +9,7 @@ from simply_nwb import SimpleNWB
 
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
-    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE
+    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS
 from population_analysis.population.units import UnitPopulation
 
 
@@ -101,6 +101,10 @@ class RawSessionProcessor(object):
             description="Waveforms of each unit in each trial for mixed (perisaccadic) trials. "
                         + "Probe waveform responses have been subtracted by the average saccadic response for that unit"
                         + " (average across all saccadic trials) NOT zscored")
+        nwb.add_unit_column(
+            name="trial_spike_flags",
+            description=f"Bool arr if the unit spiked in the trial duration ({TOTAL_TRIAL_MS}ms)"
+        )
 
         threshold_fields = {}
         # helper func to pull out individual values for each unit into a kwargs dict for nwb
@@ -126,6 +130,7 @@ class RawSessionProcessor(object):
                 spike_times=spike_times,
                 trial_response_firing_rates=self.unit_pop.unit_firingrates[:, unit_idx],
                 trial_response_zscored=self.unit_pop.unit_zscores[:, unit_idx],
+                trial_spike_flags=self.unit_pop.trial_spike_flags[:, unit_idx],
                 r_p_peri_trials=r_p_peri_trialdata[:, unit_idx],
                 probe_zeta_scores=self.probe_zeta[unit_idx],
                 saccade_zeta_scores=self.saccade_zeta[unit_idx],
@@ -135,9 +140,13 @@ class RawSessionProcessor(object):
         # Add probe and saccade event timings, trial types
         behavior_events = nwb.create_processing_module(name="behavior",
                                                        description="Contains saccade and probe event timings")
+
         unit_labels = TimeSeries(name="unit-labels", data=self.unit_pop.unique_unit_nums, unit="num", rate=1.0, description="Unit number from kilosort for each unit")
         probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe")
         saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
+        spike_clusters = TimeSeries(name="spike_clusters", data=self.unit_pop.spike_clusters, unit="num", rate=1.0,
+                                    description="Spike cluster assignments for the spike timings")
+        trial_durations_idxs = TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs, unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters")
 
         trial_types = np.array(self.unit_pop.get_trial_labels())
         unique_trial_types = np.unique(trial_types)
@@ -148,6 +157,8 @@ class RawSessionProcessor(object):
         behavior_events.add(unit_labels)
         behavior_events.add(probe_ts)
         behavior_events.add(saccade_ts)
+        behavior_events.add(spike_clusters)
+        behavior_events.add(trial_durations_idxs)
 
         # Want to specify when the saccade happened for the mixed trials (probe is always centered at 10ms)
 

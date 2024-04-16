@@ -74,12 +74,93 @@ def units_baseline_firingrate(unit_data):
     plt.show()
 
 
-def raster_plot(nwb_session, name):
-    fig, ax = plt.subplot()
+def _get_spike_idxs(bbool_counts, unit_num, units_idxs, trial_idxs):
+    counts = bbool_counts[units_idxs, :, :][:, trial_idxs, :][unit_num]
+    spike_idxss = []
+    for trial in counts:
+        spike_idxss.append(np.where(trial)[0])
+    return spike_idxss
 
-    # axs[0, 0].eventplot(data1, colors=colors1, lineoffsets=lineoffsets1, linelengths=linelengths1)
 
-    pass
+def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
+    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+
+    fig, ax = plt.subplots()
+
+    if num_units > len(units_idxs):
+        num_units = len(units_idxs)
+
+    for uidx in range(num_units):
+        print(f"{uidx}/{num_units} ", end="")
+        ax.eventplot(_get_spike_idxs(bool_counts, uidx, units_idxs, trial_idxs), colors="black", lineoffsets=1, linelengths=1, alpha=0.1)
+    print("")
+
+    fig.suptitle(name)
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Trial #")
+    fig.savefig(f"{name}_avg_{num_units}.png")
+
+    fig.show()
+    tw = 2
+
+
+def multi_raster_plot(nwb_session, name, units_idxs, trial_idxs, nrows, ncols, start_unit=0):
+    unit_num = start_unit
+    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+
+    fig, axs = plt.subplots(nrows, ncols, sharex=True, sharey=True)
+    for r in range(nrows):
+        print(f"{r + 1}/{nrows} ", end="")
+        for c in range(ncols):
+            spike_idxs = _get_spike_idxs(bool_counts, unit_num, units_idxs, trial_idxs)
+            axs[r, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
+            unit_num = unit_num + 1
+    print("")
+
+    axs[nrows-1, 0].set_xlabel("Time (ms)")
+    axs[0, 0].set_ylabel("Trial #")
+
+    fig.suptitle(name)
+    fig.savefig(f"{name}_multi_{start_unit}.png")
+    fig.show()
+    tw = 2
+
+
+def single_raster_plot(nwb_session, name, units_idxs, trial_idxs, unit_num):
+    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+
+    fig, ax = plt.subplots()
+
+    spike_idxs = _get_spike_idxs(bool_counts, unit_num, units_idxs, trial_idxs)
+    ax.eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
+
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Trial #")
+
+    fig.suptitle(name)
+    fig.savefig(f"{name}_single_u{unit_num}.png")
+    # fig.show()
+    tw = 2
+
+
+def mean_response(nwb_session: NWBSessionProcessor, name, unit_idxs, trial_idxs):
+    units = nwb_session.units()[unit_idxs, :, :][:, trial_idxs, :]
+    avgd_units = np.mean(units, axis=1)
+
+    mean_response_custom(avgd_units, name)
+
+
+def mean_response_custom(averaged_units, name):
+    fig, ax = plt.subplots()
+
+    for u in averaged_units:
+        ax.plot(u)
+    fig.suptitle(f"{name} mean response across trials for all units")
+    ax.set_xlabel("Time (binned by 20ms)")
+    ax.set_ylabel("Firing rate (spikes/20ms)")
+    fig.savefig(f"{name}_mean_response.png")
+    fig.show()
+    tw = 2
 
 
 def main():
@@ -92,7 +173,19 @@ def main():
     # units_baseline_firingrate(probe_units)
     # units_baseline_firingrate(saccade_units)
 
-    raster_plot(sess, "Rp(Extra)")
+    # avg_raster_plot(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs, 1000)
+
+    # multi_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, 2, 2, start_unit=0)
+    for u in range(230):
+        print(f"{u}/230")
+        single_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, u)
+
+    # mean_response(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs)
+    # mean_response(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs)
+    # mean_response(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs)
+    # mean_response_custom(np.mean(sess.rp_peri_units()[sess.probe_zeta_idxs(), :, :], axis=1), "Rp_Peri")
 
     tw = 2
 

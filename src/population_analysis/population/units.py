@@ -56,7 +56,9 @@ class UnitPopulation(object):
         self.spike_timestamps = spike_timestamps
         self.spike_clusters = spike_clusters
         self._trials = []
-        self._firing_rates = None  # UnitNum x Trial x time arr
+        self._firing_rates = None  # Trial x UnitNum x time arr
+        self._trial_spike_flags = None  # Trial x UnitNum x time arr bool if it spiked or not
+        self._trial_durations_idxs = None  # Trial x 2 (start and stop indexes into spike_timestamps and clusters)
         self._zscores = None
         self.unique_spike_clusters = np.unique(self.spike_clusters)
         self._num_prefiltered_units = len(self.unique_spike_clusters)
@@ -157,10 +159,14 @@ class UnitPopulation(object):
         # Calculate the firing rate of each unit for all trials
         num_trials = len(self._trials)
         firing_rates = np.empty((num_trials, self._num_prefiltered_units, NUM_FIRINGRATE_SAMPLES))
+        trial_spike_flags = np.empty((num_trials, self._num_prefiltered_units, TOTAL_TRIAL_MS), dtype="bool")
+        trial_durations_idxs = np.empty((num_trials, 2))
 
         print("Calculating firing rates for all trials and units", end="")
         one_tenth_of_trials = int(num_trials / 10)
         for trial_idx, trial in enumerate(self._trials):
+            trial_durations_idxs[trial_idx, :] = np.array([trial.start, trial.end])
+
             if trial_idx % one_tenth_of_trials == 0:
                 print(f" {round(100 * (trial_idx/num_trials), 2)}%", end="")
 
@@ -196,18 +202,17 @@ class UnitPopulation(object):
                 # Calculate the absolute unit index (not used anymore since all units are included)
                 # absolute_unit_idx = np.where(self.unique_spike_clusters == self.unique_unit_nums[unique_unit_num])[0][0]
                 firing_rates[trial_idx, unique_unit_num, :] = single_unit_firing_rate[:]
-
-                # TODO use this for spikes? Also include single unit spike times in NWB?
-                # Probably include trial start times and trial start index into the spike_times arr
                 
                 # Get an array of size (700,) with counts for spikes at that ms, essentially single spike times
                 single_unit_spike_array = np.histogram(single_unit_spike_times, bins=spike_bins, density=False)[0]
-
+                single_unit_spike_array = np.logical_not(single_unit_spike_array == 0)
+                trial_spike_flags[trial_idx, unique_unit_num, :] = single_unit_spike_array[:]
 
         # Mark units to be filtered out units using a threshold
         self._gen_threshold_trials(firing_rates)
-
+        self._trial_durations_idxs = trial_durations_idxs
         self._firing_rates = firing_rates  # (trials, units, t)
+        self._trial_spike_flags = trial_spike_flags
         self._zscores = self._zscore_unit_trial_waveforms(firing_rates)
         tw = 2
         print("")
@@ -217,6 +222,18 @@ class UnitPopulation(object):
         if self._firing_rates is None:
             self.calc_firingrates()
         return self._firing_rates
+
+    @property
+    def trial_spike_flags(self):
+        if self._trial_spike_flags is None:
+            self.calc_firingrates()
+        return self._trial_spike_flags
+
+    @property
+    def trial_durations_idxs(self):
+        if self._trial_durations_idxs is None:
+            self.calc_firingrates()
+        return self._trial_durations_idxs
 
     @property
     def unit_zscores(self):

@@ -28,15 +28,36 @@ class NWBSessionProcessor(object):
         self.nwb = nwb
         tw = 2
 
+    def probe_units(self):
+        return self.nwb.units["trial_response_firing_rates"].data[:, self.probe_trial_idxs]
+
+    def saccade_units(self):
+        return self.nwb.units["trial_response_firing_rates"].data[:, self.saccade_trial_idxs]
+
+    def mixed_units(self):
+        return self.nwb.units["trial_response_firing_rates"].data[:, self.mixed_trial_idxs]
+
+    def rp_peri_units(self):
+        return self.nwb.units["r_p_peri_trials"].data[:]  # units x trials x t
+
+    def units(self):
+        return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
+
     def unfiltered_units(self):
         # (units, trials, t)
-        probe_units = self.nwb.units["trial_response_firing_rates"].data[:, self.probe_trial_idxs]
-        saccade_units = self.nwb.units["trial_response_firing_rates"].data[:, self.saccade_trial_idxs]
-        mixed_units = self.nwb.units["trial_response_firing_rates"].data[:, self.mixed_trial_idxs]
-        rp_peri_units = self.nwb.units["r_p_peri_trials"].data[:]
+        probe_units = self.probe_units()
+        saccade_units = self.saccade_units()
+        mixed_units = self.mixed_units()
+        rp_peri_units = self.rp_peri_units()
         return probe_units, saccade_units, mixed_units, rp_peri_units
 
     def zeta_units(self):
         probe_units, saccade_units, mixed_units, rp_peri_units = self.unfiltered_units()
-        th = self.nwb.units["threshold_zeta_passes"]
+        th = self.zeta_idxs()
         return probe_units[th, :, :], saccade_units[th, :, :], mixed_units[th, :, :], rp_peri_units[th, :, :]
+
+    def zeta_idxs(self):
+        return np.where(self.nwb.units["threshold_zeta_passes"])[0]
+
+    def probe_zeta_idxs(self):
+        return np.where(self.nwb.units["probe_zeta_scores"][:] < 0.01)[0]
