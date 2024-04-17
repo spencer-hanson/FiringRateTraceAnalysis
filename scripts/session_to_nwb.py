@@ -55,7 +55,7 @@ def main():
             sess = RawSessionProcessor(filename)
             # +1 for leading \\, -4 for '.hdf'
             # nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
-            nwb_filename = "2023-05-15_mlati7_output2.nwb"  # TODO Remove me
+            nwb_filename = "2023-05-15_mlati7_output.nwb"  # TODO Remove me
             sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
         except Exception as e:
             raise e

@@ -83,7 +83,7 @@ def _get_spike_idxs(bbool_counts, unit_num, units_idxs, trial_idxs):
 
 
 def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
-    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+    bool_counts = nwb_session.nwb.units["trial_spike_flags"]  # units x trials x 700
 
     fig, ax = plt.subplots()
 
@@ -106,7 +106,7 @@ def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
 
 def multi_raster_plot(nwb_session, name, units_idxs, trial_idxs, nrows, ncols, start_unit=0):
     unit_num = start_unit
-    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+    bool_counts = nwb_session.nwb.units["trial_spike_flags"]  # units x trials x 700
 
     fig, axs = plt.subplots(nrows, ncols, sharex=True, sharey=True)
     for r in range(nrows):
@@ -127,7 +127,7 @@ def multi_raster_plot(nwb_session, name, units_idxs, trial_idxs, nrows, ncols, s
 
 
 def single_raster_plot(nwb_session, name, units_idxs, trial_idxs, unit_num):
-    bool_counts = nwb_session.nwb.units["trial_spike_counts"]  # units x trials x 700
+    bool_counts = nwb_session.nwb.units["trial_spike_flags"]  # units x trials x 700
 
     fig, ax = plt.subplots()
 
@@ -180,7 +180,9 @@ def main():
     # multi_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, 2, 2, start_unit=0)
     for u in range(230):
         print(f"{u}/230")
-        single_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, u)
+        # single_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, u)
+        single_raster_plot(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs, u)
+        single_raster_plot(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs, u)
 
     # mean_response(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs)
     # mean_response(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs)
