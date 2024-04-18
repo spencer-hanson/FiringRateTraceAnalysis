@@ -1,5 +1,6 @@
 import math
 
+import matplotlib
 import numpy as np
 from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
@@ -104,25 +105,30 @@ def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
     tw = 2
 
 
-def multi_raster_plot(nwb_session, name, units_idxs, trial_idxs, nrows, ncols, start_unit=0):
-    unit_num = start_unit
+def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, nrows, ncols, unit_number):
     bool_counts = nwb_session.nwb.units["trial_spike_flags"]  # units x trials x 700
+    if len(name_and_trial_idxs) != nrows * ncols:
+        raise ValueError("Cannot display, trial nums doesnt match rows*cols")
 
-    fig, axs = plt.subplots(nrows, ncols, sharex=True, sharey=True)
+    fig, axs = plt.subplots(nrows, ncols, sharex=False, sharey=False, figsize=(16, 8), width_ratios=[1]*ncols, height_ratios=[1]*nrows)
+    axs = axs.reshape((nrows, ncols))
+
+    count = 0
     for r in range(nrows):
-        print(f"{r + 1}/{nrows} ", end="")
         for c in range(ncols):
-            spike_idxs = _get_spike_idxs(bool_counts, unit_num, units_idxs, trial_idxs)
+            name, trial_idxs = name_and_trial_idxs[count]
+            spike_idxs = _get_spike_idxs(bool_counts, unit_number, units_idxs, trial_idxs)
             axs[r, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
-            unit_num = unit_num + 1
+            axs[r, c].set_title(f"{name}")
+            count = count + 1
     print("")
 
     axs[nrows-1, 0].set_xlabel("Time (ms)")
     axs[0, 0].set_ylabel("Trial #")
 
-    fig.suptitle(name)
-    fig.savefig(f"{name}_multi_{start_unit}.png")
-    fig.show()
+    fig.suptitle(f"Unit {unit_number}")
+    fig.savefig(f"multi_u{unit_number}.png")
+    # fig.show()
     tw = 2
 
 
@@ -137,7 +143,7 @@ def single_raster_plot(nwb_session, name, units_idxs, trial_idxs, unit_num):
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Trial #")
 
-    fig.suptitle(name)
+    fig.suptitle(f"{name} - Unit {unit_num}")
     fig.savefig(f"{name}_single_u{unit_num}.png")
     # fig.show()
     tw = 2
@@ -164,30 +170,45 @@ def mean_response_custom(averaged_units, name):
 
 
 def main():
+    matplotlib.use('Agg')   # Suppress matplotlib window opening
+
     filename = "2023-05-15_mlati7_output"
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-    probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()
+    # probe_units, saccade_units, mixed_units, rp_peri_units = sess.activity_filtered_units(sess.probe_zeta_idxs())
+    activity_idxs = sess.activity_filtered_units_idxs(sess.probe_zeta_idxs())
+    probe_units, saccade_units, mixed_units, rp_peri_units = sess.filter_units(activity_idxs)
 
     # units_baseline_firingrate(mixed_units)
     # units_baseline_firingrate(probe_units)
     # units_baseline_firingrate(saccade_units)
 
-    # avg_raster_plot(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs, 1000)
-    # avg_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, 1000)
-    # avg_raster_plot(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs, 1000)
+    # mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
+    # mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
+    # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
+    # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
 
-    # multi_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, 2, 2, start_unit=0)
-    for u in range(230):
-        print(f"{u}/230")
-        # single_raster_plot(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs, u)
-        single_raster_plot(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs, u)
-        single_raster_plot(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs, u)
+    # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
 
-    # mean_response(sess, "Rs", sess.probe_zeta_idxs(), sess.saccade_trial_idxs)
-    # mean_response(sess, "Rp_Extra", sess.probe_zeta_idxs(), sess.probe_trial_idxs)
-    # mean_response(sess, "Rmixed", sess.probe_zeta_idxs(), sess.mixed_trial_idxs)
-    # mean_response_custom(np.mean(sess.rp_peri_units()[sess.probe_zeta_idxs(), :, :], axis=1), "Rp_Peri")
+    for unum in range(len(activity_idxs)):
+        print(f"Processing unit num {unum}")
+        multi_raster_plot(
+            sess,
+            [
+                ("Rp_Extra", sess.probe_trial_idxs),
+                ("Rs", sess.saccade_trial_idxs),
+                ("Rmixed", sess.mixed_trial_idxs)
+            ],
+            activity_idxs, 1, 3, unit_number=unum
+        )
+
+    # for u in range(230):
+    #     print(f"{u}/230")
+    #     single_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, u)
+    #     single_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, u)
+    #     single_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, u)
 
     tw = 2
 
