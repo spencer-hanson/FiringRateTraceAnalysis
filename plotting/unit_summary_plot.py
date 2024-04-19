@@ -93,10 +93,10 @@ def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
 
     for uidx in range(num_units):
         print(f"{uidx}/{num_units} ", end="")
-        ax.eventplot(_get_spike_idxs(bool_counts, uidx, units_idxs, trial_idxs), colors="black", lineoffsets=1, linelengths=1, alpha=0.1)
+        ax.eventplot(_get_spike_idxs(bool_counts, uidx, units_idxs, trial_idxs), colors="black", lineoffsets=1, linelengths=1, alpha=.2)
     print("")
 
-    fig.suptitle(name)
+    fig.suptitle(f"{name} - Averaged over all units")
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Trial #")
     fig.savefig(f"{name}_avg_{num_units}.png")
@@ -170,7 +170,7 @@ def mean_response_custom(averaged_units, name):
 
 
 def main():
-    matplotlib.use('Agg')   # Suppress matplotlib window opening
+    # matplotlib.use('Agg')   # Suppress matplotlib window opening
 
     filename = "2023-05-15_mlati7_output"
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
@@ -188,10 +188,11 @@ def main():
     # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
     # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
 
-    # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
-    # avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
-    # avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
+    avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
+    avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
+    avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
 
+    matplotlib.use('Agg')   # Suppress matplotlib window opening
     for unum in range(len(activity_idxs)):
         print(f"Processing unit num {unum}")
         multi_raster_plot(
@@ -204,12 +205,13 @@ def main():
             activity_idxs, 1, 3, unit_number=unum
         )
 
-    # for u in range(230):
-    #     print(f"{u}/230")
+    # tot = len(activity_idxs)
+    # for u in range(tot):
+    #     print(f"{u}/{tot}")
     #     single_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, u)
     #     single_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, u)
     #     single_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, u)
-
+    #
     tw = 2
 
 

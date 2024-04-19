@@ -74,26 +74,46 @@ class NWBSessionProcessor(object):
     def activity_filtered_units_idxs(self, unit_filter=None):
         # unit_filter is an array of indexes to pre-filter the trial_spike_flags, return will be indexed relative
         bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
-        if unit_filter is not None:
-            bool_counts = bool_counts[unit_filter, :, :]
-
         num_units = bool_counts.shape[0]
-        passing_units_idxs = []
 
-        for unit_num in range(num_units):
-            unit_trials = bool_counts[unit_num, :, :]  # trials x 700
-            trial_spike_sum = np.sum(unit_trials, axis=1)
-            # want units that spike spike_count_threshold% of the time, in at least trial_threshold% of the trials
+        def get_passing_units(spike_count_threshold, trial_threshold, missing_threshold, min_missing):
+            # want units that spike at least <spike_count_threshold> times, in at least trial_threshold% of the trials
+            # at most there can be missing_threshold% close to zero trials, (less than <min_missing> spikes is close)
+            passing_units_idxs = []
 
-            spike_count_threshold = TOTAL_TRIAL_MS * .01
-            trial_threshold = 0.2
+            for unit_num in range(num_units):
+                unit_trials = bool_counts[unit_num, :, :]  # trials x 700
+                trial_count = bool_counts.shape[1]
 
-            passing_trial_count = len(np.where(trial_spike_sum >= spike_count_threshold)[0])
-            trial_count = bool_counts.shape[1]
-            if trial_count * trial_threshold <= passing_trial_count:
-                passing_units_idxs.append(unit_num)
+                # count = len(np.where(np.sum(unit_trials[:, 250:450], axis=1) >= 7)[0])
+                # condition = count >= (trial_count*trial_threshold)
+                trial_spike_sum = np.sum(unit_trials, axis=1)
+                passing_trial_count = len(np.where(trial_spike_sum >= spike_count_threshold)[0])
+                missing_trial_count = len(np.where(trial_spike_sum < min_missing)[0])
 
-        return passing_units_idxs
+                condition = (trial_count * trial_threshold) <= passing_trial_count
+                condition = ((trial_count * missing_threshold) >= missing_trial_count) and condition
+
+                if condition:
+                    passing_units_idxs.append(unit_num)
+            return passing_units_idxs
+
+
+        # vals = []
+        # threshs = np.linspace(0, .5, 50)
+        # for th in threshs:
+        #     vals.append(get_passing_units(th, .2))
+        import matplotlib.pyplot as plt
+        tw = 2
+        # passing = get_passing_units(.01, .2)
+        # Currently running passing = get_passing_units((25 / 700), .05)
+        passing = get_passing_units(11, .01, 0.01, 1)
+        if unit_filter is not None:
+            passing = sorted(list(set(unit_filter).intersection(passing)))
+            tw = 2
+
+        tw = 2
+        return passing
 
     def activity_filtered_units(self, unit_filter=None):
         if unit_filter is None:
