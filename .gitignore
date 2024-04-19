@@ -7,3 +7,5 @@ testdata/
 ignore_*
 graphs/*
 *.nwb
+*.png
+*.gif
