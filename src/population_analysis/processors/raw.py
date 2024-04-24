@@ -203,29 +203,6 @@ class RawSessionProcessor(object):
         # return indices into spike_timestamps within a window of -200ms to +700ms for trials times in other_timestamps
         idx_ranges = []
 
-        def limit_spike_timestamps(timestamp, higher=False):
-            # Find an approximate index that's close to the timestamp, so calculating the exact will be faster
-            # If higher = True, then return an index that is higher than the timestamp, otherwise will return a lower
-            # Start approximate around index equal to the number of the timestamp
-            # Won't be accurate because of duplicated entries, will scale up a modifier until it is about it
-            estimated_timestamp_idx = timestamp * 1000 - 1
-            multiplier = 1.0
-            done = False
-            while not done:
-                to_check_idx = int(estimated_timestamp_idx * multiplier)
-                if to_check_idx > len(spike_timestamps):
-                    done = True
-                    to_check_idx = len(spike_timestamps) - 1
-
-                actual_value = spike_timestamps[to_check_idx]
-                if actual_value < timestamp:
-                    multiplier = multiplier + 0.1
-                else:
-                    done = True
-                    if not higher:
-                        multiplier = multiplier - 0.1  # Last estimate was lower, this estimate was too high
-            return int(estimated_timestamp_idx * multiplier)
-
         # _testing = {"lower": [], "upper": [], "event": []}  # TODO comment me out
 
         other_len = len(other_timestamps)
@@ -238,15 +215,12 @@ class RawSessionProcessor(object):
                 continue
             pre_window_ts = ts - (PRE_TRIAL_MS / 1000)
             post_window_ts = ts + (POST_TRIAL_MS / 1000)
-            # Grab approximate indicies around the timestamp window to limit the timestamp search for speed
-            lower_limit = limit_spike_timestamps(pre_window_ts)
-            upper_limit = limit_spike_timestamps(post_window_ts, higher=True)
 
-            start_idx = np.where(pre_window_ts <= spike_timestamps[lower_limit:upper_limit])[0][0]  # First index in tuple, first index is the edge
-            end_idx = np.where(post_window_ts <= spike_timestamps[lower_limit:upper_limit])[0][0]
-            ts_idx = np.where(ts >= spike_timestamps[lower_limit:upper_limit])[0][-1]  # Index of the event timestamp itself, next smallest value
+            start_idx = np.where(pre_window_ts <= spike_timestamps)[0][0]  # First index in tuple, first index is the edge
+            end_idx = np.where(post_window_ts <= spike_timestamps)[0][0]
+            ts_idx = np.where(ts >= spike_timestamps)[0][-1]  # Index of the event timestamp itself, next smallest value
             # Add the lower limit back on since the np.where statements return relative to the array passed in
-            idx_ranges.append([lower_limit + start_idx, lower_limit + ts_idx, lower_limit + end_idx])
+            idx_ranges.append([start_idx, ts_idx, end_idx])
 
             # _testing["lower"].append(pre_window_ts - spike_timestamps[lower_limit + start_idx])
             # _testing["upper"].append(post_window_ts - spike_timestamps[lower_limit + end_idx])

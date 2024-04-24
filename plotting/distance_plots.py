@@ -22,8 +22,8 @@ def _calc_dists(data_dict, shuffled=False):
     # if shuffled=True, then randomize the points between the two datasets before calculating mean
     # data_dict is {"Rp(Extra)": <rp data>, ..}
     # returns like {"Rp(Extra)-Rp(Peri)": [dist_t_0, dist_t_1, ..], ..}
-    # quan = EuclidianQuantification("Pairwise")
-    quan = SpectralQuantification("Pairwise")
+    quan = EuclidianQuantification("Pairwise")
+    # quan = SpectralQuantification("Pairwise")
 
     def dist_func(name, data, name1, data1):
         dist_data = []
@@ -170,7 +170,7 @@ def mean_response(data_dict):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "2023-05-15_mlati7_output_changed"
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
     probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()

@@ -107,7 +107,7 @@ class NWBSessionProcessor(object):
         tw = 2
         # passing = get_passing_units(.01, .2)
         # Currently running passing = get_passing_units((25 / 700), .05)
-        passing = get_passing_units(11, .01, 0.01, 1)
+        passing = get_passing_units(25, .2, 1, 1)
         if unit_filter is not None:
             passing = sorted(list(set(unit_filter).intersection(passing)))
             tw = 2

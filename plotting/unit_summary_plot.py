@@ -99,7 +99,7 @@ def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
     fig.suptitle(f"{name} - Averaged over all units")
     ax.set_xlabel("Time (ms)")
     ax.set_ylabel("Trial #")
-    fig.savefig(f"{name}_avg_{num_units}.png")
+    fig.savefig(f"AAA{name}_avg_{num_units}.png")
 
     fig.show()
     tw = 2
@@ -127,7 +127,7 @@ def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, nrows, ncols
     axs[0, 0].set_ylabel("Trial #")
 
     fig.suptitle(f"Unit {unit_number}")
-    fig.savefig(f"multi_u{unit_number}.png")
+    fig.savefig(f"AAAmulti_u{unit_number}.png")
     # fig.show()
     tw = 2
 
@@ -172,7 +172,8 @@ def mean_response_custom(averaged_units, name):
 def main():
     # matplotlib.use('Agg')   # Suppress matplotlib window opening
 
-    filename = "2023-05-15_mlati7_output"
+    filename = "2023-05-15_mlati7_output_changed"
+
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
     # probe_units, saccade_units, mixed_units, rp_peri_units = sess.activity_filtered_units(sess.probe_zeta_idxs())
