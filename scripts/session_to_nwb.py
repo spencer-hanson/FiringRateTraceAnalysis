@@ -47,17 +47,17 @@ def main():
     #     check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
-    data_files = {"idk": "output.hdf"}
+    data_files = {"idk": "output2.hdf"}
 
     for filename in list(data_files.values()):
         try:
             print(f"Processing '{filename}'")
-            sess = RawSessionProcessor(filename)
+            sess = RawSessionProcessor(filename, "mlati9")
             # +1 for leading \\, -4 for '.hdf'
             # nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
-            nwb_filename = "2023-05-15_mlati7_output_changed.nwb"  # TODO Remove me
-            # nwb_filename = "2023-06-30_mlati9_output_2.nwb"
-            sess.save_to_nwb(nwb_filename, "mlati9", "session0")  # TODO change me
+            # nwb_filename = "2023-05-15_mlati7_output_changed.nwb"  # TODO Remove me
+            nwb_filename = "2023-06-30_mlati9_output.nwb"
+            sess.save_to_nwb(nwb_filename, "session0")  # TODO change me
         except Exception as e:
             raise e
             # warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")

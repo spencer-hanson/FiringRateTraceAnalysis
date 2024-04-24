@@ -14,7 +14,7 @@ from population_analysis.population.units import UnitPopulation
 
 
 class RawSessionProcessor(object):
-    def __init__(self, filename):
+    def __init__(self, filename, mouse_name):
         data = h5py.File(filename)
         self.spike_clusters = np.array(data["spikes"]["clusters"])
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
@@ -26,6 +26,11 @@ class RawSessionProcessor(object):
 
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
         self._unit_pop: Optional[UnitPopulation] = None
+
+        self.mouse_name = mouse_name
+        self.mouse_birthday = MOUSE_DETAILS[mouse_name]["birthday"]
+        self.mouse_strain = MOUSE_DETAILS[mouse_name]["strain"]
+        self.mouse_sex = MOUSE_DETAILS[mouse_name]["sex"]
 
     def _calc_p_value_truth(self, probe_zeta, saccade_zeta):
         # Calculate a bool array of if the units pass the p-value zeta test
@@ -52,11 +57,11 @@ class RawSessionProcessor(object):
 
         self._unit_pop = unit_pop
 
-    def save_to_nwb(self, filename, mouse_name, session_id):
+    def save_to_nwb(self, filename, session_id):
         if self._unit_pop is None:
             self.calc_unit_population_stats()
 
-        birthday_diff = pendulum.now().diff(MOUSE_DETAILS[mouse_name]["birthday"])
+        birthday_diff = pendulum.now().diff(self.mouse_birthday)
 
         nwb = SimpleNWB.create_nwb(
             # Required
@@ -67,13 +72,13 @@ class RawSessionProcessor(object):
             lab="Felsen Lab",
             experiment_description=EXPERIMENT_DESCRIPTION,
             # Optional
-            identifier=mouse_name,
+            identifier=self.mouse_name,
             subject=Subject(**{
-                "subject_id": mouse_name,
+                "subject_id": self.mouse_name,
                 "age": f"P{birthday_diff.days}D",  # ISO-8601 for days duration
-                "strain": MOUSE_DETAILS[mouse_name]["strain"],
-                "description": f"Mouse id '{mouse_name}'",
-                "sex": MOUSE_DETAILS[mouse_name]["sex"]
+                "strain": self.mouse_strain,
+                "description": f"Mouse id '{self.mouse_name}'",
+                "sex": self.mouse_sex
             }),
             session_id=session_id,
             institution="CU Anschutz",

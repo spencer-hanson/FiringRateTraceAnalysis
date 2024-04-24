@@ -1,3 +1,4 @@
+import functools
 import math
 
 import matplotlib
@@ -105,29 +106,41 @@ def avg_raster_plot(nwb_session, name, units_idxs, trial_idxs, num_units):
     tw = 2
 
 
-def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, nrows, ncols, unit_number):
+def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, unit_number, passing_func=None):
+    # Graph a single unit's specific response type and mean response
+    # name_and_trial_idxs is a tuple like (name, trial_idxs)
+    # passing_func(unit_num) -> bool if unit passes filtering, will change title
+
+    ncols = len(name_and_trial_idxs)
+    nrows = 2  # Top row is response of unit, bottom is mean response of all trials
+
     bool_counts = nwb_session.nwb.units["trial_spike_flags"]  # units x trials x 700
-    if len(name_and_trial_idxs) != nrows * ncols:
-        raise ValueError("Cannot display, trial nums doesnt match rows*cols")
 
     fig, axs = plt.subplots(nrows, ncols, sharex=False, sharey=False, figsize=(16, 8), width_ratios=[1]*ncols, height_ratios=[1]*nrows)
     axs = axs.reshape((nrows, ncols))
 
     count = 0
-    for r in range(nrows):
-        for c in range(ncols):
-            name, trial_idxs = name_and_trial_idxs[count]
-            spike_idxs = _get_spike_idxs(bool_counts, unit_number, units_idxs, trial_idxs)
-            axs[r, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
-            axs[r, c].set_title(f"{name}")
-            count = count + 1
-    print("")
+    for c in range(ncols):
+        name, trial_idxs = name_and_trial_idxs[count]
+        spike_idxs = _get_spike_idxs(bool_counts, unit_number, units_idxs, trial_idxs)
+        axs[0, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
+        axs[0, c].set_title(f"{name}")
+        count = count + 1
+        responses = nwb_session.units()[:, trial_idxs, :][unit_number, :, :]
+        responses = np.mean(responses, axis=1)
+        axs[1, c].plot(responses)
+        axs[1, c].set_title("Mean response of all trials")
 
     axs[nrows-1, 0].set_xlabel("Time (ms)")
     axs[0, 0].set_ylabel("Trial #")
 
-    fig.suptitle(f"Unit {unit_number}")
-    fig.savefig(f"AAAmulti_u{unit_number}.png")
+    title_str = f"Unit {unit_number}"
+    if passing_func is not None:
+        passes = "PASSES" if passing_func(unit_number) else "FAILS"
+        title_str = title_str + " - " + passes
+
+    fig.suptitle(title_str)
+    fig.savefig(f"multi_u{unit_number}.png")
     # fig.show()
     tw = 2
 
@@ -172,13 +185,15 @@ def mean_response_custom(averaged_units, name):
 def main():
     # matplotlib.use('Agg')   # Suppress matplotlib window opening
 
-    filename = "2023-05-15_mlati7_output_changed"
+    filename = "2023-05-15_mlati7_output"
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-    # probe_units, saccade_units, mixed_units, rp_peri_units = sess.activity_filtered_units(sess.probe_zeta_idxs())
-    activity_idxs = sess.activity_filtered_units_idxs(sess.probe_zeta_idxs())
-    probe_units, saccade_units, mixed_units, rp_peri_units = sess.filter_units(activity_idxs)
+    # activity_idxs = sess.activity_filtered_units_idxs(sess.probe_zeta_idxs())
+    # activity_idxs = sess.unfiltered_idxs()
+    activity_idxs = sess.probe_zeta_idxs()
+
+    # probe_units, saccade_units, mixed_units, rp_peri_units = sess.filter_units(activity_idxs)
 
     # units_baseline_firingrate(mixed_units)
     # units_baseline_firingrate(probe_units)
@@ -189,13 +204,27 @@ def main():
     # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
     # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
 
-    avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
-    avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
-    avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
 
-    matplotlib.use('Agg')   # Suppress matplotlib window opening
-    for unum in range(len(activity_idxs)):
-        print(f"Processing unit num {unum}")
+    # matplotlib.use('Agg')   # Suppress matplotlib window opening
+    # for unum in range(len(activity_idxs)):
+
+    # Graph individual units
+    passing_func = functools.partial(
+        sess.passing_multi,
+        [
+            sess.passing_zeta,  # zeta test
+            sess.passing_activity,  # activity test
+        ]
+    )
+
+    total = len(activity_idxs)
+
+    # for unum in range(1):
+    for unum in range(total):
+        print(f"Processing unit num {unum}/{total}")
         multi_raster_plot(
             sess,
             [
@@ -203,7 +232,9 @@ def main():
                 ("Rs", sess.saccade_trial_idxs),
                 ("Rmixed", sess.mixed_trial_idxs)
             ],
-            activity_idxs, 1, 3, unit_number=unum
+            activity_idxs,
+            unit_number=unum,
+            passing_func=passing_func
         )
 
     # tot = len(activity_idxs)
