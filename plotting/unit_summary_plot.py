@@ -135,12 +135,14 @@ def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, unit_number,
     axs[0, 0].set_ylabel("Trial #")
 
     title_str = f"Unit {unit_number}"
+    save_name = f"multi_u{unit_number}.png"
     if passing_func is not None:
         passes = "PASSES" if passing_func(unit_number) else "FAILS"
         title_str = title_str + " - " + passes
+        save_name = passes + "_" + save_name
 
     fig.suptitle(title_str)
-    fig.savefig(f"multi_u{unit_number}.png")
+    fig.savefig(save_name)
     # fig.show()
     tw = 2
 
