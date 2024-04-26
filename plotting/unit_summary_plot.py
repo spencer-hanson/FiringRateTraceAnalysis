@@ -184,16 +184,60 @@ def mean_response_custom(averaged_units, name):
     tw = 2
 
 
-def main():
-    # matplotlib.use('Agg')   # Suppress matplotlib window opening
-
-    filename = "2023-05-15_mlati7_output"
+def standard_all_summary(filename):
+    matplotlib.use('Agg')   # Suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
+    activity_idxs = sess.probe_zeta_idxs()
+
+    mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
+    mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
+    mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
+    mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
+
+    avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
+    avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
+    avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
+
+    # Graph individual units
+    passing_func = functools.partial(
+        sess.passing_multi,
+        [
+            sess.passing_zeta,  # zeta test
+        ]
+    )
+
+    total = len(activity_idxs)
+    for unum in range(total):
+        print(f"Processing unit num {unum}/{total}")
+        multi_raster_plot(
+            sess,
+            [
+                ("Rp_Extra", sess.probe_trial_idxs),
+                ("Rs", sess.saccade_trial_idxs),
+                ("Rmixed", sess.mixed_trial_idxs)
+            ],
+            activity_idxs,
+            unit_number=unum,
+            passing_func=passing_func
+        )
+
+
+def main():
+    matplotlib.use('Agg')   # Suppress matplotlib window opening
+
+    filename = "2023-05-15_mlati7_updated_output"
+    import time
+    time.sleep(60*60)  # Wait an hour before starting..
+    standard_all_summary(filename)
+    tw = 2
+
+    # sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+
     # activity_idxs = sess.activity_filtered_units_idxs(sess.probe_zeta_idxs())
     # activity_idxs = sess.unfiltered_idxs()
-    activity_idxs = sess.probe_zeta_idxs()
+    # activity_idxs = sess.probe_zeta_idxs()
 
     # probe_units, saccade_units, mixed_units, rp_peri_units = sess.filter_units(activity_idxs)
 
@@ -214,30 +258,29 @@ def main():
     # for unum in range(len(activity_idxs)):
 
     # Graph individual units
-    passing_func = functools.partial(
-        sess.passing_multi,
-        [
-            sess.passing_zeta,  # zeta test
-            sess.passing_activity,  # activity test
-        ]
-    )
+    # passing_func = functools.partial(
+    #     sess.passing_multi,
+    #     [
+    #         sess.passing_zeta,  # zeta test
+    #         sess.passing_activity,  # activity test
+    #     ]
+    # )
 
-    total = len(activity_idxs)
-
-    # for unum in range(1):
-    for unum in range(total):
-        print(f"Processing unit num {unum}/{total}")
-        multi_raster_plot(
-            sess,
-            [
-                ("Rp_Extra", sess.probe_trial_idxs),
-                ("Rs", sess.saccade_trial_idxs),
-                ("Rmixed", sess.mixed_trial_idxs)
-            ],
-            activity_idxs,
-            unit_number=unum,
-            passing_func=passing_func
-        )
+    # total = len(activity_idxs)
+    # # for unum in range(1):
+    # for unum in range(total):
+    #     print(f"Processing unit num {unum}/{total}")
+    #     multi_raster_plot(
+    #         sess,
+    #         [
+    #             ("Rp_Extra", sess.probe_trial_idxs),
+    #             ("Rs", sess.saccade_trial_idxs),
+    #             ("Rmixed", sess.mixed_trial_idxs)
+    #         ],
+    #         activity_idxs,
+    #         unit_number=unum,
+    #         passing_func=passing_func
+    #     )
 
     # tot = len(activity_idxs)
     # for u in range(tot):

@@ -17,7 +17,7 @@ UNIT_TRIAL_PERCENTAGE = .2  # NOT USED CURRENTLY Minimum percentage of trials th
 UNIT_ZETA_P_VALUE = 0.01  # p-value of a unit using the zeta test must be lower than this threshold
 
 MOUSE_DETAILS = {
-    "mlati9": {  # TODO Correct these values
+    "mlati7": {  # TODO Correct these values
         "birthday": pendulum.parse("5/2/22", strict=False),
         "strain": "mouse",
         "description": "this is a mouse",

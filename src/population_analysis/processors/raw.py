@@ -19,10 +19,11 @@ class RawSessionProcessor(object):
         self.spike_clusters = np.array(data["spikes"]["clusters"])
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
-        self.saccade_timestamps = np.array(data["saccades"]["predicted"]["left"]["nasal"]["timestamps"])  # TODO others?
 
-        self.probe_zeta = np.array(data["population"]["zeta"]["probe"]["left"]["p"])
-        self.saccade_zeta = np.array(data["population"]["zeta"]["saccade"]["nasal"]["p"])
+        # -1.0 is nasal, 1.0 is temporal, 0 is none
+        self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"], -1.0)  # TODO others?
+        self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
+        self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
 
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
         self._unit_pop: Optional[UnitPopulation] = None
@@ -31,6 +32,13 @@ class RawSessionProcessor(object):
         self.mouse_birthday = MOUSE_DETAILS[mouse_name]["birthday"]
         self.mouse_strain = MOUSE_DETAILS[mouse_name]["strain"]
         self.mouse_sex = MOUSE_DETAILS[mouse_name]["sex"]
+
+    def _extract_saccade_timestamps(self, saccade_data, direction_value):
+        direction = np.array(saccade_data["labels"])
+        direction_idxs = np.where(direction == direction_value)
+        timestamps = np.array(saccade_data["timestamps"])[:, 0]
+        directional_timestamps = timestamps[direction_idxs]
+        return directional_timestamps
 
     def _calc_p_value_truth(self, probe_zeta, saccade_zeta):
         # Calculate a bool array of if the units pass the p-value zeta test
