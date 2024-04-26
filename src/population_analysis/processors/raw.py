@@ -159,7 +159,7 @@ class RawSessionProcessor(object):
         saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
         spike_clusters = TimeSeries(name="spike_clusters", data=self.unit_pop.spike_clusters, unit="num", rate=1.0,
                                     description="Spike cluster assignments for the spike timings")
-        trial_durations_idxs = TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs, unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters")
+        trial_durations_idxs = TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs.astype(int), unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters")
 
         trial_types = np.array(self.unit_pop.get_trial_labels())
         unique_trial_types = np.unique(trial_types)

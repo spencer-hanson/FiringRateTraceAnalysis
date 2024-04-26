@@ -126,8 +126,8 @@ def multi_raster_plot(nwb_session, name_and_trial_idxs, units_idxs, unit_number,
         axs[0, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
         axs[0, c].set_title(f"{name}")
         count = count + 1
-        responses = nwb_session.units()[:, trial_idxs, :][unit_number, :, :]
-        responses = np.mean(responses, axis=1)
+        responses = nwb_session.units()[units_idxs, :, :][:, trial_idxs, :][unit_number]
+        responses = np.mean(responses, axis=0)
         axs[1, c].plot(responses)
         axs[1, c].set_title("Mean response of all trials")
 
@@ -185,20 +185,20 @@ def mean_response_custom(averaged_units, name):
 
 
 def standard_all_summary(filename):
-    matplotlib.use('Agg')   # Suppress matplotlib window opening
+    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
     activity_idxs = sess.probe_zeta_idxs()
 
-    mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
-    mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
-    mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
-    mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
-
-    avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
-    avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
-    avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
+    # mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
+    # mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
+    # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
+    # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
+    #
+    # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
+    # avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
 
     # Graph individual units
     passing_func = functools.partial(
@@ -208,28 +208,27 @@ def standard_all_summary(filename):
         ]
     )
 
-    total = len(activity_idxs)
-    for unum in range(total):
-        print(f"Processing unit num {unum}/{total}")
-        multi_raster_plot(
-            sess,
-            [
-                ("Rp_Extra", sess.probe_trial_idxs),
-                ("Rs", sess.saccade_trial_idxs),
-                ("Rmixed", sess.mixed_trial_idxs)
-            ],
-            activity_idxs,
-            unit_number=unum,
-            passing_func=passing_func
-        )
+    # total = len(activity_idxs)
+    # for unum in range(total):
+    unum = 5
+    total = 0
+    print(f"Processing unit num {unum}/{total}")
+    multi_raster_plot(
+        sess,
+        [
+            ("Rp_Extra", sess.probe_trial_idxs),
+            ("Rs", sess.saccade_trial_idxs),
+            ("Rmixed", sess.mixed_trial_idxs)
+        ],
+        activity_idxs,
+        unit_number=unum,
+        passing_func=passing_func
+    )
 
 
 def main():
-    matplotlib.use('Agg')   # Suppress matplotlib window opening
-
     filename = "2023-05-15_mlati7_updated_output"
-    import time
-    time.sleep(60*60)  # Wait an hour before starting..
+
     standard_all_summary(filename)
     tw = 2
 

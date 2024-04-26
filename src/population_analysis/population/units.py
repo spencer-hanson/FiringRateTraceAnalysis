@@ -160,7 +160,7 @@ class UnitPopulation(object):
         num_trials = len(self._trials)
         firing_rates = np.empty((num_trials, self._num_prefiltered_units, NUM_FIRINGRATE_SAMPLES))
         trial_spike_flags = np.empty((num_trials, self._num_prefiltered_units, TOTAL_TRIAL_MS), dtype="bool")
-        trial_durations_idxs = np.empty((num_trials, 2))
+        trial_durations_idxs = np.empty((num_trials, 2), dtype="int")
 
         print("Calculating firing rates for all trials and units", end="")
         one_tenth_of_trials = int(num_trials / 10)
