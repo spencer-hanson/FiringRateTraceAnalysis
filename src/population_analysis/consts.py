@@ -35,3 +35,20 @@ EXPERIMENTERS = [
 DEVICE_NAME = "neuropixels-probe"
 DEVICE_DESCRIPTION = "neuropixels probe"
 DEVICE_MANUFACTURER = "neuropixels"
+
+METRIC_NAMES = {
+    "ac": "amplitude_cutoff",
+    "pr": "presence_ratio",
+    "rpvr": "refactory_period_violation_rate",
+    "fr": "global_firing_rate",
+    "ql": "quality_labeling"
+    # Quality labeling; 0 is multi-unit, 1 is single-unit; based on Kilosort and Anna's manual spike-sorting
+}
+
+METRIC_THRESHOLDS = {  # metric_name: func(unit_value) -> bool if true keep unit
+    "amplitude_cutoff": lambda v: v <= 0.1,
+    "presence_ratio": lambda v: v >= 0.9,
+    "refactory_period_violation_rate": lambda v: v <= 0.5,
+    "global_firing_rate": lambda v: v >= 0.2
+    # don't include quality_labeling since that has a specific procedure
+}

@@ -9,13 +9,16 @@ from simply_nwb import SimpleNWB
 
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
-    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS
+    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS, METRIC_NAMES
 from population_analysis.population.units import UnitPopulation
 
 
 class RawSessionProcessor(object):
     def __init__(self, filename, mouse_name):
         data = h5py.File(filename)
+
+        self._unit_pop: Optional[UnitPopulation] = None
+
         self.spike_clusters = np.array(data["spikes"]["clusters"])
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
@@ -25,13 +28,20 @@ class RawSessionProcessor(object):
         self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
         self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
 
+        self.metrics = self._extract_metrics(data)
+
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
-        self._unit_pop: Optional[UnitPopulation] = None
 
         self.mouse_name = mouse_name
         self.mouse_birthday = MOUSE_DETAILS[mouse_name]["birthday"]
         self.mouse_strain = MOUSE_DETAILS[mouse_name]["strain"]
         self.mouse_sex = MOUSE_DETAILS[mouse_name]["sex"]
+
+    def _extract_metrics(self, hd5data):
+        metrics = {}
+        for k, v in METRIC_NAMES.items():
+            metrics[v] = np.array(hd5data["metrics"][k])
+        return metrics
 
     def _extract_saccade_timestamps(self, saccade_data, direction_value):
         direction = np.array(saccade_data["labels"])
@@ -153,7 +163,12 @@ class RawSessionProcessor(object):
         # Add probe and saccade event timings, trial types
         behavior_events = nwb.create_processing_module(name="behavior",
                                                        description="Contains saccade and probe event timings")
+        # Add metrics
+        for metric_name, metric_data in self.metrics.items():
+            ts = TimeSeries(name=f"metric-{metric_name}", data=metric_data, unit="num", rate=1.0, description=f"Quality metric {metric_name}")
+            behavior_events.add(ts)
 
+        # Misc data
         unit_labels = TimeSeries(name="unit-labels", data=self.unit_pop.unique_unit_nums, unit="num", rate=1.0, description="Unit number from kilosort for each unit")
         probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe")
         saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
