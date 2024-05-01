@@ -7,6 +7,10 @@ class UnitFilter(object):
         self._idxs = None
         self.num_units = num_units
 
+    @staticmethod
+    def empty(num_units):
+        return UnitFilter(lambda v: True, num_units)
+
     def idxs(self):
         # return a list of indexes into the full list of units that pass the filter
         if self._idxs is None:
@@ -22,7 +26,7 @@ class UnitFilter(object):
         # return the length of the indexes
         return len(self.idxs())
 
-    def passes_abs(self, abs_unit_num):
+    def passes_abs(self, abs_unit_num) -> bool:
         for func in self._funcs:
             if not func(abs_unit_num):
                 return False

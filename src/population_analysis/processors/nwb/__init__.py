@@ -92,63 +92,46 @@ class NWBSessionProcessor(object):
 
         return UnitFilter(does_pass, self.num_units)
 
-    # def multi_idxs(self, idxs_list):
-    #     # list of idxs to union [[idxs1, ..], [idxs2, ..], ..]
-    #     idxs = set(list(np.array(idxs_list[0])))
-    #     for ilist in idxs_list[1:]:
-    #         idxs = idxs.intersection(set(list(np.array(ilist))))
-    #     idxs = np.array(sorted(list(idxs)))
-    #     return idxs
-    #
-    # def zeta_idxs(self):
-    #     return np.where(self.nwb.units["threshold_zeta_passes"])[0]
-    #
-    # def quality_metrics_idxs(self):
-    #     passing = []
-    #
-    #     for unit_num in range(len(self.quality_metrics["quality_labeling"])):
-    #         passing.append(self.passing_quality_metrics(unit_num))
-    #     passing = np.array(passing)
-    #     idxs = np.where(passing)[0]
-    #     return idxs
-    #
+    def activity_threshold_unit_filter(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore) -> UnitFilter:
+        # Want units that spike at least <spike_count_threshold> times,
+        # in at least trial_threshold % of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
+        # at most there can be missing_threshold% close to zero trials,
+        # "close to zero trials" is any trial with less than <min_missing> spikes
+        # baseline_zscore is the zscore of the average value of the first 8 timepoints is from
+        # the trial average baseline first 8 timepoints
+        baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
+        baseline_std = np.std(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=1))
 
-    #
-    # def passing_zeta(self, unit_num):
-    #     idxs = self.zeta_idxs()
-    #     return unit_num in idxs
-    #
-    # def passing_multi(self, func_list):
-    #     def wrapped(unit_num):
-    #         for func in func_list:
-    #             if not func(unit_num):
-    #                 return False
-    #         return True
-    #     return wrapped
-    #
-    # def passing_activity(self, unit_num, spike_count_threshold=25, trial_threshold=.2, missing_threshold=1,
-    #                      min_missing=1):
-    #     bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
-    #     unit_trials = bool_counts[unit_num, :, :]  # trials x 700
-    #     trial_count = bool_counts.shape[1]
-    #
-    #     # count = len(np.where(np.sum(unit_trials[:, 250:450], axis=1) >= 7)[0])
-    #     # condition = count >= (trial_count*trial_threshold)
-    #     trial_spike_sum = np.sum(unit_trials, axis=1)
-    #     passing_trial_count = len(np.where(trial_spike_sum >= spike_count_threshold)[0])
-    #     missing_trial_count = len(np.where(trial_spike_sum < min_missing)[0])
-    #
-    #     condition = (trial_count * trial_threshold) <= passing_trial_count
-    #     condition = ((trial_count * missing_threshold) >= missing_trial_count) and condition
-    #     return condition
+        def passing_activity(unit_num):
+            bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
+
+            unit_trials = bool_counts[unit_num, :, :][self.probe_trial_idxs, :]  # trials x 700
+            trial_count = len(self.probe_trial_idxs)
+
+            trial_spike_sum = np.sum(unit_trials, axis=1)
+            passing_trial_count = len(np.where(trial_spike_sum >= spike_count_threshold)[0])
+            missing_trial_count = len(np.where(trial_spike_sum < min_missing)[0])
+
+            condition = (trial_count * trial_threshold) <= passing_trial_count
+            condition = ((trial_count * missing_threshold) >= missing_trial_count) and condition
+
+            cur_mean = np.mean(np.mean(self.units()[unit_num][self.probe_trial_idxs, :][:, :8], axis=1), axis=0)
+            zscore = abs((cur_mean - baseline_mean) / baseline_std)
+            passes_zscore = zscore < baseline_zscore
+            condition = condition and passes_zscore
+
+            return condition
+
+        u = UnitFilter(passing_activity, self.num_units)
+        return u
+
     #
     # def activity_filtered_units_idxs(self, unit_filter=None):
     #     # unit_filter is an array of indexes to pre-filter the trial_spike_flags, return will be indexed relative
     #     bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
     #     num_units = bool_counts.shape[0]
     #
-    #     # want units that spike at least <spike_count_threshold> times, in at least trial_threshold% of the trials
-    #     # at most there can be missing_threshold% close to zero trials, (less than <min_missing> spikes is close)
+
     #     passing_units_idxs = []
     #
     #     for unit_num in range(num_units):
