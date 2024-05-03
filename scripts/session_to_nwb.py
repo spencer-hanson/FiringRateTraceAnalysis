@@ -47,7 +47,7 @@ def main():
     #     check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
-    data_files = {"idk": "updated_output.hdf"}
+    data_files = {"idk": "output.hdf"}
 
     for filename in list(data_files.values()):
         try:
@@ -55,7 +55,7 @@ def main():
             sess = RawSessionProcessor(filename, "mlati7")
             # +1 for leading \\, -4 for '.hdf'
             # nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
-            nwb_filename = "2023-05-15_mlati7_updated_output.nwb"
+            nwb_filename = "2023-05-15_mlati7_output.nwb"
             sess.save_to_nwb(nwb_filename, "session0")  # TODO change me
         except Exception as e:
             raise e

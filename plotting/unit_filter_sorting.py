@@ -4,7 +4,11 @@ import os.path
 import shutil
 import time
 
+import matplotlib
+
 from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
+from unit_summary_plot import mean_response, mean_response_custom, avg_raster_plot
+import numpy as np
 
 
 def _unit_filename_to_unit_num(source_folderpath) -> dict[int, str]:
@@ -59,48 +63,79 @@ def _organize(source_folderpath, dest_foldername, unit_filter: UnitFilter, dry_r
         time.sleep(1)
 
 
+def organize_qm(sess, dry_run=False, show_progress=True):
+    filt = sess.qm_unit_filter()
+    dst = "qm"
+    _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
+    if not dry_run:
+        plot_avgs(sess, filt, dst)
+
+
+def organize_zeta(sess, dry_run=False, show_progress=True):
+    filt = sess.probe_zeta_unit_filter()
+    dst = "zeta"
+    _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
+    if not dry_run:
+        plot_avgs(sess, filt, dst)
+
+
+def organize_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore, dry_run=False, show_progress=True):
+    filt = sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore)
+    dst = f"activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_zscore}bz"
+    _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
+    if not dry_run:
+        plot_avgs(sess, filt, dst)
+
+
 def organize_qm_zeta(sess, dry_run=False, show_progress=True):
     passing_unit_filter = sess.qm_unit_filter().append(
         sess.probe_zeta_unit_filter()
     )
-    _organize("src", "qm_zeta", passing_unit_filter, dry_run=dry_run, show_progress=show_progress)
+    dst = "qm_zeta"
+    _organize("src", dst, passing_unit_filter, dry_run=dry_run, show_progress=show_progress)
+    if not dry_run:
+        plot_avgs(sess, passing_unit_filter, dst)
 
 
 def organize_qm_zeta_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore, dry_run=False, show_progress=True):
-    filt = sess.qm_unit_filter().append(sess.probe_zeta_unit_filter()).append(
+    filt = sess.qm_unit_filter().append(
+        sess.probe_zeta_unit_filter()).append(
         sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore)
     )
     dst = f"qm_zeta_activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_zscore}bz"
 
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
-    from unit_summary_plot import mean_response, mean_response_custom, avg_raster_plot
-    import numpy as np
-
-    fileprefix = os.path.join(dst, "passes") + "/"
     if not dry_run:
-        print("Plotting mean responses..")
-        print("Rmixed..")
-        mean_response(sess, "Rmixed - Passing", filt, sess.mixed_trial_idxs, prefix=fileprefix)
-        avg_raster_plot(sess, "Rmixed - Passing", filt, sess.mixed_trial_idxs, -1, prefix=fileprefix)
+        plot_avgs(sess, filt, dst)
 
-        print("Rs..")
-        mean_response(sess, "Rs - Passing", filt, sess.saccade_trial_idxs, prefix=fileprefix)
-        avg_raster_plot(sess, "Rs", filt, sess.saccade_trial_idxs, -1, prefix=fileprefix)
 
-        print("Rp_Extra..")
-        mean_response(sess, "Rp_Extra - Passing", filt, sess.probe_trial_idxs, prefix=fileprefix)
-        avg_raster_plot(sess, "Rp_Extra - Passing", filt, sess.probe_trial_idxs, -1, prefix=fileprefix)
+def plot_avgs(sess, filt: UnitFilter, dst: str):
+    # Plot the average responses and rasters for all response types for a given filter
+    fileprefix = os.path.join(dst, "passes") + "/"
 
-        print("Rp_Peri..")
-        mean_response_custom(np.mean(sess.rp_peri_units()[filt.idxs(), :, :], axis=1), "Rp_Peri", prefix=fileprefix)
+    print("Plotting mean responses..")
+    print("Rmixed..")
+    mean_response(sess, "Rmixed - Passing", filt, sess.mixed_trial_idxs, prefix=fileprefix)
+    avg_raster_plot(sess, "Rmixed - Passing", filt, sess.mixed_trial_idxs, -1, prefix=fileprefix)
 
-        print("Done!")
+    print("Rs..")
+    mean_response(sess, "Rs - Passing", filt, sess.saccade_trial_idxs, prefix=fileprefix)
+    avg_raster_plot(sess, "Rs", filt, sess.saccade_trial_idxs, -1, prefix=fileprefix)
+
+    print("Rp_Extra..")
+    mean_response(sess, "Rp_Extra - Passing", filt, sess.probe_trial_idxs, prefix=fileprefix)
+    avg_raster_plot(sess, "Rp_Extra - Passing", filt, sess.probe_trial_idxs, -1, prefix=fileprefix)
+
+    print("Rp_Peri..")
+    mean_response_custom(np.mean(sess.rp_peri_units()[filt.idxs(), :, :], axis=1), "Rp_Peri", prefix=fileprefix)
+
+    print("Done!")
 
 
 def main():
     # shutil.rmtree("qm_zeta")
-    filename = "2023-05-15_mlati7_updated_output"
-    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    filename = "2023-05-15_mlati7_output"
+    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
     # organize_qm_zeta(sess)
@@ -122,15 +157,13 @@ def main():
             show_progress=show_progress
         )
         print("--")
+    qm_zeta_activity_params = [8, .5, 1, 1, 2]  # sp, tr, ms, mn, bz
 
-    # oo(25, .2, 1, 1)
-    # oo(8, .1, 1, 1)
-    # oo(8, .2, 1, 1)
-    oo(8, .5, 1, 1, 2)
-
-    # organize_qm_zeta_activity(sess, spike_count_threshold=20, trial_threshold=.2, missing_threshold=.8, min_missing=5)
-    # organize_qm_zeta_activity(sess, spike_count_threshold=15, trial_threshold=.3, missing_threshold=.7, min_missing=5)
-    # organize_qm_zeta_activity(sess, spike_count_threshold=10, trial_threshold=.4, missing_threshold=.6, min_missing=5)
+    # oo(8, .5, 1, 1, 2)
+    organize_qm(sess, dry_run, show_progress)
+    organize_zeta(sess, dry_run, show_progress)
+    organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)
+    organize_qm_zeta(sess, dry_run, show_progress)
 
     tw = 2
 

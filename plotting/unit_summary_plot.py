@@ -99,10 +99,39 @@ def avg_raster_plot(nwb_session, name, unit_filter: UnitFilter, trial_idxs, num_
     # Raster
     if num_units == -1:
         num_units = unit_filter.len()
+    # TODO use a polynomial to normalize the distribution of spikes to create a valid heatmap for the raster, with
+    # specific number of bins to reduce computational time
 
-    for uidx in range(num_units):
+    # bins = 40
+    # ss = np.sum(bool_counts[unit_filter.idxs()][:, trial_idxs], axis=0)
+    # hist = np.histogram(ss, bins=bins)
+    #
+    # total = np.sum(hist[0])
+    # hist_vals = hist[0][np.where(hist[0] != 0)[0]]
+    # sums = [np.sum(hist[0][:i]) for i in range(1, bins+1)]  # Skip 1 since it's going to be zero
+    # xs = range(bins)
+    # ys = sums
+    # deg = bins
+    #
+    # poly = np.polynomial.polynomial.Polynomial.fit(xs, ys, deg)
+    # inv_poly = np.polynomial.polynomial.Polynomial.fit(ys, xs, deg)
+    # dig = np.digitize(ss, hist[1])
+
+    # fig, axs = plt.subplots(2, 1)
+    # for j in range(1, bins):  # Skip 0 since only no spikes will give that value
+    #     print(f"{j}/{bins}")
+    #     jj = []
+    #     for i in range(ss.shape[0]):
+    #         jj.append(np.where(dig[i] == j)[0])
+    #     axs[0].eventplot(jj, colors="black", lineoffsets=1, linelengths=1, alpha=round(np.sum(hist[0][:j])/total, 2))
+    #
+    # fig.show()
+
+    for uidx in range(5):
         print(f"{uidx}/{num_units} ", end="")
-        axs[0].eventplot(_get_spike_idxs(bool_counts, uidx, trial_idxs, unit_filter=unit_filter), colors="black", lineoffsets=1, linelengths=1, alpha=.2)
+        spike_idxs = _get_spike_idxs(bool_counts, uidx, trial_idxs, unit_filter=unit_filter)
+        axs[0].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1, alpha=.2)
+
     print("")
     axs[0].set_xlabel("Time (ms)")
     axs[0].set_ylabel("Trial #")
@@ -250,12 +279,19 @@ def standard_all_summary(sess):
 
 
 def main():
-    filename = "2023-05-15_mlati7_updated_output"
+    filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
     # standard_all_summary(sess)
-    standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing=True)
+
+    passing_unit_filter = sess.qm_unit_filter().append(
+        sess.probe_zeta_unit_filter()
+    )
+    avg_raster_plot(sess, "Rp_Extra", passing_unit_filter, sess.probe_trial_idxs, -1)
+
+    # This will create a multi-raster of all units and save them in the form u<unit_num>_c<cluster_num>
+    # standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing=True)
 
     # standard_multi_raster(
     #     sess,
