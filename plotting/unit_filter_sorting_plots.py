@@ -138,7 +138,7 @@ def judge_filters(sess: NWBSessionProcessor):
 
     def wrap_filter():
         pass
-    
+
     pass
 
 
