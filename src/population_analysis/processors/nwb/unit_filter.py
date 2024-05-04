@@ -34,7 +34,7 @@ class UnitFilter(object):
 
     def append(self, unit_filter: 'UnitFilter') -> 'UnitFilter':
         if unit_filter.num_units != self.num_units:
-            raise ValueError(f"Cannot append unitfilter, unit nums don't match! self != other {self.num_units} != {unit_filter.num_units}")
+            raise ValueError(f"Cannot append unit filter, unit nums don't match! self != other {self.num_units} != {unit_filter.num_units}")
 
         self._funcs.extend(unit_filter._funcs)
         return self

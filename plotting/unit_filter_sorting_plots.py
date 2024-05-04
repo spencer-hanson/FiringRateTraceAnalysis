@@ -5,6 +5,7 @@ import shutil
 import time
 
 import matplotlib
+from graph_judge import GraphJudge
 
 from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
 from unit_summary_plot import mean_response, mean_response_custom, avg_raster_plot
@@ -79,9 +80,9 @@ def organize_zeta(sess, dry_run=False, show_progress=True):
         plot_avgs(sess, filt, dst)
 
 
-def organize_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore, dry_run=False, show_progress=True):
-    filt = sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore)
-    dst = f"activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_zscore}bz"
+def organize_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, dry_run=False, show_progress=True):
+    filt = sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
+    dst = f"activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_mean_zscore}_bzm_{baseline_time_std_zscore}bzs"
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
     if not dry_run:
         plot_avgs(sess, filt, dst)
@@ -97,15 +98,16 @@ def organize_qm_zeta(sess, dry_run=False, show_progress=True):
         plot_avgs(sess, passing_unit_filter, dst)
 
 
-def organize_qm_zeta_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore, dry_run=False, show_progress=True):
+def organize_qm_zeta_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing,
+                              baseline_mean_zscore, baseline_time_std_zscore, dry_run=False, show_progress=True, skip_avgs=False):
     filt = sess.qm_unit_filter().append(
         sess.probe_zeta_unit_filter()).append(
-        sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore)
+        sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
     )
-    dst = f"qm_zeta_activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_zscore}bz"
+    dst = f"qm_zeta_activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_mean_zscore}bzm_{baseline_time_std_zscore}bzs"
 
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
-    if not dry_run:
+    if not dry_run and not skip_avgs:
         plot_avgs(sess, filt, dst)
 
 
@@ -128,8 +130,16 @@ def plot_avgs(sess, filt: UnitFilter, dst: str):
 
     print("Rp_Peri..")
     mean_response_custom(np.mean(sess.rp_peri_units()[filt.idxs(), :, :], axis=1), "Rp_Peri", prefix=fileprefix)
-
     print("Done!")
+
+
+def judge_filters(sess: NWBSessionProcessor):
+    gj = GraphJudge.from_directory("src")
+
+    def wrap_filter():
+        pass
+    
+    pass
 
 
 def main():
@@ -138,34 +148,41 @@ def main():
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
-    # organize_qm_zeta(sess)
-    # dry_run = True
-    # show_progress = False
-    dry_run = False
-    show_progress = True
+    judge_filters(sess)
 
-    def oo(sp, tr, ms, mn, bz):
-        print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bz}bz")
-        organize_qm_zeta_activity(
-            sess, spike_count_threshold=sp,
-            trial_threshold=tr,
-            missing_threshold=ms,
-            min_missing=mn,
-            baseline_zscore=bz,
-            # optional
-            dry_run=dry_run,
-            show_progress=show_progress
-        )
-        print("--")
-    qm_zeta_activity_params = [8, .5, 1, 1, 2]  # sp, tr, ms, mn, bz
-
-    # oo(8, .5, 1, 1, 2)
-    organize_qm(sess, dry_run, show_progress)
-    organize_zeta(sess, dry_run, show_progress)
-    organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)
-    organize_qm_zeta(sess, dry_run, show_progress)
-
-    tw = 2
+    # # organize_qm_zeta(sess)
+    # # dry_run = True
+    # # show_progress = False
+    # dry_run = False
+    # show_progress = True
+    # skip_avgs = False
+    #
+    # def oo(sp, tr, ms, mn, bzm, bzs):
+    #     print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")
+    #     organize_qm_zeta_activity(
+    #         sess, spike_count_threshold=sp,
+    #         trial_threshold=tr,
+    #         missing_threshold=ms,
+    #         min_missing=mn,
+    #         baseline_mean_zscore=bzm,
+    #         baseline_time_std_zscore=bzs,
+    #         # optional
+    #         dry_run=dry_run,
+    #         show_progress=show_progress,
+    #         skip_avgs=skip_avgs
+    #     )
+    #     print("--")
+    #
+    # oo(5, .1, 1, 1, 1, .8)
+    #
+    # # TODO fix when filter has no results??
+    # qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs
+    # # organize_qm(sess, dry_run, show_progress)
+    # # organize_zeta(sess, dry_run, show_progress)
+    # # organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)
+    # # organize_qm_zeta(sess, dry_run, show_progress)
+    #
+    # tw = 2
 
 
 if __name__ == "__main__":

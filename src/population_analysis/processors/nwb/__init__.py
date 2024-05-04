@@ -92,15 +92,27 @@ class NWBSessionProcessor(object):
 
         return UnitFilter(does_pass, self.num_units)
 
-    def activity_threshold_unit_filter(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_zscore) -> UnitFilter:
+    def activity_threshold_unit_filter(
+            self, spike_count_threshold, trial_threshold, missing_threshold, min_missing,
+            baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
+
         # Want units that spike at least <spike_count_threshold> times,
         # in at least trial_threshold % of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
         # at most there can be missing_threshold% close to zero trials,
         # "close to zero trials" is any trial with less than <min_missing> spikes
-        # baseline_zscore is the zscore of the average value of the first 8 timepoints is from
-        # the trial average baseline first 8 timepoints
+        # param baseline_mean_zscore:
+        # The zscore of the mean of the first 8 timepoints across units and trials needs to be strictly less than this
+        # param baseline_time_std_zscore
+        # The zscore of the std of the first 8 timepoints, across units and trials needs to be strictly less than this
+
         baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
         baseline_std = np.std(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=1))
+
+        _baseline_time_stds = np.mean(np.std(self.units()[:, self.probe_trial_idxs][:, :, :8], axis=2), axis=1)
+        # The trial-averaged mean of the baseline timepoints stds, then unit averaged
+        baseline_time_std_mean = np.mean(_baseline_time_stds)
+        # standard deviation of the baseline's trial-averaged standard deviations across units
+        baseline_time_std_std = np.std(_baseline_time_stds)
 
         def passing_activity(unit_num):
             bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
@@ -115,10 +127,17 @@ class NWBSessionProcessor(object):
             condition = (trial_count * trial_threshold) <= passing_trial_count
             condition = ((trial_count * missing_threshold) >= missing_trial_count) and condition
 
+            # Check that the mean of the baseline is within baseline_mean_zscore std's
             cur_mean = np.mean(np.mean(self.units()[unit_num][self.probe_trial_idxs, :][:, :8], axis=1), axis=0)
-            zscore = abs((cur_mean - baseline_mean) / baseline_std)
-            passes_zscore = zscore < baseline_zscore
-            condition = condition and passes_zscore
+            mean_zscore = abs((cur_mean - baseline_mean) / baseline_std)
+            condition = condition and mean_zscore < baseline_mean_zscore
+
+            # Check that the standard deviation of the current unit's baseline over time
+            # is at most baseline_time_std_zscore stds from the average std
+            cur_time_std_mean = np.mean(np.std(self.units()[unit_num][self.probe_trial_idxs][:, :8], axis=1))
+            std_zscore = (baseline_time_std_mean - cur_time_std_mean) / baseline_time_std_std
+            std_zscore = abs(std_zscore)
+            condition = condition and std_zscore < baseline_time_std_zscore
 
             return condition
 

@@ -127,7 +127,7 @@ def avg_raster_plot(nwb_session, name, unit_filter: UnitFilter, trial_idxs, num_
     #
     # fig.show()
 
-    for uidx in range(5):
+    for uidx in range(num_units):
         print(f"{uidx}/{num_units} ", end="")
         spike_idxs = _get_spike_idxs(bool_counts, uidx, trial_idxs, unit_filter=unit_filter)
         axs[0].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1, alpha=.2)

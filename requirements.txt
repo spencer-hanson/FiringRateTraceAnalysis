@@ -11,3 +11,4 @@ pendulum
 numexpr
 llvmlite
 numba
+graph-judge==0.0.6
