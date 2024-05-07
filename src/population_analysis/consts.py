@@ -48,7 +48,7 @@ METRIC_NAMES = {
 METRIC_THRESHOLDS = {  # metric_name: func(unit_value) -> bool if true keep unit
     "amplitude_cutoff": lambda v: v <= 0.1,
     "presence_ratio": lambda v: v >= 0.9,
-    "refactory_period_violation_rate": lambda v: v <= 0.5,
+    "refactory_period_violation_rate": lambda v: v <= 0.5,  # isi
     "global_firing_rate": lambda v: v >= 0.2
     # don't include quality_labeling since that has a specific procedure
 }

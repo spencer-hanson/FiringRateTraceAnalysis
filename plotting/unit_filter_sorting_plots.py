@@ -148,41 +148,41 @@ def main():
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
-    judge_filters(sess)
+    # judge_filters(sess)
 
-    # # organize_qm_zeta(sess)
-    # # dry_run = True
-    # # show_progress = False
-    # dry_run = False
-    # show_progress = True
-    # skip_avgs = False
-    #
-    # def oo(sp, tr, ms, mn, bzm, bzs):
-    #     print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")
-    #     organize_qm_zeta_activity(
-    #         sess, spike_count_threshold=sp,
-    #         trial_threshold=tr,
-    #         missing_threshold=ms,
-    #         min_missing=mn,
-    #         baseline_mean_zscore=bzm,
-    #         baseline_time_std_zscore=bzs,
-    #         # optional
-    #         dry_run=dry_run,
-    #         show_progress=show_progress,
-    #         skip_avgs=skip_avgs
-    #     )
-    #     print("--")
-    #
-    # oo(5, .1, 1, 1, 1, .8)
-    #
-    # # TODO fix when filter has no results??
-    # qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs
-    # # organize_qm(sess, dry_run, show_progress)
-    # # organize_zeta(sess, dry_run, show_progress)
-    # # organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)
-    # # organize_qm_zeta(sess, dry_run, show_progress)
-    #
-    # tw = 2
+    # organize_qm_zeta(sess)
+    # dry_run = True
+    # show_progress = False
+    dry_run = False
+    show_progress = True
+    skip_avgs = False
+
+    def oo(sp, tr, ms, mn, bzm, bzs):
+        print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")
+        organize_qm_zeta_activity(
+            sess, spike_count_threshold=sp,
+            trial_threshold=tr,
+            missing_threshold=ms,
+            min_missing=mn,
+            baseline_mean_zscore=bzm,
+            baseline_time_std_zscore=bzs,
+            # optional
+            dry_run=dry_run,
+            show_progress=show_progress,
+            skip_avgs=skip_avgs
+        )
+        print("--")
+
+    oo(5, .1, 1, 1, 1, .8)
+
+    # TODO fix when filter has no results??
+    qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs
+    # organize_qm(sess, dry_run, show_progress)
+    # organize_zeta(sess, dry_run, show_progress)
+    # organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)
+    # organize_qm_zeta(sess, dry_run, show_progress)
+
+    tw = 2
 
 
 if __name__ == "__main__":
