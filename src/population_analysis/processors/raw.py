@@ -24,7 +24,7 @@ class RawSessionProcessor(object):
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
 
         # -1.0 is nasal, 1.0 is temporal, 0 is none
-        self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"], -1.0)  # TODO others?
+        self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"], -1.0)  # TODO other than left?
         self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
         self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
 
