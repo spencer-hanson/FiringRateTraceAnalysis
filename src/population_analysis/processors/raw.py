@@ -45,7 +45,7 @@ class RawSessionProcessor(object):
 
     def _extract_saccade_timestamps(self, saccade_data, direction_value):
         direction = np.array(saccade_data["labels"])
-        direction_idxs = np.where(direction == direction_value)
+        direction_idxs = np.where(direction == direction_value)[0]
         timestamps = np.array(saccade_data["timestamps"])[:, 0]
         directional_timestamps = timestamps[direction_idxs]
         return directional_timestamps
