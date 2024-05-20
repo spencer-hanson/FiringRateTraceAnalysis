@@ -21,7 +21,8 @@ def _unit_filename_to_unit_num(source_folderpath) -> dict[int, str]:
     for file in os.listdir(source_folderpath):
         if file.endswith(".png") and file.startswith("u"):
             parts = file.split("_")
-            unit_num = parts[0][1:]  # cut off the 'u' in 'u12_.. .png'
+            unit_num = parts[0][1:]  # cut off the 'u' in 'u12_.. .png'  # TODO change me for different things?
+            # unit_num = parts[-1][1:-len(".png")]
             mapping[int(unit_num)] = os.path.join(source_folderpath, file)
     return mapping
 
@@ -107,6 +108,7 @@ def organize_qm_zeta_activity(sess, spike_count_threshold, trial_threshold, miss
     dst = f"qm_zeta_activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_mean_zscore}bzm_{baseline_time_std_zscore}bzs"
 
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
+    # _organize("../plotting", dst, filt, dry_run=dry_run, show_progress=show_progress)
     if not dry_run and not skip_avgs:
         plot_avgs(sess, filt, dst)
 
@@ -155,7 +157,7 @@ def main():
     # show_progress = False
     dry_run = False
     show_progress = True
-    skip_avgs = False
+    skip_avgs = False  # Skip plotting the averages
 
     def oo(sp, tr, ms, mn, bzm, bzs):
         print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")

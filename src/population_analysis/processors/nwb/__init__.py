@@ -44,6 +44,12 @@ class NWBSessionProcessor(object):
         num_units = self.nwb.units["trial_spike_flags"].shape[0]  # units x trials x 700
         return num_units
 
+    def spikes(self):
+        return self.nwb.units["trial_spike_flags"]  # (units, trials, 700)
+
+    def trial_durations(self):
+        return self.nwb.processing["behavior"]["trial_durations_idxs"].data[:]  # (trials, 2)  [start, stop]
+
     def probe_units(self):
         return self.nwb.units["trial_response_firing_rates"].data[:, self.probe_trial_idxs]
 
@@ -105,14 +111,14 @@ class NWBSessionProcessor(object):
         # param baseline_time_std_zscore
         # The zscore of the std of the first 8 timepoints, across units and trials needs to be strictly less than this
 
-        baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
-        baseline_std = np.std(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=1))
+        # baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
+        # baseline_std = np.std(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=1))
 
-        _baseline_time_stds = np.mean(np.std(self.units()[:, self.probe_trial_idxs][:, :, :8], axis=2), axis=1)
+        # _baseline_time_stds = np.mean(np.std(self.units()[:, self.probe_trial_idxs][:, :, :8], axis=2), axis=1)
         # The trial-averaged mean of the baseline timepoints stds, then unit averaged
-        baseline_time_std_mean = np.mean(_baseline_time_stds)
+        # baseline_time_std_mean = np.mean(_baseline_time_stds)
         # standard deviation of the baseline's trial-averaged standard deviations across units
-        baseline_time_std_std = np.std(_baseline_time_stds)
+        # baseline_time_std_std = np.std(_baseline_time_stds)
 
         def passing_activity(unit_num):
             bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700
@@ -129,13 +135,17 @@ class NWBSessionProcessor(object):
 
             # Check that the mean of the baseline is within baseline_mean_zscore std's
             cur_mean = np.mean(np.mean(self.units()[unit_num][self.probe_trial_idxs, :][:, :8], axis=1), axis=0)
+            baseline_mean = np.mean(np.mean(self.units()[unit_num][:, :8], axis=1), axis=0)
+            baseline_std = np.mean(np.std(self.units()[unit_num][:, :8], axis=1))
+
             mean_zscore = abs((cur_mean - baseline_mean) / baseline_std)
             condition = condition and mean_zscore < baseline_mean_zscore
 
             # Check that the standard deviation of the current unit's baseline over time
             # is at most baseline_time_std_zscore stds from the average std
             cur_time_std_mean = np.mean(np.std(self.units()[unit_num][self.probe_trial_idxs][:, :8], axis=1))
-            std_zscore = (baseline_time_std_mean - cur_time_std_mean) / baseline_time_std_std
+            baseline_time_std_std = np.std(np.std(self.units()[unit_num][:, :8], axis=1))
+            std_zscore = (baseline_std - cur_time_std_mean) / baseline_time_std_std
             std_zscore = abs(std_zscore)
             condition = condition and std_zscore < baseline_time_std_zscore
 
