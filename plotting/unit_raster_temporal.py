@@ -60,6 +60,7 @@ def main():
             spike_idxs_offset = do_offset(spike_idxs, trial[0])  # trial type
             eventplot_data.append(spike_idxs)
             offset_eventplot_data.append(spike_idxs_offset)
+            tw = 2
 
         fig, axs = plt.subplots(nrows=1, ncols=2)
 
@@ -67,6 +68,7 @@ def main():
         axs[0].set_xlabel("Probes,   Saccades,    Mixed")
 
         axs[1].eventplot(eventplot_data, colors="black", lineoffsets=1, linelengths=1)
+
         axs[1].set_xlabel("All trials aligned")
 
         axs[0].hlines(len(offset_eventplot_data), 0, 2100)
