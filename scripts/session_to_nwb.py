@@ -47,7 +47,7 @@ def main():
     #     check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
-    data_files = {"idk": "updated_output.hdf"}
+    data_files = {"idk": "output.hdf"}
 
     for filename in list(data_files.values()):
         try:

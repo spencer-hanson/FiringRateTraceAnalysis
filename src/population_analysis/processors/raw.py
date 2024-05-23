@@ -19,12 +19,26 @@ class RawSessionProcessor(object):
 
         self._unit_pop: Optional[UnitPopulation] = None
 
+        # [[start, stop], ..] of each drifting grating. Any time outside these ranges is a non-moving static gray screen and shouldn't be included
+        self.grating_timestamps = np.array(list(zip(list(data["stimuli"]["dg"]["grating"]["timestamps"]), list(data["stimuli"]["dg"]["iti"]["timestamps"]))))
+        self.inter_grating_timestamps = self._calc_inter_grating_timestamps(self.grating_timestamps)
+
+        first_dg = self.grating_timestamps[0][0]
+
+        # Spike Clusters and Timestamps
         self.spike_clusters = np.array(data["spikes"]["clusters"])
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
-        self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
+        # Find the indexes of the spike timestamps that are greater than the first drifting grating motion
+        spike_ts_idxs = np.where(self.spike_timestamps >= first_dg)[0]
+        self.spike_clusters = self.spike_clusters[spike_ts_idxs]
+        self.spike_timestamps = self.spike_timestamps[spike_ts_idxs]
 
-        # -1.0 is nasal, 1.0 is temporal, 0 is none
-        self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"], -1.0)  # TODO other than left?
+        # Probe and Saccade timestamps
+        self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
+        self.probe_timestamps = self.probe_timestamps[np.where(self.probe_timestamps >= first_dg)[0]]
+        self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"])  # Saccades from the left eye TODO other eyes?
+        self.saccade_timestamps = self.saccade_timestamps[np.where(self.saccade_timestamps >= self.grating_timestamps[0][0])[0]]
+
         self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
         self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
 
@@ -37,16 +51,24 @@ class RawSessionProcessor(object):
         self.mouse_strain = MOUSE_DETAILS[mouse_name]["strain"]
         self.mouse_sex = MOUSE_DETAILS[mouse_name]["sex"]
 
+    def _calc_inter_grating_timestamps(self, grating_timestamps):
+        inter = []
+        for i in range(1, len(grating_timestamps)):
+            _, last_stop = grating_timestamps[i - 1]
+            next_start, _ = grating_timestamps[i]
+            inter.append([last_stop, next_start])
+        return inter
+
     def _extract_metrics(self, hd5data):
         metrics = {}
         for k, v in METRIC_NAMES.items():
             metrics[v] = np.array(hd5data["metrics"][k])
         return metrics
 
-    def _extract_saccade_timestamps(self, saccade_data, direction_value):
+    def _extract_saccade_timestamps(self, saccade_data):
         direction = np.array(saccade_data["labels"])
-        direction_idxs = np.where(direction == direction_value)[0]
-        timestamps = np.array(saccade_data["timestamps"])[:, 0]
+        direction_idxs = np.where(direction != 0)[0]
+        timestamps = np.array(saccade_data["timestamps"])[:, 0]   # Use the start of the saccade time window
         directional_timestamps = timestamps[direction_idxs]
         return directional_timestamps
 
@@ -57,13 +79,39 @@ class RawSessionProcessor(object):
         combined = np.logical_or(probe, saccade)  # A unit can pass probe or saccade to be included
         return combined
 
+    def _filter_grating_windows(self, timestamp_event_idxs):
+        # Filter out the trials that intersect with the drifting grating stopping (aren't within the window)
+        # timestamp_event_idxs is [[start, time, end], ...] of the timings of the trial
+        passing_trials = []
+        for trial in timestamp_event_idxs:
+            start_idx, event_idx, stop_idx = trial
+            start_time = self.spike_timestamps[start_idx]
+            stop_time = self.spike_timestamps[stop_idx]
+            passes = True
+            # The start and end of the inter-grating timestamps
+            for inter_start, inter_end in self.inter_grating_timestamps:
+                if inter_start < start_time < inter_end:  # Start time is within the inter window
+                    passes = False
+                    break
+                elif inter_start < stop_time < inter_end:  # End time is within the inter window
+                    passes = False
+                    break
+
+            if passes:
+                passing_trials.append(trial)
+        print(f"Filtered out {len(timestamp_event_idxs) - len(passing_trials)} trials that intersect with static stimuli")
+        return passing_trials
+
     def calc_unit_population_stats(self):
         unit_pop = UnitPopulation(self.spike_timestamps, self.spike_clusters, self.p_value_truth)
 
         print("Extracting saccade spike timestamps..")
         saccade_spike_range_idxs = self._extract_timestamp_idxs(self.spike_timestamps, self.saccade_timestamps)
+        saccade_spike_range_idxs = self._filter_grating_windows(saccade_spike_range_idxs)
+
         print("Extracting probe spike timestamps..")
         probe_spike_range_idxs = self._extract_timestamp_idxs(self.spike_timestamps, self.probe_timestamps)
+        probe_spike_range_idxs = self._filter_grating_windows(probe_spike_range_idxs)
 
         trials = self._demix_trials(saccade_spike_range_idxs, probe_spike_range_idxs)
 
@@ -239,20 +287,18 @@ class RawSessionProcessor(object):
             if idx % other_one_tenth == 0:
                 print(f" {round(100 * (idx / other_len), 2)}%", end="")
             if np.isnan(ts):
-                # idx_ranges.append(None)
                 continue
             pre_window_ts = ts - (PRE_TRIAL_MS / 1000)
             post_window_ts = ts + (POST_TRIAL_MS / 1000)
 
-            start_idx = np.where(pre_window_ts <= spike_timestamps)[0][0]  # First index in tuple, first index is the edge
-            end_idx = np.where(post_window_ts <= spike_timestamps)[0][0]
-            ts_idx = np.where(ts >= spike_timestamps)[0][-1]  # Index of the event timestamp itself, next smallest value
-            # Add the lower limit back on since the np.where statements return relative to the array passed in
+            # 0th idx in tuple of np.where, 0th idx is the edge
+            # which is the idx into spike_timestamps whose value is greater than our pre-window, so the lowest value
+            # in spike_timestamps that is within our beginning window,
+            start_idx = np.where(spike_timestamps >= pre_window_ts)[0][0]
+            end_idx = np.where(spike_timestamps >= post_window_ts)[0][0]  # Same thing, lowest index where spike_timestamps is gte our post window
+            ts_idx = np.where(spike_timestamps >= ts)[0][0]  # index of the lowest spike_timestamp that is gte our ts
             idx_ranges.append([start_idx, ts_idx, end_idx])
-
-            # _testing["lower"].append(pre_window_ts - spike_timestamps[lower_limit + start_idx])
-            # _testing["upper"].append(post_window_ts - spike_timestamps[lower_limit + end_idx])
-            # _testing["event"].append(ts - spike_timestamps[lower_limit + ts_idx])
+            tw = 2
 
         print("")
         # import matplotlib.pyplot as plt
@@ -285,6 +331,9 @@ class RawSessionProcessor(object):
                 f_end = first_idx[2]
 
                 for s_idx, second_idx in enumerate(list2):
+                    if s_idx in l2_to_remove:
+                        continue  # Skip this index as it has already been identified as mixed, but not removed yet
+
                     s_event = second_idx[1]  # second event time idx
                     if f_start <= s_event <= f_end:  # Found mixed
                         mixed.append({
@@ -294,21 +343,29 @@ class RawSessionProcessor(object):
                         l2_to_remove.append(s_idx)
                         l1_to_remove.append(f_idx)
                         break
-                list2 = self._remove_by_idxs(list2, l2_to_remove)
-                l2_to_remove = []
+            # Remove the indexes from the lists where the trials are mixed
             list1 = self._remove_by_idxs(list1, l1_to_remove)
+            list2 = self._remove_by_idxs(list2, l2_to_remove)
+
             return [list1, list2, mixed]
 
-        # Find saccades that occur within 500ms of a probe
-        print("Demixing saccades within 500ms from a probe")
-        saccade_idxs1, probe_idxs1, both = within_window(saccade_idxs, probe_idxs, "saccade", "probe")
-
         # Find probes that occur within 500ms of a saccade
-        print("Demixing probes within 500ms of a saccade")
-        probe_idxs2, saccade_idxs2, both2 = within_window(probe_idxs1, saccade_idxs1, "probe", "saccade")
+        print(f"Demixing saccade events within the probe window of -{PRE_TRIAL_MS}ms to +{POST_TRIAL_MS}ms")
+        probe_idxs1, saccade_idxs1, both = within_window(probe_idxs, saccade_idxs, "probe", "saccade")
+
+        # Find saccades that occur within 500ms of a probe (500ms is from _extract_timestamp_idxs)
+        print(f"Demixing probe events within the saccade window of -{PRE_TRIAL_MS}ms to +{POST_TRIAL_MS}ms")
+        saccade_idxs2, probe_idxs2, both2 = within_window(saccade_idxs1, probe_idxs1, "saccade", "probe")
 
         trials["saccade"] = saccade_idxs2
         trials["probe"] = probe_idxs2
         trials["mixed"] = [*both, *both2]
+
+        # dist = [self.spike_timestamps[v["saccade"][1]] - self.spike_timestamps[v["probe"][0]] for v in trials["mixed"]]
+        # plt.suptitle("Saccade time from Probe")
+        # plt.plot(dist)
+        # plt.ylabel("Time from probe (s)")
+        # plt.xlabel("Instance count #")
+        # plt.show()
 
         return trials
