@@ -162,7 +162,8 @@ def main():
     def oo(sp, tr, ms, mn, bzm, bzs):
         print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")
         organize_qm_zeta_activity(
-            sess, spike_count_threshold=sp,
+            sess,
+            spike_count_threshold=sp,
             trial_threshold=tr,
             missing_threshold=ms,
             min_missing=mn,
@@ -175,7 +176,7 @@ def main():
         )
         print("--")
 
-    oo(5, .1, 1, 1, 1, .8)
+    oo(15, .2, 1, 1, 1, .8)
 
     # TODO fix when filter has no results??
     qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs

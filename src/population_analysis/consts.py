@@ -10,9 +10,12 @@ SPIKE_BIN_MS = 20
 NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)  # Should be 35
 NUM_BASELINE_POINTS = 8  # First 8 points in a waveform will be used for z-scoring / baselining the waveform
 
+# Mixed threshold
+MIXED_THRESHOLD = .2  # any saccade/probe within 200ms of another probe/saccade will be counted as mixed
+
 # Unit filtering consts
-TRIAL_THRESHOLD_SUM = 2.5  # NOT USED CURRENTLY Sum of all firing rates in all trials for a unit
-UNIT_TRIAL_PERCENTAGE = .2  # NOT USED CURRENTLY Minimum percentage of trials that meet the threshold for a unit to include it
+# TRIAL_THRESHOLD_SUM = 2.5  # NOT USED CURRENTLY Sum of all firing rates in all trials for a unit
+# UNIT_TRIAL_PERCENTAGE = .2  # NOT USED CURRENTLY Minimum percentage of trials that meet the threshold for a unit to include it
 
 UNIT_ZETA_P_VALUE = 0.01  # p-value of a unit using the zeta test must be lower than this threshold
 

@@ -60,14 +60,13 @@ class UnitPopulation(object):
         self._trial_spike_flags = None  # Trial x UnitNum x time arr bool if it spiked or not
         self._trial_durations_idxs = None  # Trial x 2 (start and stop indexes into spike_timestamps and clusters)
         self._zscores = None
-        self.unique_spike_clusters = np.unique(self.spike_clusters)
-        self._num_prefiltered_units = len(self.unique_spike_clusters)
         self._unit_filters = None
         self.unique_unit_nums = np.unique(spike_clusters)
+        self._num_units = len(self.unique_unit_nums)
         self._p_value_truth = p_value_truth
 
     def __str__(self):
-        return f"UnitPopulation(num_units={self._num_prefiltered_units}, num_trials={len(self._trials)})"
+        return f"UnitPopulation(num_units={self._num_units}, num_trials={len(self._trials)})"
 
     def get_mixed_trials(self):
         trials = []
@@ -158,55 +157,44 @@ class UnitPopulation(object):
     def calc_firingrates(self):
         # Calculate the firing rate of each unit for all trials
         num_trials = len(self._trials)
-        firing_rates = np.empty((num_trials, self._num_prefiltered_units, NUM_FIRINGRATE_SAMPLES))
-        trial_spike_flags = np.empty((num_trials, self._num_prefiltered_units, TOTAL_TRIAL_MS), dtype="bool")
+        firing_rates = np.empty((num_trials, self._num_units, NUM_FIRINGRATE_SAMPLES))
+        trial_spike_flags = np.full((num_trials, self._num_units, TOTAL_TRIAL_MS), fill_value=False, dtype="bool")
         trial_durations_idxs = np.empty((num_trials, 2), dtype="int")
 
         print("Calculating firing rates for all trials and units", end="")
         one_tenth_of_trials = int(num_trials / 10)
         for trial_idx, trial in enumerate(self._trials):
-            trial_durations_idxs[trial_idx, :] = np.array([trial.start, trial.end])
 
             if trial_idx % one_tenth_of_trials == 0:
                 print(f" {round(100 * (trial_idx/num_trials), 2)}%", end="")
 
-            trial_spike_times = self.spike_timestamps[trial.start:trial.end]
             trial_start = self.spike_timestamps[trial.start]
             trial_end = self.spike_timestamps[trial.end]
             # Make sure that the length of the trial is at least 700ms
             trial_end = max(trial_end, trial_start + TOTAL_TRIAL_MS/1000)
+
             trial_spike_clusters = self.spike_clusters[trial.start:trial.end]
-
-            # all_units_mask is (units, num_spikes)
-            # Takes the spikes (num_spikes,) and broadcasts it to (units, num_spikes) so each unit has a copy of
-            # which spikes belong to which unit
-            all_units_mask = np.broadcast_to(trial_spike_clusters[:, None].T,
-                                             (len(self.unique_unit_nums), len(trial_spike_clusters)))
-            # Then mask out each
-            all_units_mask = all_units_mask == self.unique_unit_nums[:, None]  # Mask on trial for each unique value
-
-            unmasked_spike_times = np.broadcast_to(trial_spike_times, (len(self.unique_unit_nums), *trial_spike_times.shape))
-            # Mask out the times where the spike time doesn't belong to each spike
-            unique_unit_spike_times = ma.array(unmasked_spike_times, mask=~all_units_mask)
+            trial_spike_times = self.spike_timestamps[trial.start:trial.end]
+            trial_durations_idxs[trial_idx, :] = np.array([trial.start, trial.end])
 
             bins = np.arange(trial_start, trial_end + SPIKE_BIN_MS / 1000, SPIKE_BIN_MS / 1000)
             bins = bins[:NUM_FIRINGRATE_SAMPLES + 1]  # Ensure that there are only 35 bins
             spike_bins = np.arange(trial_start, trial_start + TOTAL_TRIAL_MS/1000 + .001, .001)[:TOTAL_TRIAL_MS + 1]
 
-            for unique_unit_num in range(self._num_prefiltered_units):
-                single_unit_spike_times = unique_unit_spike_times[unique_unit_num]
-                single_unit_spike_times = single_unit_spike_times.compressed()
+            for unique_unit_num in range(self._num_units):
+                single_unit_spike_times = trial_spike_times[np.where(trial_spike_clusters == unique_unit_num)]
                 single_unit_firing_rate = np.histogram(
                     single_unit_spike_times, bins=bins, density=False
                 )[0] / SPIKE_BIN_MS  # Normalize by bin size
-                # Calculate the absolute unit index (not used anymore since all units are included)
-                # absolute_unit_idx = np.where(self.unique_spike_clusters == self.unique_unit_nums[unique_unit_num])[0][0]
+
                 firing_rates[trial_idx, unique_unit_num, :] = single_unit_firing_rate[:]
                 
                 # Get an array of size (700,) with counts for spikes at that ms, essentially single spike times
+                # Histogram is a count of if the unit spiked in that time bin or not eg [0,0,0,0,1,0,1,0,0,..]
                 single_unit_spike_array = np.histogram(single_unit_spike_times, bins=spike_bins, density=False)[0]
                 single_unit_spike_array = np.logical_not(single_unit_spike_array == 0)
                 trial_spike_flags[trial_idx, unique_unit_num, :] = single_unit_spike_array[:]
+                tw = 2
 
         # Mark units to be filtered out units using a threshold
         self._gen_threshold_trials(firing_rates)

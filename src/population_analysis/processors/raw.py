@@ -9,7 +9,7 @@ from simply_nwb import SimpleNWB
 
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
-    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS, METRIC_NAMES
+    NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS, METRIC_NAMES, MIXED_THRESHOLD
 from population_analysis.population.units import UnitPopulation
 
 
@@ -27,6 +27,7 @@ class RawSessionProcessor(object):
 
         # Spike Clusters and Timestamps
         self.spike_clusters = np.array(data["spikes"]["clusters"])
+        pre_filtered_spike_clusters = data["spikes"]["clusters"]
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         # Find the indexes of the spike timestamps that are greater than the first drifting grating motion
         spike_ts_idxs = np.where(self.spike_timestamps >= first_dg)[0]
@@ -37,13 +38,13 @@ class RawSessionProcessor(object):
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
         self.probe_timestamps = self.probe_timestamps[np.where(self.probe_timestamps >= first_dg)[0]]
         self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"])  # Saccades from the left eye TODO other eyes?
-        self.saccade_timestamps = self.saccade_timestamps[np.where(self.saccade_timestamps >= self.grating_timestamps[0][0])[0]]
+        self.saccade_timestamps = self.saccade_timestamps[np.where(self.saccade_timestamps >= first_dg)[0]]
 
         self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
         self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
 
         self.metrics = self._extract_metrics(data)
-
+        aSDFGHJKL # TODO Match units with data from clusters,
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
 
         self.mouse_name = mouse_name
@@ -313,59 +314,53 @@ class RawSessionProcessor(object):
 
     def _demix_trials(self, saccade_idxs: list[list[float]], probe_idxs: list[list[float]]):
         # If a saccade and probe trial occur within +- .5 sec (500ms) then they should be considered a mixed trial
+        # Indexes come in like [[start, event, stop], ..]
+
+        saccade_ts = np.array([self.spike_timestamps[sp[1]] for sp in saccade_idxs])
+
+        paired_passing = []  # [[probe_idx, [list of saccades, ..], ..]
+        probe_failing = []  # [probe_idx, probe_idx, ..]
+
+        for idx, data in enumerate(probe_idxs):
+            _, event_idx, _ = data  # start, event, stop
+            ts = self.spike_timestamps[event_idx]
+            diff = saccade_ts - ts
+            pos_res = diff <= MIXED_THRESHOLD  # Positive results
+            if not np.any(pos_res):
+                probe_failing.append(idx)
+                continue
+            pos_diff = diff[np.where(pos_res)]
+            neg_res = pos_diff >= (-1 * MIXED_THRESHOLD)
+            if np.any(neg_res):
+                neg_res_idxs = np.where(neg_res)[0]  # Where the negative results are relative to the pos arr
+                diff_idxs = np.where(pos_res)[0][neg_res_idxs]  # Where the results are (absolute diff idx)
+                paired_passing.append([idx, diff_idxs])
+            else:
+                probe_failing.append(idx)
+        probe_passing = np.array([r[0] for r in paired_passing])  # Array of indexes of passing probes [int, int, ..]
+        saccade_passing = np.array([r[1][0] for r in paired_passing])  # array of passing saccades, only keeping first
+
+        # [True/False, ...] where there were multiple saccades that were close to the probe
+        multiple = np.array([len(r[1]) for r in paired_passing]) == 2
+        # Invert to filter out multiple, going to just throw out those trials
+        probe_passing_filtered = probe_passing[np.invert(multiple)]
+        saccade_passing_filtered = saccade_passing[np.invert(multiple)]
+
+        # Find the saccade_indexes that are NOT in the passing list, out of all possible indexes, by using set.difference
+        sac_idx_set = set(range(len(saccade_idxs)))
+        sac_filtered_idx_set = set(saccade_passing_filtered)
+        saccade_failing = list(sac_idx_set.difference(sac_filtered_idx_set))
+
+        # probe_passing and saccade_passing are the same length, and are the mixed ones
+        # saccade_failing is the 'pure' saccades
+        # probe_failing is the 'pure' probes
+        saccade_idxs = np.array(saccade_idxs)
+        probe_idxs = np.array(probe_idxs)
+
         trials = {
-            "saccade": [],
-            "probe": [],
-            "mixed": []
+            "saccade": saccade_idxs[saccade_failing],
+            "probe": probe_idxs[probe_failing],
+            "mixed": [{"probe": probe_idxs[probe_passing[i]], "saccade": saccade_idxs[saccade_passing[i]]} for i in range(len(probe_passing))]
         }
-
-        # Find probes that occur within 500ms of a saccade, remove them from the list of possible
-        # saccades/probes after finding them
-        def within_window(list1, list2, label1, label2):  # Find events within eachothers bounds
-            mixed = []
-            l1_to_remove = []
-            l2_to_remove = []
-
-            for f_idx, first_idx in enumerate(list1):
-                f_start = first_idx[0]  # first start
-                f_end = first_idx[2]
-
-                for s_idx, second_idx in enumerate(list2):
-                    if s_idx in l2_to_remove:
-                        continue  # Skip this index as it has already been identified as mixed, but not removed yet
-
-                    s_event = second_idx[1]  # second event time idx
-                    if f_start <= s_event <= f_end:  # Found mixed
-                        mixed.append({
-                            label1: first_idx,
-                            label2: second_idx
-                        })
-                        l2_to_remove.append(s_idx)
-                        l1_to_remove.append(f_idx)
-                        break
-            # Remove the indexes from the lists where the trials are mixed
-            list1 = self._remove_by_idxs(list1, l1_to_remove)
-            list2 = self._remove_by_idxs(list2, l2_to_remove)
-
-            return [list1, list2, mixed]
-
-        # Find probes that occur within 500ms of a saccade
-        print(f"Demixing saccade events within the probe window of -{PRE_TRIAL_MS}ms to +{POST_TRIAL_MS}ms")
-        probe_idxs1, saccade_idxs1, both = within_window(probe_idxs, saccade_idxs, "probe", "saccade")
-
-        # Find saccades that occur within 500ms of a probe (500ms is from _extract_timestamp_idxs)
-        print(f"Demixing probe events within the saccade window of -{PRE_TRIAL_MS}ms to +{POST_TRIAL_MS}ms")
-        saccade_idxs2, probe_idxs2, both2 = within_window(saccade_idxs1, probe_idxs1, "saccade", "probe")
-
-        trials["saccade"] = saccade_idxs2
-        trials["probe"] = probe_idxs2
-        trials["mixed"] = [*both, *both2]
-
-        # dist = [self.spike_timestamps[v["saccade"][1]] - self.spike_timestamps[v["probe"][0]] for v in trials["mixed"]]
-        # plt.suptitle("Saccade time from Probe")
-        # plt.plot(dist)
-        # plt.ylabel("Time from probe (s)")
-        # plt.xlabel("Instance count #")
-        # plt.show()
 
         return trials
