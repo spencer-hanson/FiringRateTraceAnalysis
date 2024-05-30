@@ -18,6 +18,7 @@ class RawSessionProcessor(object):
         data = h5py.File(filename)
 
         self._unit_pop: Optional[UnitPopulation] = None
+        self._convert_unit_indexes = None
 
         # [[start, stop], ..] of each drifting grating. Any time outside these ranges is a non-moving static gray screen and shouldn't be included
         self.grating_timestamps = np.array(list(zip(list(data["stimuli"]["dg"]["grating"]["timestamps"]), list(data["stimuli"]["dg"]["iti"]["timestamps"]))))
@@ -27,12 +28,13 @@ class RawSessionProcessor(object):
 
         # Spike Clusters and Timestamps
         self.spike_clusters = np.array(data["spikes"]["clusters"])
-        pre_filtered_spike_clusters = data["spikes"]["clusters"]
         self.spike_timestamps = np.array(data["spikes"]["timestamps"])
         # Find the indexes of the spike timestamps that are greater than the first drifting grating motion
         spike_ts_idxs = np.where(self.spike_timestamps >= first_dg)[0]
         self.spike_clusters = self.spike_clusters[spike_ts_idxs]
         self.spike_timestamps = self.spike_timestamps[spike_ts_idxs]
+        self.pre_filtered_unique_units = np.unique(np.array(data["spikes"]["clusters"]))
+        self.unique_units = np.unique(self.spike_clusters)
 
         # Probe and Saccade timestamps
         self.probe_timestamps = np.array(data["stimuli"]["dg"]["probe"]["timestamps"])
@@ -40,17 +42,32 @@ class RawSessionProcessor(object):
         self.saccade_timestamps = self._extract_saccade_timestamps(data["saccades"]["predicted"]["left"])  # Saccades from the left eye TODO other eyes?
         self.saccade_timestamps = self.saccade_timestamps[np.where(self.saccade_timestamps >= first_dg)[0]]
 
-        self.probe_zeta = np.array(data["zeta"]["probe"]["left"]["p"])
-        self.saccade_zeta = np.array(data["zeta"]["saccade"]["nasal"]["p"])
+        self.probe_zeta = self._convert_unit_arr(np.array(data["zeta"]["probe"]["left"]["p"]))
+        self.saccade_zeta = self._convert_unit_arr(np.array(data["zeta"]["saccade"]["nasal"]["p"]))
 
         self.metrics = self._extract_metrics(data)
-        aSDFGHJKL # TODO Match units with data from clusters,
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
 
         self.mouse_name = mouse_name
         self.mouse_birthday = MOUSE_DETAILS[mouse_name]["birthday"]
         self.mouse_strain = MOUSE_DETAILS[mouse_name]["strain"]
         self.mouse_sex = MOUSE_DETAILS[mouse_name]["sex"]
+
+    def _convert_unit_arr(self, arr):
+        # Convert a unit array from the original source unit ordering to the filtered version
+        # For example, before filtering by drifting gratings, there are 562 units, but after there are only 552
+        # Need to convert an array meant for the original 562 to the 552 version
+
+        if self._convert_unit_indexes is None:
+            indexes = []
+            for unit_num in self.unique_units:
+                # Index into pre-filtered units of where this unit number is
+                pre_filtered_index = np.where(self.pre_filtered_unique_units == unit_num)[0][0]
+                indexes.append(pre_filtered_index)
+            self._convert_unit_indexes = indexes
+
+        converted_array = arr[self._convert_unit_indexes]
+        return converted_array
 
     def _calc_inter_grating_timestamps(self, grating_timestamps):
         inter = []
@@ -63,7 +80,7 @@ class RawSessionProcessor(object):
     def _extract_metrics(self, hd5data):
         metrics = {}
         for k, v in METRIC_NAMES.items():
-            metrics[v] = np.array(hd5data["metrics"][k])
+            metrics[v] = self._convert_unit_arr(np.array(hd5data["metrics"][k]))
         return metrics
 
     def _extract_saccade_timestamps(self, saccade_data):
@@ -345,11 +362,13 @@ class RawSessionProcessor(object):
         # Invert to filter out multiple, going to just throw out those trials
         probe_passing_filtered = probe_passing[np.invert(multiple)]
         saccade_passing_filtered = saccade_passing[np.invert(multiple)]
+        saccade_multi_filtered = saccade_passing[multiple]
 
         # Find the saccade_indexes that are NOT in the passing list, out of all possible indexes, by using set.difference
         sac_idx_set = set(range(len(saccade_idxs)))
         sac_filtered_idx_set = set(saccade_passing_filtered)
-        saccade_failing = list(sac_idx_set.difference(sac_filtered_idx_set))
+        # Remove passing (mixed) and multi passing (multiple saccades close to a probe)
+        saccade_failing = list(sac_idx_set.difference(sac_filtered_idx_set).difference(saccade_multi_filtered))
 
         # probe_passing and saccade_passing are the same length, and are the mixed ones
         # saccade_failing is the 'pure' saccades
@@ -360,7 +379,7 @@ class RawSessionProcessor(object):
         trials = {
             "saccade": saccade_idxs[saccade_failing],
             "probe": probe_idxs[probe_failing],
-            "mixed": [{"probe": probe_idxs[probe_passing[i]], "saccade": saccade_idxs[saccade_passing[i]]} for i in range(len(probe_passing))]
+            "mixed": [{"probe": probe_idxs[probe_passing_filtered[i]], "saccade": saccade_idxs[saccade_passing_filtered[i]]} for i in range(len(probe_passing_filtered))]
         }
 
         return trials
