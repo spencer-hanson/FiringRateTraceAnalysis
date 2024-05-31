@@ -150,10 +150,11 @@ def avg_raster_plot(nwb_session, name, unit_filter: UnitFilter, trial_idxs, num_
     tw = 2
 
 
-def multi_raster_plot(nwb_session, name_and_trial_idxs, absolute_unit_number, unit_filter: UnitFilter, suppress_passing=False):
+def multi_raster_plot(nwb_session, name_and_trial_idxs, absolute_unit_number, unit_filter: UnitFilter, suppress_passing_filename_suffix=False):
     # Graph a single unit's specific response type and mean response
     # name_and_trial_idxs is a tuple like (name, trial_idxs)
     # passing_func(unit_num) -> bool if unit passes filtering, will change title
+    # suppress_passing_filename_suffix = True will remove the suffix '- passing'
 
     ncols = len(name_and_trial_idxs)
     nrows = 2  # Top row is response of unit, bottom is mean response of all trials
@@ -185,7 +186,7 @@ def multi_raster_plot(nwb_session, name_and_trial_idxs, absolute_unit_number, un
     title_str = f"Unit {absolute_unit_number} Cluster {cluster_number}"
     save_name = f"{passes}_multi_u{absolute_unit_number}_c{cluster_number}.png"
 
-    if not suppress_passing:
+    if not suppress_passing_filename_suffix:
         title_str = title_str + " - {passes}"
     else:
         save_name = f"u{absolute_unit_number}_c{cluster_number}.png"
@@ -236,7 +237,7 @@ def mean_response_custom(averaged_units, name, prefix=""):
     tw = 2
 
 
-def standard_multi_rasters(sess: NWBSessionProcessor, unit_filter: UnitFilter, suppress_passing=False):
+def standard_multi_rasters(sess: NWBSessionProcessor, unit_filter: UnitFilter, suppress_passing_filename_suffix=False):
     # todo only_passing? change loop to idxs, use unit_filter.idxs(), default to all idxs
     total = sess.num_units
     for unum in range(total):
@@ -250,7 +251,7 @@ def standard_multi_rasters(sess: NWBSessionProcessor, unit_filter: UnitFilter, s
             ],
             unit_filter=unit_filter,
             absolute_unit_number=unum,
-            suppress_passing=suppress_passing
+            suppress_passing_filename_suffix=suppress_passing_filename_suffix
         )
 
 
@@ -280,83 +281,31 @@ def standard_all_summary(sess):
 
 def main():
     filename = "2023-05-15_mlati7_output"
-    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    # Create the mean responses, avg raster plot, and individual unit rasters for the standard filter
     # standard_all_summary(sess)
 
-    passing_unit_filter = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter()
-    )
-    avg_raster_plot(sess, "Rp_Extra", passing_unit_filter, sess.probe_trial_idxs, -1)
-
     # This will create a multi-raster of all units and save them in the form u<unit_num>_c<cluster_num>
-    # standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing=True)
+    standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing_filename_suffix=True)
 
-    # standard_multi_raster(
-    #     sess,
-    #     [8],
-    #     functools.partial(sess.passing_multi,[sess.passing_zeta, sess.passing_quality_metrics])
-    # )
-
-    tw = 2
-
-    # sess = NWBSessionProcessor("../scripts", filename, "../graphs")
-
-    # activity_idxs = sess.activity_filtered_units_idxs(sess.probe_zeta_idxs())
-    # activity_idxs = sess.unfiltered_idxs()
-    # activity_idxs = sess.probe_zeta_idxs()
-
-    # probe_units, saccade_units, mixed_units, rp_peri_units = sess.filter_units(activity_idxs)
-
+    # Baseline of timepoints
     # units_baseline_firingrate(mixed_units)
     # units_baseline_firingrate(probe_units)
     # units_baseline_firingrate(saccade_units)
 
+    # Mean responses
     # mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
     # mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
     # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
     # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
 
+    # Average of all units in one raster
     # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
     # avg_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, 1000)
     # avg_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, 1000)
 
-    # matplotlib.use('Agg')   # Suppress matplotlib window opening
-    # for unum in range(len(activity_idxs)):
-
-    # Graph individual units
-    # passing_func = functools.partial(
-    #     sess.passing_multi,
-    #     [
-    #         sess.passing_zeta,  # zeta test
-    #         sess.passing_activity,  # activity test
-    #     ]
-    # )
-
-    # total = len(activity_idxs)
-    # # for unum in range(1):
-    # for unum in range(total):
-    #     print(f"Processing unit num {unum}/{total}")
-    #     multi_raster_plot(
-    #         sess,
-    #         [
-    #             ("Rp_Extra", sess.probe_trial_idxs),
-    #             ("Rs", sess.saccade_trial_idxs),
-    #             ("Rmixed", sess.mixed_trial_idxs)
-    #         ],
-    #         activity_idxs,
-    #         unit_number=unum,
-    #         passing_func=passing_func
-    #     )
-
-    # tot = len(activity_idxs)
-    # for u in range(tot):
-    #     print(f"{u}/{tot}")
-    #     single_raster_plot(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs, u)
-    #     single_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, u)
-    #     single_raster_plot(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs, u)
-    #
     tw = 2
 
 

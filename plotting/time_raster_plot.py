@@ -42,12 +42,11 @@ def main():
         for idx, t in enumerate(uniq_times):
             time_to_idx_mapping[t] = idx
 
-        print("Processing unit numbers..")
+        print("Processing units..")
         for unit_num in uniq_nums:
             if unit_num not in passing_unit_filter.idxs():
                 continue
 
-            print(f"Unit num {unit_num}..")
             idxs = np.where(spike_clusters == unit_num)
             spike_times = spike_timestamps[idxs]
 
@@ -70,7 +69,7 @@ def main():
 
         fig, ax = plt.subplots(dpi=2000)
 
-        print("Rendering raster..")
+        print(f"Rendering raster.. {chunk}/{chunks}")
         ax.eventplot(unit_nums_timestamps, colors="black", lineoffsets=1, linelengths=1)
         for sac_line in saccade_lines:
             ax.vlines(sac_line, 0, len(unit_nums_timestamps), colors="red", linestyles="dashed")

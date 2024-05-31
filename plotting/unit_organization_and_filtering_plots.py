@@ -8,7 +8,7 @@ import matplotlib
 from graph_judge import GraphJudge
 
 from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
-from unit_summary_plot import mean_response, mean_response_custom, avg_raster_plot
+from unit_summary_plots import mean_response, mean_response_custom, avg_raster_plot
 import numpy as np
 
 
@@ -157,7 +157,7 @@ def main():
     # show_progress = False
     dry_run = False
     show_progress = True
-    skip_avgs = False  # Skip plotting the averages
+    skip_avgs = True  # Skip plotting the averages
 
     def oo(sp, tr, ms, mn, bzm, bzs):
         print(f"{sp}sp_{tr}tr_{ms}ms_{mn}mn_{bzm}bzm_{bzs}_bzs")
@@ -176,7 +176,7 @@ def main():
         )
         print("--")
 
-    oo(15, .2, 1, 1, 1, .8)
+    oo(5, .2, 1, 1, .9, .4)
 
     # TODO fix when filter has no results??
     qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs

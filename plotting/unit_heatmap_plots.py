@@ -64,24 +64,25 @@ def main():
     mixed_units = nwb.units["trial_response_firing_rates"].data[:, mixed_trial_idxs]
     rp_peri_units = nwb.units["r_p_peri_trials"].data[:]
 
-    # data_dict = {
-    #     "Rp(Extra)": probe_units,
-    #     "Rs": saccade_units,
-    #     "Rmixed": mixed_units,
-    #     "Rp(Peri)": rp_peri_units
-    # }
-    # plot_responses(data_dict)  # Plot the responses as an image for each unit, averaged over trials, heatmap-style
-
-    split_data = probe_units
-    num_split = int(split_data.shape[1] * .1)
-    data_dict = {}
-    idxs = []
-    for i in range(1, 9):
-        start_idx = (i - 1) * num_split
-        end_idx = i * num_split
-        idxs.append((start_idx, end_idx))
-        data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
+    data_dict = {
+        "Rp(Extra)": probe_units,
+        "Rs": saccade_units,
+        "Rmixed": mixed_units,
+        "Rp(Peri)": rp_peri_units
+    }
     plot_responses(data_dict)  # Plot the responses as an image for each unit, averaged over trials, heatmap-style
+
+    # Uncomment for splitting a single response type into multiple sections
+    # split_data = probe_units
+    # num_split = int(split_data.shape[1] * .1)
+    # data_dict = {}
+    # idxs = []
+    # for i in range(1, 9):
+    #     start_idx = (i - 1) * num_split
+    #     end_idx = i * num_split
+    #     idxs.append((start_idx, end_idx))
+    #     data_dict[f"Rp(Extra){i}"] = split_data[:, start_idx:end_idx]
+    # plot_responses(data_dict)  # Plot the responses as an image for each unit, averaged over trials, heatmap-style
     tw = 2
 
 

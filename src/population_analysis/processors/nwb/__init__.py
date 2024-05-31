@@ -101,15 +101,26 @@ class NWBSessionProcessor(object):
     def activity_threshold_unit_filter(
             self, spike_count_threshold, trial_threshold, missing_threshold, min_missing,
             baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
+        """
+                Folder formatting name params guide:
 
-        # Want units that spike at least <spike_count_threshold> times,
-        # in at least trial_threshold % of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
-        # at most there can be missing_threshold% close to zero trials,
-        # "close to zero trials" is any trial with less than <min_missing> spikes
-        # param baseline_mean_zscore:
-        # The zscore of the mean of the first 8 timepoints across units and trials needs to be strictly less than this
-        # param baseline_time_std_zscore
-        # The zscore of the std of the first 8 timepoints, across units and trials needs to be strictly less than this
+                spike_count_threshold=sp,
+                trial_threshold=tr,
+                missing_threshold=ms,
+                min_missing=mn,
+                baseline_mean_zscore=bzm,
+                baseline_time_std_zscore=bzs
+
+                Want units that spike at least <spike_count_threshold> times,
+                in at least trial_threshold % of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
+                at most there can be missing_threshold% close to zero trials,
+                "close to zero trials" is any trial with less than <min_missing> spikes
+                param baseline_mean_zscore:
+                The zscore of the mean of the first 8 timepoints across trials and of the same units needs to be strictly less than this
+                param baseline_time_std_zscore
+                The zscore of the std of the first 8 timepoints, across trials of the same units needs to be strictly less than this
+        """
+
 
         # baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
         # baseline_std = np.std(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=1))
@@ -119,6 +130,8 @@ class NWBSessionProcessor(object):
         # baseline_time_std_mean = np.mean(_baseline_time_stds)
         # standard deviation of the baseline's trial-averaged standard deviations across units
         # baseline_time_std_std = np.std(_baseline_time_stds)
+
+
 
         def passing_activity(unit_num):
             bool_counts = self.nwb.units["trial_spike_flags"]  # units x trials x 700

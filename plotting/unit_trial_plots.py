@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 
 def ani_unit_trials(sess, trial_idxs, unit_num):
+    # Animated trial firing rates for given units
     plots = {"d": []}
     fig, ax = plt.subplots()
 
