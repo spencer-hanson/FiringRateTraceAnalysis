@@ -18,7 +18,7 @@ TODO add a line where the saccade was, align with time
 """
 
 
-def unfinished_plot_responses(unit_data, responses_to_plot=None):
+def TODO_unfinished_plot_responses(unit_data, responses_to_plot=None):
     # response list should be (n, t) where n can be trials or units
 
     # TODO order by saccade dist?
@@ -168,7 +168,7 @@ def multi_raster_plot(nwb_session, name_and_trial_idxs, absolute_unit_number, un
     count = 0
     for c in range(ncols):
         name, trial_idxs = name_and_trial_idxs[count]
-        spike_idxs = _get_spike_idxs(bool_counts, absolute_unit_number, trial_idxs)  # Don't filter units here
+        spike_idxs = _get_spike_idxs(bool_counts, absolute_unit_number, trial_idxs)
         axs[0, c].eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
         axs[0, c].set_title(f"{name}")
         count = count + 1

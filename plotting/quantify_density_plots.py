@@ -54,9 +54,8 @@ def _create_test_data():
     """
     TODO
     Take each neuron fr as a dimension, use 100ms after the probe and average the fr, concat for all neurons
-    
-    
     """
+
     # plt.plot(range(35), class1[0], color="red")
     # plt.plot(range(35), class2[0], color="green")
     # plt.show()

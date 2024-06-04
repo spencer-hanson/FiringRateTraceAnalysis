@@ -10,7 +10,6 @@ def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-
     filename = "../scripts/output.hdf"
     data = h5py.File(filename)
     # TODO currently ignoring interpolation, dont think need to fix for visual
