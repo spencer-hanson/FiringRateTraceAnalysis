@@ -6,6 +6,8 @@ from pynwb import NWBHDF5IO
 from population_analysis.consts import TOTAL_TRIAL_MS, METRIC_NAMES, METRIC_THRESHOLDS
 from population_analysis.processors.nwb.unit_filter import UnitFilter
 
+from population_analysis.processors.nwb.unit_filters.zeta import ZetaUnitFilter
+
 
 class NWBSessionProcessor(object):
     def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath, filter_mixed=True):
@@ -89,14 +91,7 @@ class NWBSessionProcessor(object):
         return UnitFilter(passing_quality_metrics, self.num_units)
 
     def probe_zeta_unit_filter(self) -> UnitFilter:
-        passing_idxs = np.where(self.nwb.units["probe_zeta_scores"][:] < 0.01)[0]
-        passing_units = np.array(list(range(self.num_units)))[passing_idxs]
-
-        def does_pass(unit_num):
-            p = unit_num in passing_units
-            return p
-
-        return UnitFilter(does_pass, self.num_units)
+        return ZetaUnitFilter(self.nwb.units["probe_zeta_scores"][:])
 
     def activity_threshold_unit_filter(
             self, spike_count_threshold, trial_threshold, missing_threshold, min_missing,

@@ -179,7 +179,7 @@ def main():
     oo(5, .2, 1, 1, .9, .4)
 
     # TODO fix when filter has no results??
-    qm_zeta_activity_params = [8, .5, 1, 1, 2, 1]  # sp, tr, ms, mn, bzm, bzs
+
     # organize_qm(sess, dry_run, show_progress)
     # organize_zeta(sess, dry_run, show_progress)
     # organize_activity(sess, *qm_zeta_activity_params, dry_run=dry_run, show_progress=show_progress)

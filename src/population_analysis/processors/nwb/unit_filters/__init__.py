@@ -6,6 +6,13 @@ class UnitFilter(object):
         self._funcs = [func]  # list of funcs like func(absolute_unit_num) -> bool passes filter
         self._idxs = None
         self.num_units = num_units
+        self.names = [self.get_basename()]
+
+    def get_basename(self):
+        return "empty"
+
+    def get_name(self):
+        return "_".join(self.names)
 
     @staticmethod
     def empty(num_units):
@@ -34,7 +41,9 @@ class UnitFilter(object):
 
     def append(self, unit_filter: 'UnitFilter') -> 'UnitFilter':
         if unit_filter.num_units != self.num_units:
-            raise ValueError(f"Cannot append unit filter, unit nums don't match! self != other {self.num_units} != {unit_filter.num_units}")
+            raise ValueError(
+                f"Cannot append unit filter, unit nums don't match! self != other {self.num_units} != {unit_filter.num_units}")
 
         self._funcs.extend(unit_filter._funcs)
+        self.names.append(unit_filter.get_basename())
         return self
