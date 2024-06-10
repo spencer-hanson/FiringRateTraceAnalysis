@@ -89,8 +89,7 @@ def main():
     saccade_units = nwb.units["trial_response_firing_rates"].data[:, saccade_trial_idxs]
 
     # TODO Do we concat trials? idk doing that currently
-    probe_unit_timepoints = probe_units.swapaxes(0, 2)[0]
-    saccade_unit_timepoints = saccade_units.swapaxes(0, 2)[0]
+    # TODO broken
 
     flattened_probe_units = probe_units.reshape((-1, 35))
     flattened_saccade_units = saccade_units.reshape((-1, 35))

@@ -129,16 +129,16 @@ class RawSessionProcessor(object):
             gratings_later_than = self.grating_timestamps[:, 0] < ts_start
             grating_motion_idx = np.where(gratings_later_than)[0][-1]  # Take the last entry, latest event
             direction = self.motion_directions[grating_motion_idx]
-            return direction
+            return direction, grating_motion_idx
 
         for ky in ["saccade", "probe"]:
             for trial_idx in range(len(trials[ky])):
                 start, _, _ = trials[ky][trial_idx]
-                trials[ky][trial_idx].append(calc_direction(start))
+                trials[ky][trial_idx].extend(calc_direction(start))
 
         for trial in trials["mixed"]:
             start, _, _ = trial["probe"]
-            trial["probe"].append(calc_direction(start))
+            trial["probe"].extend(calc_direction(start))
 
         return trials
 
@@ -221,6 +221,7 @@ class RawSessionProcessor(object):
 
         threshold_fields = {}
         # helper func to pull out individual values for each unit into a kwargs dict for nwb
+
         def get_threshold_fields(unit_idxx: int) -> dict[str, bool]:
             vv = {}
             for k, v in threshold_fields.items():
@@ -259,12 +260,14 @@ class RawSessionProcessor(object):
             behavior_events.add(ts)
 
         # Misc data
-        unit_labels = TimeSeries(name="unit-labels", data=self.unit_pop.unique_unit_nums, unit="num", rate=1.0, description="Unit number from kilosort for each unit")
-        probe_ts = TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe")
-        saccade_ts = TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades")
-        spike_clusters = TimeSeries(name="spike_clusters", data=self.unit_pop.spike_clusters, unit="num", rate=1.0,
-                                    description="Spike cluster assignments for the spike timings")
-        trial_durations_idxs = TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs.astype(int), unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters")
+        behavior_events.add(TimeSeries(name="unit-labels", data=self.unit_pop.unique_unit_nums, unit="num", rate=1.0, description="Unit number from kilosort for each unit"))
+        behavior_events.add(TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe"))
+        behavior_events.add(TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades"))
+        behavior_events.add(TimeSeries(name="spike_clusters", data=self.unit_pop.spike_clusters, unit="num", rate=1.0, description="Spike cluster assignments for the spike timings"))
+
+        behavior_events.add(TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs.astype(int), unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters"))
+        behavior_events.add(TimeSeries(name="trial_motion_directions", data=self.unit_pop.get_trial_motion_directions(), unit="motion", rate=1.0, description="Motion direction of the drifting grating"))
+        behavior_events.add(TimeSeries(name="trial_block_idx", data=self.unit_pop.get_trial_block_idx(), unit="idxs", rate=1.0, description="Which block of drifting grating did the trial occur in"))
 
         trial_types = np.array(self.unit_pop.get_trial_labels())
         unique_trial_types = np.unique(trial_types)
@@ -272,11 +275,6 @@ class RawSessionProcessor(object):
             behavior_events.add(TimeSeries(name=f"unit-trial-{trial_type}",
                                            data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx",
                                            description=f"Indices into all trials that are {trial_type} trials. Use nwbfile.units['trial_firing_rates'][unit_number][<idx goes here>] to get the firing rate of a unit in a given trial using these indicies"))
-        behavior_events.add(unit_labels)
-        behavior_events.add(probe_ts)
-        behavior_events.add(saccade_ts)
-        behavior_events.add(spike_clusters)
-        behavior_events.add(trial_durations_idxs)
 
         # Want to specify when the saccade happened for the mixed trials (probe is always centered at 10ms)
 

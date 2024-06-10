@@ -17,11 +17,12 @@ Plots relating to distance between response types, eg Rs, Rp(Peri), etc..
 """
 
 
-def _calc_dists(data_dict, shuffled=False):
+def calc_dists(data_dict, shuffled=False):
     # Calculate the mean euclidian distance between datasets, pairwise
     # if shuffled=True, then randomize the points between the two datasets before calculating mean
     # data_dict is {"Rp(Extra)": <rp data>, ..}
     # returns like {"Rp(Extra)-Rp(Peri)": [dist_t_0, dist_t_1, ..], ..}
+    # rp_data = arr(units, trials, t) You need the same number of units and time
     quan = EuclidianQuantification("Pairwise")
     # quan = SpectralQuantification("Pairwise")
 
@@ -37,10 +38,10 @@ def _calc_dists(data_dict, shuffled=False):
 
         for t in range(NUM_FIRINGRATE_SAMPLES):
             dist_data.append(quan.calculate(
-                data[:, :, t].swapaxes(0, 1),
-                data1[:, :, t].swapaxes(0, 1)
+                data[:, :, t],
+                data1[:, :, t]
             ))
-        quan.ani()  # For euclid dist testing
+        # quan.ani()  # For euclid dist testing
 
         return dist_name, dist_data
     result = _pairwise_iter(data_dict, dist_func)
@@ -62,8 +63,8 @@ def _pairwise_iter(data_dict, func):
 
 def pairwise_mean_distances(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
-    dists = _calc_dists(data_dict)
-    shuffled_dists = [_calc_dists(data_dict, shuffled=True) for _ in range(10)]
+    dists = calc_dists(data_dict)
+    shuffled_dists = [calc_dists(data_dict, shuffled=True) for _ in range(10)]
     # dist data - dists[0][1]
     # [s[0][1] for s in shuffled_dists]
     for idx in range(len(dists)):
@@ -80,13 +81,14 @@ def pairwise_mean_distances(data_dict):
 
 def pairwise_mean_distances_single_plot(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
-    dists = _calc_dists(data_dict)
+    dists = calc_dists(data_dict)
 
     for idx in range(len(dists)):
         pair_name, vals = dists[idx]
         plt.plot(range(NUM_FIRINGRATE_SAMPLES), vals)
 
     plt.show()
+    tw = 2
 
 
 def pairwise_scaled_mean_distances(data_dict):
@@ -170,10 +172,8 @@ def mean_response(data_dict):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output_changed"
+    filename = "2023-05-15_mlati7_output"
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
-
-    probe_units, saccade_units, mixed_units, rp_peri_units = sess.zeta_units()
 
     # shuffle = True
     # split_data = probe_units
@@ -193,6 +193,9 @@ def main():
     #     end_idx = i * num_split
     #     idxs.append((start_idx, end_idx))
     #     data_dict[f"Split{i}"] = split_data[:, start_idx:end_idx]
+
+    probe_units = sess.probe_units()
+    saccade_units = sess.saccade_units()
 
     data_dict = {
         "Rp(Extra)": probe_units[:, :500],  # (units, trials, t)

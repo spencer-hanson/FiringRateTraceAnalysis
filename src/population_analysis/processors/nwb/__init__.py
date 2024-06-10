@@ -4,7 +4,7 @@ import numpy as np
 from pynwb import NWBHDF5IO
 
 from population_analysis.consts import TOTAL_TRIAL_MS, METRIC_NAMES, METRIC_THRESHOLDS
-from population_analysis.processors.nwb.unit_filter import UnitFilter
+from population_analysis.processors.nwb.unit_filters import UnitFilter
 
 from population_analysis.processors.nwb.unit_filters.custom import CustomUnitFilter
 from population_analysis.processors.nwb.unit_filters.qm import QualityMetricsUnitFilter
@@ -51,6 +51,12 @@ class NWBSessionProcessor(object):
     def spikes(self):
         return self.nwb.units["trial_spike_flags"]  # (units, trials, 700)
 
+    def trial_motion_directions(self):
+        return self.nwb.processing["behavior"]["trial_motion_directions"].data[:]
+
+    def trial_block_idxs(self):
+        return self.nwb.processing["behavior"]["trial_block_idx"].data[:]
+
     def trial_durations(self):
         return self.nwb.processing["behavior"]["trial_durations_idxs"].data[:]  # (trials, 2)  [start, stop]
 
@@ -76,4 +82,4 @@ class NWBSessionProcessor(object):
         return ZetaUnitFilter(self.nwb.units["probe_zeta_scores"][:])
 
     def activity_threshold_unit_filter(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
-        return CustomUnitFilter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, self.units["trial_spike_flags"], self.units(), self.probe_trial_idxs, self.num_units)
+        return CustomUnitFilter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, self.nwb.units["trial_spike_flags"], self.units(), self.probe_trial_idxs, self.num_units)

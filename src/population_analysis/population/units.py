@@ -4,18 +4,19 @@ from population_analysis.consts import TOTAL_TRIAL_MS, SPIKE_BIN_MS, NUM_FIRINGR
 
 
 class Trial(object):
-    def __init__(self, start, end, trial_label, motion_direction):
+    def __init__(self, start, end, trial_label, motion_direction, block_num):
         self.start = start
         self.end = end
         self.trial_label = trial_label
         self.motion_direction = motion_direction  # -1 or 1 (I don't remember which is which rn)
+        self.block_num = block_num  # Which block this trial resides in (should be 0-60)
         self.events = {}
 
     def __str__(self):
         return f"Trial({self.trial_label}, start={self.start}, end={self.end}, events_count={len(list(self.events.items()))}, dir={self.motion_direction})"
 
     def copy(self):
-        tr = Trial(self.start, self.end, self.trial_label, self.motion_direction)
+        tr = Trial(self.start, self.end, self.trial_label, self.motion_direction, self.block_num)
         tr.events = self.events.copy()
         return tr
 
@@ -23,24 +24,24 @@ class Trial(object):
         self.events[label] = timestamp
 
     @staticmethod
-    def create_saccade_trial(start, event, end, motion_direction):
-        t = Trial(start, end, "saccade", motion_direction)
+    def create_saccade_trial(start, event, end, motion_direction, block_num):
+        t = Trial(start, end, "saccade", motion_direction, block_num)
         t.add_event(event, "saccade_event")
         return t
 
     @staticmethod
-    def create_probe_trial(start, event, end, motion_direction):
-        t = Trial(start, end, "probe", motion_direction)
+    def create_probe_trial(start, event, end, motion_direction, block_num):
+        t = Trial(start, end, "probe", motion_direction, block_num)
         t.add_event(event, "probe_event")
         return t
 
     @staticmethod
-    def create_mixed_trial(saccade_start, saccade_event, saccade_end, probe_start, probe_event, probe_end, motion_direction):
+    def create_mixed_trial(saccade_start, saccade_event, saccade_end, probe_start, probe_event, probe_end, motion_direction, block_num):
         # Disabled since trial is centered on probe
         # start = saccade_start if saccade_start <= probe_start else probe_start
         # end = saccade_end if saccade_end >= probe_end else probe_end
 
-        t = Trial(probe_start, probe_end, "mixed", motion_direction)  # Note the trial is centered on the probe regardless of the saccade timing
+        t = Trial(probe_start, probe_end, "mixed", motion_direction, block_num)  # Note the trial is centered on the probe regardless of the saccade timing
         t.add_event(saccade_start, "saccade_start")
         t.add_event(saccade_event, "saccade_event")
         t.add_event(saccade_end, "saccade_end")
@@ -79,11 +80,11 @@ class UnitPopulation(object):
     def add_saccade_trials(self, saccade_idx_list: list[list[int]]):
         # Format [[start, event, end], ..] Where start is the index -200ms before the trial, event is the timestamps at
         # and end is the idx 500ms after the trial
-        self._trials.extend([Trial.create_saccade_trial(s[0], s[1], s[2], s[3]) for s in saccade_idx_list])
+        self._trials.extend([Trial.create_saccade_trial(*s) for s in saccade_idx_list])
 
     def add_probe_trials(self, probe_idx_list: list[list[int]]):
         # Format [[start, event, end], ..]
-        self._trials.extend([Trial.create_probe_trial(p[0], p[1], p[2], p[3]) for p in probe_idx_list])
+        self._trials.extend([Trial.create_probe_trial(*p) for p in probe_idx_list])
 
     def add_mixed_trials(self, mixed_list: list[dict[str, list[int]]]):
         # Mixed in format [{"saccade": [start, event, end], "probe": ..}, ..]
@@ -239,3 +240,8 @@ class UnitPopulation(object):
     def get_trial_labels(self):
         return [tr.trial_label for tr in self._trials]
 
+    def get_trial_motion_directions(self):
+        return [tr.motion_direction for tr in self._trials]
+
+    def get_trial_block_idx(self):
+        return [tr.block_num for tr in self._trials]

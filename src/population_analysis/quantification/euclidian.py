@@ -109,8 +109,8 @@ class EuclidianQuantification(Quantification):
         tw = 2
 
     def calculate(self, class_1_data, class_2_data):
-        mean_1 = np.average(class_1_data, axis=0)
-        mean_2 = np.average(class_2_data, axis=0)
+        mean_1 = np.average(class_1_data, axis=1)  # expects (units, trials)
+        mean_2 = np.average(class_2_data, axis=1)  # Averaging over trials
 
         from scipy.spatial import distance
         # dst = distance.euclidean(a, b)

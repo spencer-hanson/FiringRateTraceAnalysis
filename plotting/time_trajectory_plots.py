@@ -29,12 +29,13 @@ Visualized PCA trajectories for different response types
 #         points.append([x1+dx*samp, y1+dy*samp])
 #     return np.array(points)
 
+
 def quantify_timepoints(probe_units, saccade_units):
     from plotting.quantify_density_plots import graph_dists
     # for timepoint in range(35):
     timepoint = 0
-    probe_timepoints = probe_units[:, :, timepoint].swapaxes(0, 1)
-    saccade_timepoints = saccade_units[:, :, timepoint].swapaxes(0, 1)
+    probe_timepoints = probe_units[:, :, timepoint]
+    saccade_timepoints = saccade_units[:, :, timepoint]
 
     quan_name = "timepoints" + str(timepoint)
     quan = QuanDistribution(probe_timepoints, saccade_timepoints, EuclidianQuantification(quan_name))
