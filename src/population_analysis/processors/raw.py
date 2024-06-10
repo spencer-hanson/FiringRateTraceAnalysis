@@ -23,7 +23,7 @@ class RawSessionProcessor(object):
         # [[start, stop], ..] of each drifting grating. Any time outside these ranges is a non-moving static gray screen and shouldn't be included
         self.grating_timestamps = np.array(list(zip(list(data["stimuli"]["dg"]["grating"]["timestamps"]), list(data["stimuli"]["dg"]["iti"]["timestamps"]))))
         self.inter_grating_timestamps = self._calc_inter_grating_timestamps(self.grating_timestamps)
-
+        self.motion_directions = np.array(data["stimuli"]["dg"]["grating"]["motion"])
         first_dg = self.grating_timestamps[0][0]
 
         # Spike Clusters and Timestamps
@@ -120,6 +120,28 @@ class RawSessionProcessor(object):
         print(f"Filtered out {len(timestamp_event_idxs) - len(passing_trials)} trials that intersect with static stimuli")
         return passing_trials
 
+    def _add_motion_direction(self, trials):
+        # trials comes in as a dict like {'saccade': <data>, "probe": <data>, "mixed": {"saccade": <data>, "probe":<data>}
+        # where <data> = [[start, event, stop],..] in idxs
+
+        def calc_direction(start_idx):
+            ts_start = self.spike_timestamps[start_idx]
+            gratings_later_than = self.grating_timestamps[:, 0] < ts_start
+            grating_motion_idx = np.where(gratings_later_than)[0][-1]  # Take the last entry, latest event
+            direction = self.motion_directions[grating_motion_idx]
+            return direction
+
+        for ky in ["saccade", "probe"]:
+            for trial_idx in range(len(trials[ky])):
+                start, _, _ = trials[ky][trial_idx]
+                trials[ky][trial_idx].append(calc_direction(start))
+
+        for trial in trials["mixed"]:
+            start, _, _ = trial["probe"]
+            trial["probe"].append(calc_direction(start))
+
+        return trials
+
     def calc_unit_population_stats(self):
         unit_pop = UnitPopulation(self.spike_timestamps, self.spike_clusters, self.p_value_truth)
 
@@ -132,6 +154,8 @@ class RawSessionProcessor(object):
         probe_spike_range_idxs = self._filter_grating_windows(probe_spike_range_idxs)
 
         trials = self._demix_trials(saccade_spike_range_idxs, probe_spike_range_idxs)
+
+        trials = self._add_motion_direction(trials)  # TODO also include which section matched trials
 
         unit_pop.add_probe_trials(trials["probe"])
         unit_pop.add_saccade_trials(trials["saccade"])
@@ -382,4 +406,21 @@ class RawSessionProcessor(object):
             "mixed": [{"probe": probe_idxs[probe_passing_filtered[i]], "saccade": saccade_idxs[saccade_passing_filtered[i]]} for i in range(len(probe_passing_filtered))]
         }
 
+        # Convert the trial entries back into lists instead of numpy arrays
+        for typ in ["saccade", "probe"]:
+            val = trials[typ]
+            newdata = []
+            for trial in val:
+                newdata.append(list(trial))
+            trials[typ] = newdata
+
+        # Convert the mixed as well
+        newmixed = []
+        for m in trials["mixed"]:
+            newmixed.append({
+                "probe": list(m["probe"]),
+                "saccade": list(m["saccade"])
+            })
+
+        trials["mixed"] = newmixed
         return trials
