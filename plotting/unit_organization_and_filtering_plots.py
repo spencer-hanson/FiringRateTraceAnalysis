@@ -155,7 +155,7 @@ def main():
     # organize_qm_zeta(sess)
     # dry_run = True
     # show_progress = False
-    dry_run = False
+    dry_run = False  # If true will not actually copy files/make directories/graphs
     show_progress = True
     skip_avgs = True  # Skip plotting the averages
 
