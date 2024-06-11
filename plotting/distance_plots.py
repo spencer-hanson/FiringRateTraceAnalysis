@@ -81,7 +81,7 @@ def pairwise_mean_distances(data_dict):
 
 def pairwise_mean_distances_single_plot(data_dict):
     # Distance between the means of each data type (probe, saccade, mixed, etc..) over time
-    dists = calc_dists(data_dict)
+    dists = calc_dists(data_dict, shuffled=True)
 
     for idx in range(len(dists)):
         pair_name, vals = dists[idx]
@@ -193,13 +193,21 @@ def main():
     #     end_idx = i * num_split
     #     idxs.append((start_idx, end_idx))
     #     data_dict[f"Split{i}"] = split_data[:, start_idx:end_idx]
+    filt = sess.qm_unit_filter().append(
+        sess.probe_zeta_unit_filter().append(
+            sess.activity_threshold_unit_filter(5, .2, 1, 1, .9, .4)
+        )
+    )
 
-    probe_units = sess.probe_units()
-    saccade_units = sess.saccade_units()
+    r1 = sess.probe_units()[filt.idxs()]
+    r2 = sess.rp_peri_units()[filt.idxs()]
 
+    rp_extra_len = int(r1.shape[1]/2)
     data_dict = {
-        "Rp(Extra)": probe_units[:, :500],  # (units, trials, t)
-        "Rp(Extra)2": probe_units[:, 500:1000, :],  # (units, trials, t)
+        # "Rp(Extra)": r1,  # (units, trials, t)
+        # "Rp(Peri)": r2,  # (units, trials, t)
+        "Rp(Extra)1": r1[:, :rp_extra_len-1, :],
+        "Rp(Extra)2": r1[:, rp_extra_len:, :]
         # "Rs": saccade_units,
         # "Rmixed": mixed_units,
         # "Rp(Peri)": rp_peri_units
