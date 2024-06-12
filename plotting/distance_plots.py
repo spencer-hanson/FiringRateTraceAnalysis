@@ -193,9 +193,9 @@ def main():
     #     end_idx = i * num_split
     #     idxs.append((start_idx, end_idx))
     #     data_dict[f"Split{i}"] = split_data[:, start_idx:end_idx]
-    filt = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter().append(
-            sess.activity_threshold_unit_filter(5, .2, 1, 1, .9, .4)
+    filt = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta().append(
+            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
         )
     )
 

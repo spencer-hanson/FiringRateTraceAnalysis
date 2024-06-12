@@ -3,12 +3,14 @@ import os
 import numpy as np
 from pynwb import NWBHDF5IO
 
-from population_analysis.consts import TOTAL_TRIAL_MS, METRIC_NAMES, METRIC_THRESHOLDS
-from population_analysis.processors.nwb.unit_filters import UnitFilter
+from population_analysis.consts import METRIC_NAMES
+from population_analysis.processors.nwb.filters.trial_filters import TrialFilter
+from population_analysis.processors.nwb.filters.trial_filters.motiondir import MotionDirectionTrialFilter
+from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 
-from population_analysis.processors.nwb.unit_filters.custom import CustomUnitFilter
-from population_analysis.processors.nwb.unit_filters.qm import QualityMetricsUnitFilter
-from population_analysis.processors.nwb.unit_filters.zeta import ZetaUnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import CustomUnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import QualityMetricsUnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import ZetaUnitFilter
 
 
 class NWBSessionProcessor(object):
@@ -33,6 +35,7 @@ class NWBSessionProcessor(object):
         if filter_mixed:
             mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= 0.02  # only want mixed trials 20 ms within probe
             self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
+            self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]
 
         self.nwb = nwb
         tw = 2
@@ -70,16 +73,20 @@ class NWBSessionProcessor(object):
         return self.nwb.units["trial_response_firing_rates"].data[:, self.mixed_trial_idxs]
 
     def rp_peri_units(self):
-        return self.nwb.units["r_p_peri_trials"].data[:]  # units x trials x t
+        return self.nwb.units["r_p_peri_trials"].data[:][:, self.mixed_filtered_idxs]  # units x trials x t
 
     def units(self):
         return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
 
-    def qm_unit_filter(self) -> UnitFilter:
+    def unit_filter_qm(self) -> UnitFilter:
         return QualityMetricsUnitFilter(self.quality_metrics, self.num_units)
     
-    def probe_zeta_unit_filter(self) -> UnitFilter:
+    def unit_filter_probe_zeta(self) -> UnitFilter:
         return ZetaUnitFilter(self.nwb.units["probe_zeta_scores"][:])
 
-    def activity_threshold_unit_filter(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
+    def unit_filter_custom(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
         return CustomUnitFilter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, self.nwb.units["trial_spike_flags"], self.units(), self.probe_trial_idxs, self.num_units)
+
+    def trial_motion_filter(self, motion_direction) -> TrialFilter:
+        return MotionDirectionTrialFilter(motion_direction, self.trial_motion_directions())
+

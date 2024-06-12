@@ -258,8 +258,8 @@ def standard_multi_rasters(sess: NWBSessionProcessor, unit_filter: UnitFilter, s
 def standard_all_summary(sess):
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    passing_unit_filter = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter()
+    passing_unit_filter = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta()
     )
 
     print("Plotting mean responses..")

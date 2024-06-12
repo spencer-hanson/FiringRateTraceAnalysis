@@ -66,7 +66,7 @@ def _organize(source_folderpath, dest_foldername, unit_filter: UnitFilter, dry_r
 
 
 def organize_qm(sess, dry_run=False, show_progress=True):
-    filt = sess.qm_unit_filter()
+    filt = sess.unit_filter_qm()
     dst = "qm"
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
     if not dry_run:
@@ -74,7 +74,7 @@ def organize_qm(sess, dry_run=False, show_progress=True):
 
 
 def organize_zeta(sess, dry_run=False, show_progress=True):
-    filt = sess.probe_zeta_unit_filter()
+    filt = sess.unit_filter_probe_zeta()
     dst = "zeta"
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
     if not dry_run:
@@ -82,7 +82,7 @@ def organize_zeta(sess, dry_run=False, show_progress=True):
 
 
 def organize_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, dry_run=False, show_progress=True):
-    filt = sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
+    filt = sess.unit_filter_custom(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
     dst = f"activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_mean_zscore}_bzm_{baseline_time_std_zscore}bzs"
     _organize("src", dst, filt, dry_run=dry_run, show_progress=show_progress)
     if not dry_run:
@@ -90,8 +90,8 @@ def organize_activity(sess, spike_count_threshold, trial_threshold, missing_thre
 
 
 def organize_qm_zeta(sess, dry_run=False, show_progress=True):
-    passing_unit_filter = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter()
+    passing_unit_filter = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta()
     )
     dst = "qm_zeta"
     _organize("src", dst, passing_unit_filter, dry_run=dry_run, show_progress=show_progress)
@@ -101,9 +101,9 @@ def organize_qm_zeta(sess, dry_run=False, show_progress=True):
 
 def organize_qm_zeta_activity(sess, spike_count_threshold, trial_threshold, missing_threshold, min_missing,
                               baseline_mean_zscore, baseline_time_std_zscore, dry_run=False, show_progress=True, skip_avgs=False):
-    filt = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter()).append(
-        sess.activity_threshold_unit_filter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
+    filt = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta()).append(
+        sess.unit_filter_custom(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore)
     )
     dst = f"qm_zeta_activity_{spike_count_threshold}sp_{trial_threshold}tr_{missing_threshold}ms_{min_missing}mn_{baseline_mean_zscore}bzm_{baseline_time_std_zscore}bzs"
 

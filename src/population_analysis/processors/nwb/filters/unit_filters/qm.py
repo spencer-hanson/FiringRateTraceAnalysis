@@ -1,7 +1,5 @@
-import numpy as np
-
 from population_analysis.consts import METRIC_THRESHOLDS
-from population_analysis.processors.nwb.unit_filters import UnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 
 
 class QualityMetricsUnitFilter(UnitFilter):

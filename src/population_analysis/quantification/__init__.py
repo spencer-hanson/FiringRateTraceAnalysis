@@ -12,7 +12,8 @@ class Quantification(object):
     def __init__(self, name):
         self.name = name
 
-    def calculate(self, class_1_data, class_2_data):
+    def calculate(self, class_1_data, class_2_data) -> float:
+        # expects shape to be (units, trials) pass in each time sep
         raise NotImplemented
 
     def get_name(self):
@@ -40,6 +41,10 @@ class SlowQuantification(Quantification):
 
 
 class QuanDistribution(object):
+    """
+    Calculate the distribution of a given quantification, samples 10,000 times and creates a prob dist
+    """
+
     NUM_SAMPLES = 10000
 
     def __init__(self, class_1_data, class_2_data, quan: Quantification):

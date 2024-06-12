@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class UnitFilter(object):
+class Filter(object):
     def __init__(self, func, num_units):
         self._funcs = [func]  # list of funcs like func(absolute_unit_num) -> bool passes filter
         self._idxs = None
@@ -11,15 +11,22 @@ class UnitFilter(object):
     def get_basename(self):
         return "empty"
 
+    def copy(self):
+        f = Filter(self._funcs[0], self.num_units)
+        for func in self._funcs[1:]:
+            f._funcs.append(func)
+        f.names = self.names
+        return f
+
     def get_name(self):
         return "_".join(self.names)
 
     @staticmethod
     def empty(num_units):
-        return UnitFilter(lambda v: True, num_units)
+        return Filter(lambda v: True, num_units)
 
     def idxs(self):
-        # return a list of indexes into the full list of units that pass the filter
+        # return a list of indexes into the full list that pass the filter
         if self._idxs is None:
             passing = []
             for num in range(self.num_units):
@@ -39,11 +46,11 @@ class UnitFilter(object):
                 return False
         return True
 
-    def append(self, unit_filter: 'UnitFilter') -> 'UnitFilter':
-        if unit_filter.num_units != self.num_units:
+    def append(self, filt: 'Filter') -> 'Filter':
+        if filt.num_units != self.num_units:
             raise ValueError(
-                f"Cannot append unit filter, unit nums don't match! self != other {self.num_units} != {unit_filter.num_units}")
+                f"Cannot append filter, unit nums don't match! self != other {self.num_units} != {filt.num_units}")
 
-        self._funcs.extend(unit_filter._funcs)
-        self.names.append(unit_filter.get_basename())
+        self._funcs.extend(filt._funcs)
+        self.names.append(filt.get_basename())
         return self

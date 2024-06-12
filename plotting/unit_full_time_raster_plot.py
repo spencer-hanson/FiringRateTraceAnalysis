@@ -13,8 +13,8 @@ def main():
     filename = "../scripts/output.hdf"
     data = h5py.File(filename)
     # TODO currently ignoring interpolation, dont think need to fix for visual
-    passing_unit_filter = sess.qm_unit_filter().append(
-        sess.probe_zeta_unit_filter()
+    passing_unit_filter = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta()
     )
 
     probe_timestamps = sess.nwb.processing["behavior"]["probes"].data[:]

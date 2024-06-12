@@ -1,6 +1,6 @@
 import numpy as np
 
-from population_analysis.processors.nwb.unit_filters import UnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 
 
 class ZetaUnitFilter(UnitFilter):
