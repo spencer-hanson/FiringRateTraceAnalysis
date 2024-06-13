@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from population_analysis.processors.nwb import NWBSessionProcessor
-from population_analysis.processors.nwb.unit_filter import UnitFilter
+from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 
 """
 NOT FINISHED
@@ -281,14 +281,21 @@ def standard_all_summary(sess):
 
 def main():
     filename = "2023-05-15_mlati7_output"
-    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+
+    filt = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta().append(
+            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+        )
+    )
+
     # Create the mean responses, avg raster plot, and individual unit rasters for the standard filter
     # standard_all_summary(sess)
 
     # This will create a multi-raster of all units and save them in the form u<unit_num>_c<cluster_num>
-    standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing_filename_suffix=True)
+    # standard_multi_rasters(sess, UnitFilter.empty(sess.num_units), suppress_passing_filename_suffix=True)
 
     # Baseline of timepoints
     # units_baseline_firingrate(mixed_units)
@@ -297,9 +304,10 @@ def main():
 
     # Mean responses
     # mean_response(sess, "Rs", activity_idxs, sess.saccade_trial_idxs)
-    # mean_response(sess, "Rp_Extra", activity_idxs, sess.probe_trial_idxs)
+    # (nwb_session: NWBSessionProcessor, name, unit_filter: UnitFilter, trial_idxs, prefix="")
+    mean_response(sess, "Rp_Extra", filt, sess.probe_trial_idxs)
     # mean_response(sess, "Rmixed", activity_idxs, sess.mixed_trial_idxs)
-    # mean_response_custom(np.mean(sess.rp_peri_units()[activity_idxs, :, :], axis=1), "Rp_Peri")
+    mean_response_custom(np.mean(sess.rp_peri_units()[filt.idxs(), :, :], axis=1), "Rp_Peri")
 
     # Average of all units in one raster
     # avg_raster_plot(sess, "Rs", activity_idxs, sess.saccade_trial_idxs, 1000)
