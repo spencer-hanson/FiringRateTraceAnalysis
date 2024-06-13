@@ -35,7 +35,7 @@ def main():
 
     for col_idx, motdir in enumerate([-1, 1]):
         rp_e_filter = sess.trial_motion_filter(motdir).append(BasicTrialFilter(sess.probe_trial_idxs, rp_extra.shape[1]))
-        rp_p_filter = RpPeriTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs, rp_peri)
+        rp_p_filter = RpPeriTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs)
 
         rpe = rp_extra[:, rp_e_filter.idxs()]
         rpp = rp_peri[:, rp_p_filter.idxs()]

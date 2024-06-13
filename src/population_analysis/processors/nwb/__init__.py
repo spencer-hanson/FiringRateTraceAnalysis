@@ -32,10 +32,13 @@ class NWBSessionProcessor(object):
 
         # Filter out mixed trials that saccades are more than 20ms away from the probe
         self.mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
+
         if filter_mixed:
             mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= 0.02  # only want mixed trials 20 ms within probe
             self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
             self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]
+        else:
+            self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
 
         self.nwb = nwb
         tw = 2
