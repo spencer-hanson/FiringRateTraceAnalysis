@@ -259,7 +259,9 @@ def standard_all_summary(sess):
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     passing_unit_filter = sess.unit_filter_qm().append(
-        sess.unit_filter_probe_zeta()
+        sess.unit_filter_probe_zeta().append(
+            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+        )
     )
 
     print("Plotting mean responses..")
@@ -290,6 +292,8 @@ def main():
             sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
         )
     )
+
+    # standard_multi_rasters(sess, passing_unit_filter)
 
     # Create the mean responses, avg raster plot, and individual unit rasters for the standard filter
     # standard_all_summary(sess)
