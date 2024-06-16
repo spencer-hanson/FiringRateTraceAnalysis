@@ -116,6 +116,8 @@ class UnitNormalizer(object):
                 # plt.show()
                 tw = 2
         print("")
+        # normalized_arr is (trials, units, t) and is actually a zscored STANDARDIZED NOT NORMALIZED
+        # need to divide by highest amplitude within the response to normalize see clustering.py:L244 in josh's proj
         tw = 2
         pass
 
