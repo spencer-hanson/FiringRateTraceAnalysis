@@ -7,7 +7,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSessionProcessor
 from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
 from population_analysis.processors.nwb.filters.trial_filters.probe_offset import ProbeOffsetTrialFilter
-from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RpPeriTrialFilter
+from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 
 
@@ -35,7 +35,7 @@ def main():
     for mot_idx, motdir in enumerate([-1, 1]):
         dist_from_time = {x: [] for x in range(NUM_FIRINGRATE_SAMPLES)}  # dict like {t: [bin1, bin2, ..], ..} where bin1 is the distance from rp_peri to rp_extra in bin1, and t is the time to take the population at
         for bin_num in range(len(bins)):
-            rp_peri_filt = RpPeriTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs).append(
+            rp_peri_filt = RelativeTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs).append(
                 ProbeOffsetTrialFilter(sess.mixed_rel_timestamps, bins, bin_num + 1)  # bins start at 1
             )
             rp_extra_filt = sess.trial_motion_filter(motdir).append(  # Filter by mot dir

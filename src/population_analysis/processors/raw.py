@@ -264,7 +264,8 @@ class RawSessionProcessor(object):
         behavior_events.add(TimeSeries(name="probes", data=self.probe_timestamps, unit="s", rate=0.001, description="Timestamps of the probe"))
         behavior_events.add(TimeSeries(name="saccades", data=self.saccade_timestamps, unit="s", rate=0.001, description="Timestamps of the saccades"))
         behavior_events.add(TimeSeries(name="spike_clusters", data=self.unit_pop.spike_clusters, unit="num", rate=1.0, description="Spike cluster assignments for the spike timings"))
-
+        behavior_events.add(TimeSeries(name="spike_timestamps", data=self.unit_pop.spike_timestamps, unit="num", rate=1.0, description="Timestamps of each spike corresponding to the spike clusters"))
+        behavior_events.add(TimeSeries(name="trial_event_idxs", data=self.unit_pop.get_trial_event_time_idxs(), unit="idx", rate=1.0, description="Index of each trial into the spike_timestamps"))
         behavior_events.add(TimeSeries(name="trial_durations_idxs", data=self.unit_pop.trial_durations_idxs.astype(int), unit="idxs", rate=1.0, description="Indexes of the start, stop for each trial, in terms of index into spike_times and spike_clusters"))
         behavior_events.add(TimeSeries(name="trial_motion_directions", data=self.unit_pop.get_trial_motion_directions(), unit="motion", rate=1.0, description="Motion direction of the drifting grating"))
         behavior_events.add(TimeSeries(name="trial_block_idx", data=self.unit_pop.get_trial_block_idx(), unit="idxs", rate=1.0, description="Which block of drifting grating did the trial occur in"))

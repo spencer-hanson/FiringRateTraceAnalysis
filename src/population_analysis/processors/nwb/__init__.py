@@ -54,6 +54,11 @@ class NWBSessionProcessor(object):
         num_units = self.nwb.units["trial_spike_flags"].shape[0]  # units x trials x 700
         return num_units
 
+    @property
+    def num_trials(self):
+        num_trials = self.nwb.units["trial_spike_flags"].shape[1]
+        return num_trials
+
     def spikes(self):
         return self.nwb.units["trial_spike_flags"]  # (units, trials, 700)
 

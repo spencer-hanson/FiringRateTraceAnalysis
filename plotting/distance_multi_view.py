@@ -3,7 +3,7 @@ from population_analysis.processors.nwb import NWBSessionProcessor
 import matplotlib.pyplot as plt
 
 from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
-from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RpPeriTrialFilter
+from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification import Quantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.quantification.magnitude_difference import MagDiffQuantification
@@ -35,7 +35,7 @@ def main():
 
     for col_idx, motdir in enumerate([-1, 1]):
         rp_e_filter = sess.trial_motion_filter(motdir).append(BasicTrialFilter(sess.probe_trial_idxs, rp_extra.shape[1]))
-        rp_p_filter = RpPeriTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs)
+        rp_p_filter = RelativeTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs)
 
         rpe = rp_extra[:, rp_e_filter.idxs()]
         rpp = rp_peri[:, rp_p_filter.idxs()]

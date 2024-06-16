@@ -5,7 +5,7 @@ import numpy as np
 
 
 def main():
-    data = h5py.File("updated_output.hdf")
+    data = h5py.File("output.hdf")
     probe_timestamps = np.array(list(data["stimuli"]["dg"]["probe"]["timestamps"]))
     saccade_startstop = np.array(list(data["saccades"]["predicted"]["left"]["timestamps"]))
     saccade_timestamps = np.array([s[0] for s in saccade_startstop])

@@ -20,8 +20,8 @@ class Trial(object):
         tr.events = self.events.copy()
         return tr
 
-    def add_event(self, timestamp, label):
-        self.events[label] = timestamp
+    def add_event(self, time_idx, label):
+        self.events[label] = time_idx
 
     @staticmethod
     def create_saccade_trial(start, event, end, motion_direction, block_num):
@@ -245,3 +245,14 @@ class UnitPopulation(object):
 
     def get_trial_block_idx(self):
         return [tr.block_num for tr in self._trials]
+
+    def get_trial_event_time_idxs(self):
+        event_idxs = []
+        for trial in self._trials:
+            if trial.trial_label == "saccade":
+                data = trial.events["saccade_event"]
+            else:
+                data = trial.events["probe_event"]
+            event_idxs.append(data)
+        return np.array(event_idxs)
+

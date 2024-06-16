@@ -8,7 +8,7 @@ import matplotlib
 from graph_judge import GraphJudge
 
 from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
-from unit_summary_plots import mean_response, mean_response_custom, avg_raster_plot
+from unit_lib_summary_plots import mean_response, mean_response_custom, avg_raster_plot
 import numpy as np
 
 
