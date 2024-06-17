@@ -34,6 +34,12 @@ class RawSessionProcessor(object):
         spike_ts_idxs = np.where(self.spike_timestamps >= first_dg)[0]
         self.spike_clusters = self.spike_clusters[spike_ts_idxs]
         self.spike_timestamps = self.spike_timestamps[spike_ts_idxs]
+        # How many indexes into the raw (pre-motion direction filtered) spike_clusters/spike_timestamps that we
+        # actually start from, because we cut off the first half of the recording
+        self._raw_spike_idx_offset = spike_ts_idxs[0]
+        self._raw_spike_clusters = np.array(data["spikes"]["clusters"])
+        self._raw_spike_timestamps = np.array(data["spikes"]["timestamps"])
+
         self.pre_filtered_unique_units = np.unique(np.array(data["spikes"]["clusters"]))
         self.unique_units = np.unique(self.spike_clusters)
 
@@ -296,11 +302,13 @@ class RawSessionProcessor(object):
                 data=relative_saccade_times_for_mixed_trials, rate=0.001, unit="s",
                 description=f"Timestamps of saccades in the mixed trials relative to the probe time"))
 
-        # Add standardized and normalized units
-        print("Normalizing & Standardizing Units..")
-        norm, stand = UnitNormalizer(nwb).normalize()
-        behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
-        behavior_events.add(TimeSeries(name="units_standardized", data=stand, unit="unit", rate=1.0, description="Units standardized"))
+        # Add standardized and normalized units TODO re-enable me
+        # print("Normalizing Units..")
+        # norm = UnitNormalizer(nwb).normalize()
+        # Make special func in unit pop to put trial [[start, event, stop], ..] idxs
+        # see self.unit_pop.trial_durations_idxs.astype(int)
+        # see self.unit_pop.get_trial_event_time_idxs()
+        # behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
 
         print("Writing to file, may take a while..")
         SimpleNWB.write(nwb, filename)
