@@ -69,6 +69,7 @@ class CustomUnitFilter(UnitFilter):
             cur_mean = np.mean(np.mean(self.units[unit_num][self.probe_trial_idxs, :][:, :8], axis=1), axis=0)
             baseline_mean = np.mean(np.mean(self.units[unit_num][:, :8], axis=1), axis=0)
             baseline_std = np.mean(np.std(self.units[unit_num][:, :8], axis=1))
+            baseline_std = baseline_std if baseline_std != 0 else 1
 
             mean_zscore = abs((cur_mean - baseline_mean) / baseline_std)
             condition = condition and mean_zscore < self.baseline_mean_zscore
@@ -77,6 +78,8 @@ class CustomUnitFilter(UnitFilter):
             # is at most baseline_time_std_zscore stds from the average std
             cur_time_std_mean = np.mean(np.std(self.units[unit_num][self.probe_trial_idxs][:, :8], axis=1))
             baseline_time_std_std = np.std(np.std(self.units[unit_num][:, :8], axis=1))
+            baseline_time_std_std = baseline_time_std_std if baseline_time_std_std != 0 else 1
+
             std_zscore = (baseline_std - cur_time_std_mean) / baseline_time_std_std
             std_zscore = abs(std_zscore)
             condition = condition and std_zscore < self.baseline_time_std_zscore

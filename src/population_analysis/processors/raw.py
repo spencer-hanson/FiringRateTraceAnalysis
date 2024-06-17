@@ -11,6 +11,7 @@ from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESC
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
     NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS, METRIC_NAMES, MIXED_THRESHOLD
 from population_analysis.population.units import UnitPopulation
+from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
 
 
 class RawSessionProcessor(object):
@@ -278,7 +279,6 @@ class RawSessionProcessor(object):
                                            description=f"Indices into all trials that are {trial_type} trials. Use nwbfile.units['trial_firing_rates'][unit_number][<idx goes here>] to get the firing rate of a unit in a given trial using these indicies"))
 
         # Want to specify when the saccade happened for the mixed trials (probe is always centered at 10ms)
-
         relative_saccade_times_for_mixed_trials = []
 
         for trial in self.unit_pop.get_mixed_trials():
@@ -295,6 +295,12 @@ class RawSessionProcessor(object):
                 name=f"mixed-trial-saccade-relative-timestamps",
                 data=relative_saccade_times_for_mixed_trials, rate=0.001, unit="s",
                 description=f"Timestamps of saccades in the mixed trials relative to the probe time"))
+
+        # Add standardized and normalized units
+        print("Normalizing & Standardizing Units..")
+        norm, stand = UnitNormalizer(nwb).normalize()
+        behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
+        behavior_events.add(TimeSeries(name="units_standardized", data=stand, unit="unit", rate=1.0, description="Units standardized"))
 
         print("Writing to file, may take a while..")
         SimpleNWB.write(nwb, filename)

@@ -8,11 +8,6 @@ def main():
 
     sess = NWBSessionProcessor("../scripts", filename, "../graphs")
 
-    norm = UnitNormalizer(sess.nwb)
-
-    norm.normalize()
-    tw = 2
-
 
 if __name__ == "__main__":
     main()

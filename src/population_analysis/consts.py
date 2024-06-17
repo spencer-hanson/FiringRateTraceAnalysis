@@ -5,6 +5,7 @@ TOTAL_TRIAL_MS = 700
 PRE_TRIAL_MS = 200
 POST_TRIAL_MS = TOTAL_TRIAL_MS - PRE_TRIAL_MS
 SPIKE_BIN_MS = 20
+PROBE_IDX = int(PRE_TRIAL_MS / SPIKE_BIN_MS)  # we want to know how many idxs into the bins the probe is (default 10)
 
 # Baseline consts
 NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)  # Should be 35

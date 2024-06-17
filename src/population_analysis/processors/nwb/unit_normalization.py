@@ -3,6 +3,8 @@ import pynwb
 from scipy import ndimage
 from scipy.ndimage import gaussian_filter
 from scipy.stats import gaussian_kde
+
+from population_analysis.consts import PROBE_IDX
 from population_analysis.processors.nwb import NWBSessionProcessor
 
 
@@ -26,7 +28,7 @@ class UnitNormalizer(object):
         if len(clusts) == 0:
             return np.array([[0]]*len(self.unique_units))  # Return array of 0s for firing rate for all units
 
-        bins = np.arange(timings[0], timings[-1], .001)
+        bins = np.arange(timings[0], timings[-1], .2)
 
         for u in self.unique_units:
             mask = np.where(clusts == u)[0]
@@ -85,6 +87,15 @@ class UnitNormalizer(object):
         # baseline mean C
         # std over just A
         normalized_arr = np.empty(self.event_firingrates.shape)
+        standardized_arr = np.empty(self.event_firingrates.shape)
+
+        filename = "2023-05-15_mlati7_output"
+        sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+        tmp_filt = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta().append(
+                sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+            )
+        )
 
         for idx, event in enumerate(self.events):
             if idx % int(len(self.events)/100) == 0:
@@ -96,7 +107,8 @@ class UnitNormalizer(object):
             firingrates_a = self._calc_firingrate(*timeperiod_a)
             firingrates_c = self._calc_firingrate(*timeperiod_c)
             event_firingrate = self.event_firingrates[idx]
-            for unit_idx in range(len(event_firingrate)):
+            # for unit_idx in range(len(event_firingrate)):
+            for unit_idx in tmp_filt.idxs():
                 gauss_a = self._gaussian_kernel_estimation(firingrates_a[unit_idx], 20)
                 gauss_c = self._gaussian_kernel_estimation(firingrates_c[unit_idx], .2)
                 gauss_event = self._gaussian_kernel_estimation(event_firingrate[unit_idx], .7)  # 700ms duration of event
@@ -105,8 +117,11 @@ class UnitNormalizer(object):
                 std = np.std(gauss_a)
                 std = std if std != 0 else 1
 
-                normalized = (gauss_event - mean) / std
-                normalized_arr[idx, unit_idx, :] = normalized
+                amp = abs(event_firingrate[unit_idx, PROBE_IDX:] - mean).max()  # want the maximum amplitude after the probe
+                amp = amp if amp != 0 else 1
+
+                standardized_arr[idx, unit_idx, :] = (gauss_event - mean) / std
+                normalized_arr[idx, unit_idx, :] = (gauss_event - mean) / amp  # Divide by the max amplitude to normalize
 
                 # import matplotlib.pyplot as plt
                 # fig, axs = plt.subplots(3, 1)
@@ -116,8 +131,5 @@ class UnitNormalizer(object):
                 # plt.show()
                 tw = 2
         print("")
-        # normalized_arr is (trials, units, t) and is actually a zscored STANDARDIZED NOT NORMALIZED
-        # need to divide by highest amplitude within the response to normalize see clustering.py:L244 in josh's proj
-        tw = 2
-        pass
+        return normalized_arr, standardized_arr
 

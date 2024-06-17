@@ -84,7 +84,9 @@ class NWBSessionProcessor(object):
         return self.nwb.units["r_p_peri_trials"].data[:][:, self.mixed_filtered_idxs]  # units x trials x t
 
     def units(self):
-        return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
+        return self.nwb.processing["behavior"]["units_normalized"].data[:].swapaxes(0, 1)
+        # return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
+
 
     def unit_filter_qm(self) -> UnitFilter:
         return QualityMetricsUnitFilter(self.quality_metrics, self.num_units)

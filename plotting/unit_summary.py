@@ -140,6 +140,7 @@ def main():
     )
 
     for unit_num in unit_filter.idxs():
+    # for unit_num in [0, 5]:
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)
 
