@@ -302,13 +302,15 @@ class RawSessionProcessor(object):
                 data=relative_saccade_times_for_mixed_trials, rate=0.001, unit="s",
                 description=f"Timestamps of saccades in the mixed trials relative to the probe time"))
 
-        # Add standardized and normalized units TODO re-enable me
-        # print("Normalizing Units..")
-        # norm = UnitNormalizer(nwb).normalize()
-        # Make special func in unit pop to put trial [[start, event, stop], ..] idxs
-        # see self.unit_pop.trial_durations_idxs.astype(int)
-        # see self.unit_pop.get_trial_event_time_idxs()
-        # behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
+        # Add standardized and normalized units
+        print("Normalizing Units..")
+        norm = UnitNormalizer(
+            self.unit_pop.spike_clusters,
+            self.unit_pop.spike_timestamps,
+            self.unit_pop.get_trial_duration_event_idxs(),
+            self.unit_pop.unique_unit_nums
+        ).normalize()
+        behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
 
         print("Writing to file, may take a while..")
         SimpleNWB.write(nwb, filename)

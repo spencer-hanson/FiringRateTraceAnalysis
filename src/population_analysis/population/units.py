@@ -256,3 +256,15 @@ class UnitPopulation(object):
             event_idxs.append(data)
         return np.array(event_idxs)
 
+    def get_trial_duration_event_idxs(self):
+        # return a list like [[start, event, stop], ..] for all trials
+        data = []
+        for tr in self._trials:
+            if tr.trial_label == "saccade":
+                event_time = tr.events["saccade_event"]
+            else:
+                event_time = tr.events["probe_event"]
+
+            data.append([tr.start, event_time, tr.end])
+
+        return data

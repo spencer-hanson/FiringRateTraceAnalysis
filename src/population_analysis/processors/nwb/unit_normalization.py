@@ -4,7 +4,7 @@ from scipy import ndimage
 from scipy.ndimage import gaussian_filter
 from scipy.stats import gaussian_kde
 
-from population_analysis.consts import PROBE_IDX
+from population_analysis.consts import PROBE_IDX, NUM_FIRINGRATE_SAMPLES, SPIKE_BIN_MS
 from population_analysis.processors.nwb import NWBSessionProcessor
 
 
@@ -15,16 +15,23 @@ class UnitNormalizer(object):
         self.timings = spike_timestamps
         self.full_events = trial_duration_event_idxs  # Expects [[start, event, stop], ..] for all trials
         self.unit_nums = unit_nums  # List of unit nums within clusts to loop over (since some are not present in second half of recording)
-        self.num_trials = len(trial_duration_event_idxs)
+        self.num_trials = len(self.full_events)
 
-    def _calc_firingrate(self, start_idx, stop_idx):
+    def _calc_firingrate(self, start_idx, stop_idx, num_bins=None):
         units = []
         clusts = self.clusts[start_idx:stop_idx]
         timings = self.timings[start_idx:stop_idx]
         if len(clusts) == 0:
             return np.array([[0]]*len(self.unique_units))  # Return array of 0s for firing rate for all units
 
-        bins = np.arange(timings[0], timings[-1], .2)  # TODO check we are binning correctly, make consts
+        diff = timings[-1] - timings[0]
+        if num_bins is None:
+            bin_size = SPIKE_BIN_MS / 1000  # Use default bin size
+            num_bins = int(diff/bin_size)
+        else:  # Want a specific number of timepoints, need to slightly adjust binsize
+            bin_size = diff/num_bins
+
+        bins = np.arange(timings[0], timings[-1] + .001, bin_size)[:num_bins + 1]  # Plus one for the last edge
 
         for u in self.unit_nums:
             mask = np.where(clusts == u)[0]
@@ -82,12 +89,13 @@ class UnitNormalizer(object):
         # |--A-10sec---|--B-10sec---|-C-.2sec--|---Probe--|
         # baseline mean C
         # std over just A
-        normalized_arr = np.empty((1,1))  # TODO want arr (trials, units, 35)
+        normalized_arr = np.empty((self.num_trials, len(self.unit_nums), NUM_FIRINGRATE_SAMPLES))
 
         unit_stds = {}  # unit_num: std TODO collect both motdirs for all units in all trials and average over trials
         all_trial_firingrate_as = []
 
-        for trial_idx, event_data in enumerate(self.full_events):
+        # for trial_idx, event_data in enumerate(self.full_events):
+        for trial_idx, event_data in enumerate(self.full_events[:5]):  # TODO remove me testing only first 5 trials
             if trial_idx % int(self.num_trials/100) == 0:
                 print(f"Normalizing trial {trial_idx}/{self.num_trials}..")
 
@@ -97,33 +105,34 @@ class UnitNormalizer(object):
 
             firingrates_a = self._calc_firingrate(*timeperiod_a)  # TODO Fill in missing time periods with 0s
             firingrates_c = self._calc_firingrate(*timeperiod_c)
-            event_firingrate = self.event_firingrates[trial_idx]  # TODO recalc firing rate
+            event_firingrate = self._calc_firingrate(trial_start_idx, trial_stop_idx, 35)  # TODO make sure returns correct shape
 
             all_trial_firingrate_as.append(firingrates_a)  # TODO split by motion direction type?
 
-            for unit_idx in range(len(self.unit_nums)):  # TODO vectorize this loop
-                mean = np.mean(firingrates_c[unit_idx])
-                # Wait to divide by std until after we collect all data for all trials
-                normalized_arr[trial_idx, unit_idx, :] = (event_firingrate[unit_idx] - mean)
+            mean = np.mean(firingrates_c, axis=1)
+            # Broadcast mean from (units,) to (units, 35) so we can subtract the mean from eachtimepoint of each unit, respectively, to vectorize this calculation
+            # [:, None] adds a new axis, so (units,) -> (units, 1)
+            mean = np.broadcast_to(mean[:, None], (len(self.unit_nums), NUM_FIRINGRATE_SAMPLES))
 
-                # gauss_a = self._gaussian_kernel_estimation(firingrates_a[unit_idx], 20)
-                # gauss_c = self._gaussian_kernel_estimation(firingrates_c[unit_idx], .2)
-                # gauss_event = self._gaussian_kernel_estimation(event_firingrate[unit_idx], .7)  # 700ms duration of event
-                # amp = abs(event_firingrate[unit_idx, PROBE_IDX:] - mean).max()  # want the maximum amplitude after the probe
-                # amp = amp if amp != 0 else 1
-                # normalized_arr[idx, unit_idx, :] = (gauss_event - mean) / amp  # Divide by the max amplitude to normalize
-                # import matplotlib.pyplot as plt
-                # fig, axs = plt.subplots(3, 1)
-                # axs[0].plot(gauss_event)
-                # axs[1].plot(normalized)
-                # axs[2].plot(event_firingrate[unit_idx])
-                # plt.show()
-                tw = 2
+            normalized_arr[trial_idx, :, :] = event_firingrate - mean
+
+            # import matplotlib.pyplot as plt
+            # fig, axs = plt.subplots(3, 1)
+            # axs[0].plot(gauss_event)
+            # axs[1].plot(normalized)
+            # axs[2].plot(event_firingrate[unit_idx])
+            # plt.show()
+            tw = 2
 
         # std = np.std(firingrates_a[unit_idx])
         # std = std if std != 0 else 1
         # TODO divide by std
+        all_trial_firingrate_as = np.array(all_trial_firingrate_as)
+        stds = np.std(np.mean(all_trial_firingrate_as, axis=2), axis=0)  # Standard deviations of the mean firinall units across all trials
+        stds[stds == 0] = 1  # Replace 0 stds with 1 (very unlikely to happen just in case)
+        stds = np.broadcast_to(stds[None, :, None], normalized_arr.shape)
 
+        arr = normalized_arr / stds
         print("")
-        return normalized_arr
+        return arr
 
