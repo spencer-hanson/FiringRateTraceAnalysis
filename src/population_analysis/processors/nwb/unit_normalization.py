@@ -94,8 +94,8 @@ class UnitNormalizer(object):
         unit_stds = {}  # unit_num: std TODO collect both motdirs for all units in all trials and average over trials
         all_trial_firingrate_as = []
 
-        # for trial_idx, event_data in enumerate(self.full_events):
-        for trial_idx, event_data in enumerate(self.full_events[:5]):  # TODO remove me testing only first 5 trials
+        for trial_idx, event_data in enumerate(self.full_events):
+        # for trial_idx, event_data in enumerate(self.full_events[:5]):  # TODO remove me testing only first 5 trials
             if trial_idx % int(self.num_trials/100) == 0:
                 print(f"Normalizing trial {trial_idx}/{self.num_trials}..")
 
