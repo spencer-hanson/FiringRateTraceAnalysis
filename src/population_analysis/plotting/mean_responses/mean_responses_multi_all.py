@@ -34,7 +34,7 @@ def plot_multi_mean_responses(sess, unit_filter):
         ax2.set_title("")
         ax1.set_title(f"{name} mean responses")
         idx = idx + 1
-
+    plt.savefig("mean_responses.png")
     plt.show()
     tw = 2
 
@@ -43,7 +43,7 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSession("../../../../scripts", filename, "../../../../graphs")
+    sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
     # sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
     unit_filter = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(
