@@ -54,3 +54,21 @@ class Filter(object):
         self._funcs.extend(filt._funcs)
         self.names.append(filt.get_basename())
         return self
+
+
+class BasicFilter(Filter):
+    def __init__(self, els, num_elements):
+        self.els = els
+
+        super().__init__(self._get_passing_func(), num_elements)
+
+    def _get_passing_func(self):
+        def passing(num):
+            if num in self.els:
+                return True
+            return False
+
+        return passing
+
+    def get_basename(self):
+        return "basic"

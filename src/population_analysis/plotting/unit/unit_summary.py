@@ -2,11 +2,9 @@ from typing import Optional
 
 import numpy as np
 
-from plotting.unit_lib_summary_plots import multi_raster_plot
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSession, UnitFilter
-from population_analysis.processors.nwb.filters import Filter
-from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
+from population_analysis.processors.nwb.filters import BasicFilter, Filter
 import matplotlib.pyplot as plt
 
 from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
@@ -38,9 +36,9 @@ def unit_summary(sess: NWBSession, unit_num: int):
     ]
 
     response_trial_filters = [
-        ("RpExtra", BasicTrialFilter(sess.probe_trial_idxs, sess.num_trials)),
-        ("Rs", BasicTrialFilter(sess.saccade_trial_idxs, sess.num_trials)),
-        ("Rmixed", BasicTrialFilter(sess.mixed_trial_idxs, sess.num_trials))
+        ("RpExtra", BasicFilter(sess.probe_trial_idxs, sess.num_trials)),
+        ("Rs", BasicFilter(sess.saccade_trial_idxs, sess.num_trials)),
+        ("Rmixed", BasicFilter(sess.mixed_trial_idxs, sess.num_trials))
     ]
     # Rows + 1 for rasters, Cols + 1 for rp peri
     fig, axs = plt.subplots(len(motion_trial_filters) + 1, len(response_trial_filters) + 1,
@@ -132,15 +130,16 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSession("../scripts", filename, "../graphs")
+    sess = NWBSession("../../../../scripts", filename, "../../../../graphs")
     unit_filter = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(
             sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
         )
     )
 
-    for unit_num in unit_filter.idxs():
+    # for unit_num in unit_filter.idxs():
     # for unit_num in [0, 5]:
+    for unit_num in Filter.empty(sess.units().shape[0]).idxs()[548:]:
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)
 

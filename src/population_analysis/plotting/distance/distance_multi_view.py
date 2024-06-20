@@ -2,9 +2,8 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 
-from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
+from population_analysis.processors.nwb.filters.__init__ import BasicFilter
 from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
-from population_analysis.quantification import Quantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.quantification.magnitude_difference import MagDiffQuantification
 from population_analysis.quantification.magnitude_quotient import MagQuoQuantification
@@ -13,13 +12,16 @@ from population_analysis.quantification.magnitude_quotient import MagQuoQuantifi
 def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../scripts", filename, "../graphs")
+    sess = NWBSession("../../../../scripts", filename, "../graphs")
 
-    ufilt = sess.unit_filter_qm().append(
-        sess.unit_filter_probe_zeta().append(
-            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
-        )
-    )
+    # ufilt = sess.unit_filter_qm().append(
+    #     sess.unit_filter_probe_zeta().append(
+    #         sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+    #     )
+    # )
+
+    # 341 547
+    ufilt = BasicFilter([547, 233], sess.units().shape[1])
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
@@ -34,7 +36,7 @@ def main():
     fig.tight_layout()
 
     for col_idx, motdir in enumerate([-1, 1]):
-        rp_e_filter = sess.trial_motion_filter(motdir).append(BasicTrialFilter(sess.probe_trial_idxs, rp_extra.shape[1]))
+        rp_e_filter = sess.trial_motion_filter(motdir).append(BasicFilter(sess.probe_trial_idxs, rp_extra.shape[1]))
         rp_p_filter = RelativeTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs)
 
         rpe = rp_extra[:, rp_e_filter.idxs()]

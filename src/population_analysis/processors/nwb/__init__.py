@@ -19,8 +19,8 @@ class NWBSession(object):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
         graph_prefix = f"{graph_folderpath}/{filename}"
 
-        if not os.path.exists(graph_prefix):
-            os.makedirs(graph_prefix)
+        # if not os.path.exists(graph_prefix):  # TODO
+        #     os.makedirs(graph_prefix)
 
         nwbio = NWBHDF5IO(filepath)
         nwb = nwbio.read()

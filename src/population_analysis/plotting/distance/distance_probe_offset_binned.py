@@ -1,11 +1,9 @@
-import time
-
 import numpy as np
 from matplotlib import pyplot as plt
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
+from population_analysis.processors.nwb.filters.__init__ import BasicFilter
 from population_analysis.processors.nwb.filters.trial_filters.probe_offset import ProbeOffsetTrialFilter
 from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
@@ -39,7 +37,7 @@ def main():
                 ProbeOffsetTrialFilter(sess.mixed_rel_timestamps, bins, bin_num + 1)  # bins start at 1
             )
             rp_extra_filt = sess.trial_motion_filter(motdir).append(  # Filter by mot dir
-                BasicTrialFilter(sess.mixed_trial_idxs, units.shape[1])  # Filter by mixed
+                BasicFilter(sess.mixed_trial_idxs, units.shape[1])  # Filter by mixed
             )
 
             rp_peri = sess.rp_peri_units()[ufilt.idxs()][:, rp_peri_filt.idxs()]

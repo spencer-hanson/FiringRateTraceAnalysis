@@ -31,7 +31,7 @@ Visualized PCA trajectories for different response types
 
 
 def quantify_timepoints(probe_units, saccade_units):
-    from plotting.quantify_density_plots import graph_dists
+    from population_analysis.plotting.quantify_density_plots import graph_dists
     # for timepoint in range(35):
     timepoint = 0
     probe_timepoints = probe_units[:, :, timepoint]
