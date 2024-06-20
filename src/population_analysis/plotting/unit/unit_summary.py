@@ -139,7 +139,7 @@ def main():
 
     # for unit_num in unit_filter.idxs():
     # for unit_num in [0, 5]:
-    for unit_num in Filter.empty(sess.units().shape[0]).idxs()[548:]:
+    for unit_num in Filter.empty(sess.units().shape[0]).idxs():
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)
 

@@ -20,8 +20,8 @@ def main():
     #     )
     # )
 
-    # 341 547
-    ufilt = BasicFilter([547, 233], sess.units().shape[1])
+    # Look at unit 185
+    ufilt = BasicFilter([373, 233], sess.units().shape[1])
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
