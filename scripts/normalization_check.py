@@ -10,7 +10,7 @@ from population_analysis.processors.raw import RawSessionProcessor
 
 def main():
     raw_sess = RawSessionProcessor("output.hdf", "mlati7")
-    sess = NWBSession("../scripts", "2023-05-15_mlati7_output", "../graphs")
+    sess = NWBSession("../scripts", "2023-05-15_mlati7_output", "../graphs", use_normalized_units=False)
 
     trial_event_idxs = sess.nwb.processing["behavior"]["trial_event_idxs"].data[:]  # trial_event in idxs
     trial_duration_idxs = sess.nwb.processing["behavior"]["trial_durations_idxs"].data[:]  # [trial_start, trial_stop] in idxs

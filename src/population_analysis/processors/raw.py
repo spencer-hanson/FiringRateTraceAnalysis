@@ -307,9 +307,9 @@ class RawSessionProcessor(object):
         # Add standardized and normalized units
         print("Normalizing Units..")
         norm = UnitNormalizer(
-            self.unit_pop.spike_clusters,
-            self.unit_pop.spike_timestamps,
-            self.unit_pop.get_trial_duration_event_idxs(),
+            self._raw_spike_clusters,
+            self._raw_spike_timestamps,
+            self.unit_pop.get_trial_duration_event_idxs(offset=self._raw_spike_idx_offset),
             self.unit_pop.unique_unit_nums,
             self.unit_pop.get_trial_motion_directions(),
             self.preferred_motions

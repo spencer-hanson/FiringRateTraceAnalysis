@@ -188,7 +188,7 @@ class UnitPopulation(object):
         self._firing_rates = firing_rates  # (trials, units, t)
         self._trial_spike_flags = trial_spike_flags
         self._zscores = self._zscore_unit_trial_waveforms(firing_rates)
-        self._preferred_motions = UnitPreferredDirection(self._firing_rates, self.get_trial_motion_directions()).calculate()
+        self._preferred_motions = UnitPreferredDirection(self._firing_rates.swapaxes(0, 1), self.get_trial_motion_directions()).calculate()
 
         tw = 2
         print("")
@@ -248,7 +248,7 @@ class UnitPopulation(object):
             event_idxs.append(data)
         return np.array(event_idxs)
 
-    def get_trial_duration_event_idxs(self):
+    def get_trial_duration_event_idxs(self, offset=0):
         # return a list like [[start, event, stop], ..] for all trials
         data = []
         for tr in self._trials:
@@ -257,5 +257,5 @@ class UnitPopulation(object):
             else:
                 event_time = tr.events["probe_event"]
 
-            data.append([tr.start, event_time, tr.end])
+            data.append([tr.start + offset, event_time + offset, tr.end + offset])
         return data

@@ -14,9 +14,10 @@ class UnitNormalizer(object):
         self.unique_units = np.unique(self.clusts)
         self.timings = spike_timestamps
         self.full_events = trial_duration_event_idxs  # Expects [[start, event, stop], ..] for all trials
-        self.unit_nums = unit_nums  # List of unit nums within clusts to loop over (since some are not present in second half of recording)
+        self.unit_nums = unit_nums
+        # List of unit nums within clusts to loop over (since some are not present in second half of recording)
         self.num_trials = len(self.full_events)
-        self.trial_motion_dirs = trial_motion_directions
+        self.trial_motion_dirs = np.array(trial_motion_directions)
         self.preferred_mot = preferred_unit_motions
 
     def _calc_firingrate(self, start_idx, stop_idx, num_bins):
@@ -28,10 +29,6 @@ class UnitNormalizer(object):
             raise ValueError("There are no spiking neurons during the requested period!")
 
         diff = timings[-1] - timings[0]
-        # if num_bins is None:
-        #     bin_size = SPIKE_BIN_MS / 1000  # Use default bin size
-        #     num_bins = int(diff/bin_size)
-        # else:  # Want a specific number of timepoints, need to slightly adjust binsize
         bin_size = diff/num_bins
 
         bins = np.arange(timings[0], timings[-1] + .001, bin_size)[:num_bins + 1]  # Plus one for the last edge
@@ -44,26 +41,6 @@ class UnitNormalizer(object):
             units.append(rate)
 
         return np.array(units)
-
-    # def _gaussian_kernel_estimation(self, arr, time_len_in_seconds):
-    #     kernel_binsize = .02
-    #
-    #     if arr.min() == 0 and arr.max() == 0:
-    #         return np.zeros((int(time_len_in_seconds/kernel_binsize)))
-    #
-    #     bandwith_sigma = 1
-    #     # gauss = gaussian_kde(arr)
-    #     # gauss.set_bandwidth(bandwith_sigma / arr.std())
-    #     # times_to_sample = np.arange(0, time_len_in_seconds, kernel_binsize)
-    #     # pred = gauss(times_to_sample)  # Smooth out the array using the gaussian while sampling from 0-time_len..
-    #     # pred = ndimage.gaussian_filter1d(arr, bandwith_sigma)
-    #     pred = gaussian_filter(arr, bandwith_sigma)
-    #     # import matplotlib.pyplot as plt
-    #     # fig, axs = plt.subplots(2, 1)
-    #     # axs[0].plot(arr)
-    #     # axs[1].plot(pred)
-    #     # plt.show()
-    #     return pred
 
     def find_idx_from_relative_seconds(self, start_idx, relative_seconds):
         # Find the index into the spike_timings that is relative seconds away from the start_idx
@@ -96,7 +73,6 @@ class UnitNormalizer(object):
         all_trial_firingrate_as = []
 
         for trial_idx, event_data in enumerate(self.full_events):
-        # for trial_idx, event_data in enumerate(self.full_events[:5]):  # TODO remove me testing only first 5 trials
             if trial_idx % int(self.num_trials/100) == 0:
                 print(f"Normalizing trial {trial_idx}/{self.num_trials}..")
 
@@ -104,11 +80,11 @@ class UnitNormalizer(object):
             timeperiod_a = (self.find_idx_from_relative_seconds(trial_event_idx, -20), self.find_idx_from_relative_seconds(trial_event_idx, -10))  # start, stop idx
             timeperiod_c = (trial_start_idx, trial_event_idx)
 
-            firingrates_a = self._calc_firingrate(*timeperiod_a, 1000)  # TODO Fill in missing time periods with 0s
+            firingrates_a = self._calc_firingrate(*timeperiod_a, 1000)
             firingrates_c = self._calc_firingrate(*timeperiod_c, 10)
-            event_firingrate = self._calc_firingrate(trial_start_idx, trial_stop_idx, 35)  # TODO make sure returns correct shape
+            event_firingrate = self._calc_firingrate(trial_start_idx, trial_stop_idx, 35)
 
-            all_trial_firingrate_as.append(firingrates_a)  # TODO split by motion direction type?
+            all_trial_firingrate_as.append(firingrates_a)
 
             mean = np.mean(firingrates_c, axis=1)
             # Broadcast mean from (units,) to (units, 35) so we can subtract the mean from eachtimepoint of each unit, respectively, to vectorize this calculation
