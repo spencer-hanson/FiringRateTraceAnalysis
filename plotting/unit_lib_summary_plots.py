@@ -8,7 +8,7 @@ from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 
 """
@@ -217,7 +217,7 @@ def single_raster_plot(nwb_session, name, trial_idxs, unit_num, unit_filter: Opt
     tw = 2
 
 
-def mean_response(nwb_session: NWBSessionProcessor, name, unit_filter: UnitFilter, trial_idxs, prefix=""):
+def mean_response(nwb_session: NWBSession, name, unit_filter: UnitFilter, trial_idxs, prefix=""):
     units = nwb_session.units()[unit_filter.idxs(), :, :][:, trial_idxs, :]
     avgd_units = np.mean(units, axis=1)
 
@@ -237,7 +237,7 @@ def mean_response_custom(averaged_units, name, prefix=""):
     tw = 2
 
 
-def standard_multi_rasters(sess: NWBSessionProcessor, unit_filter: UnitFilter, suppress_passing_filename_suffix=False):
+def standard_multi_rasters(sess: NWBSession, unit_filter: UnitFilter, suppress_passing_filename_suffix=False):
     # todo only_passing? change loop to idxs, use unit_filter.idxs(), default to all idxs
     total = sess.num_units
     for unum in range(total):
@@ -285,7 +285,7 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
 
     filt = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(

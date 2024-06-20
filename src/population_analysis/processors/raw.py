@@ -1,3 +1,4 @@
+import random
 from typing import Optional
 
 import h5py
@@ -20,6 +21,7 @@ class RawSessionProcessor(object):
 
         self._unit_pop: Optional[UnitPopulation] = None
         self._convert_unit_indexes = None
+        self._preferred_motions = None
 
         # [[start, stop], ..] of each drifting grating. Any time outside these ranges is a non-moving static gray screen and shouldn't be included
         self.grating_timestamps = np.array(list(zip(list(data["stimuli"]["dg"]["grating"]["timestamps"]), list(data["stimuli"]["dg"]["iti"]["timestamps"]))))
@@ -308,7 +310,9 @@ class RawSessionProcessor(object):
             self.unit_pop.spike_clusters,
             self.unit_pop.spike_timestamps,
             self.unit_pop.get_trial_duration_event_idxs(),
-            self.unit_pop.unique_unit_nums
+            self.unit_pop.unique_unit_nums,
+            self.unit_pop.get_trial_motion_directions(),
+            self.preferred_motions
         ).normalize()
         behavior_events.add(TimeSeries(name="units_normalized", data=norm, unit="unit", rate=1.0, description="Units normalized"))
 
@@ -321,6 +325,12 @@ class RawSessionProcessor(object):
         if self._unit_pop is None:
             self.calc_unit_population_stats()
         return self._unit_pop
+
+    @property
+    def preferred_motions(self):
+        if self._unit_pop is None:
+            self.calc_unit_population_stats()
+        return self.unit_pop.preferred_motions
 
     def _remove_by_idxs(self, lst: list, idxs: list[int]) -> list:
         # Filter out a list by indexes to not include
@@ -439,3 +449,4 @@ class RawSessionProcessor(object):
 
         trials["mixed"] = newmixed
         return trials
+

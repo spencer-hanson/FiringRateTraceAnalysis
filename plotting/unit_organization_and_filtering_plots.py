@@ -7,7 +7,7 @@ import time
 import matplotlib
 from graph_judge import GraphJudge
 
-from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
+from population_analysis.processors.nwb import NWBSession, UnitFilter
 from unit_lib_summary_plots import mean_response, mean_response_custom, avg_raster_plot
 import numpy as np
 
@@ -135,7 +135,7 @@ def plot_avgs(sess, filt: UnitFilter, dst: str):
     print("Done!")
 
 
-def judge_filters(sess: NWBSessionProcessor):
+def judge_filters(sess: NWBSession):
     gj = GraphJudge.from_directory("src")
 
     def wrap_filter():
@@ -149,7 +149,7 @@ def main():
     filename = "2023-05-15_mlati7_output"
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
     # judge_filters(sess)
 
     # organize_qm_zeta(sess)

@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.ma as ma
 from population_analysis.consts import TOTAL_TRIAL_MS, SPIKE_BIN_MS, NUM_FIRINGRATE_SAMPLES, NUM_BASELINE_POINTS
+from population_analysis.processors.nwb.unit_preferred_direction import UnitPreferredDirection
 
 
 class Trial(object):
@@ -63,6 +64,7 @@ class UnitPopulation(object):
         self._trial_durations_idxs = None  # Trial x 2 (start and stop indexes into spike_timestamps and clusters)
         self._zscores = None
         self._unit_filters = None
+        self._preferred_motions = None
         self.unique_unit_nums = np.unique(spike_clusters)
         self._num_units = len(self.unique_unit_nums)
         self._p_value_truth = p_value_truth
@@ -130,31 +132,13 @@ class UnitPopulation(object):
 
     def _gen_threshold_trials(self, fr):
         # Remove units that do not meet a threshold firing rate across trials.
+        # Add filtering funcs here that should be pre-calculated
 
         self._unit_filters = {
             # Name of threshold: list of bool for each unit passing or not, str description
             "zeta_passes": (self._p_value_truth, "True or false if the unit passes the zeta test for p < 0.01 for either saccade or probe")
         }
         return
-
-        # Old thresholding code
-        # from population_analysis.consts import TRIAL_THRESHOLD_SUM, UNIT_TRIAL_PERCENTAGE
-        #
-        # # must have at least a total of 0.01 firing rate in 20% of the trials of Saccade OR Probe trials
-        # # OR is used to include units that are only responsive in one trial
-        # units = firing_rates.swapaxes(0, 1)  # Swap trials and units
-        # # units arr should be units x trials x t
-        # num_trials = units.shape[1]
-        # # The unit must have at least 0.01 activity on average in 20% of the trials
-        # # divide by 2 to account for units that only fire in saccade or probe trials
-        # threshold = TRIAL_THRESHOLD_SUM * (num_trials/2) * UNIT_TRIAL_PERCENTAGE
-        # unit_all_trial_activity = np.sum(np.sum(units, axis=2), axis=1)  # Sum across all trials of the same unit, all responses
-        # unit_mask = unit_all_trial_activity > threshold
-        # unit_idxs = np.where(unit_mask)
-        # new_units = units[unit_idxs]
-        # self._filtered_unit_nums = self.unique_unit_nums[unit_idxs]
-        # new_firing_rates = new_units.swapaxes(0, 1)  # Swap units and trials back to that it is (trials, units, t)
-        # return new_firing_rates
 
     def calc_firingrates(self):
         # Calculate the firing rate of each unit for all trials
@@ -204,6 +188,8 @@ class UnitPopulation(object):
         self._firing_rates = firing_rates  # (trials, units, t)
         self._trial_spike_flags = trial_spike_flags
         self._zscores = self._zscore_unit_trial_waveforms(firing_rates)
+        self._preferred_motions = UnitPreferredDirection(self._firing_rates, self.get_trial_motion_directions()).calculate()
+
         tw = 2
         print("")
 
@@ -224,6 +210,12 @@ class UnitPopulation(object):
         if self._trial_durations_idxs is None:
             self.calc_firingrates()
         return self._trial_durations_idxs
+
+    @property
+    def preferred_motions(self):
+        if self._preferred_motions is None:
+            self.calc_firingrates()
+        return self._preferred_motions
 
     @property
     def unit_zscores(self):
@@ -266,5 +258,4 @@ class UnitPopulation(object):
                 event_time = tr.events["probe_event"]
 
             data.append([tr.start, event_time, tr.end])
-
         return data

@@ -1,6 +1,6 @@
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 from distance_plots import calc_dists
 import matplotlib.pyplot as plt
 
@@ -10,7 +10,7 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
 
     filt = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(

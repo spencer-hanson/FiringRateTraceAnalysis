@@ -1,5 +1,4 @@
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
 
 
 def main():
@@ -7,6 +6,11 @@ def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSession("../scripts", filename, "../graphs")
+    unit_filter = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta().append(
+            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+        )
+    )
 
 
 if __name__ == "__main__":

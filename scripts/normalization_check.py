@@ -1,13 +1,16 @@
+import random
+
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
+from population_analysis.processors.nwb.unit_preferred_direction import UnitPreferredDirection
 from population_analysis.processors.raw import RawSessionProcessor
 
 
 def main():
     raw_sess = RawSessionProcessor("output.hdf", "mlati7")
-    sess = NWBSessionProcessor("../scripts", "2023-05-15_mlati7_output", "../graphs")
+    sess = NWBSession("../scripts", "2023-05-15_mlati7_output", "../graphs")
 
     trial_event_idxs = sess.nwb.processing["behavior"]["trial_event_idxs"].data[:]  # trial_event in idxs
     trial_duration_idxs = sess.nwb.processing["behavior"]["trial_durations_idxs"].data[:]  # [trial_start, trial_stop] in idxs
@@ -27,11 +30,15 @@ def main():
     )
     cluster_unit_labels = cluster_unit_labels[ufilt.idxs()]
 
+    pref_dir = UnitPreferredDirection(sess.units()[ufilt.idxs()], sess.trial_motion_directions()).calculate()
+
     norm = UnitNormalizer(
         raw_sess._raw_spike_clusters,
         raw_sess._raw_spike_timestamps,
         trial_event_duration_idxs,
-        cluster_unit_labels  # want the cluster specific unit numbers to iterate over
+        cluster_unit_labels,  # want the cluster specific unit numbers to iterate over
+        sess.trial_motion_directions(),
+        pref_dir
     )
 
     norm.normalize()

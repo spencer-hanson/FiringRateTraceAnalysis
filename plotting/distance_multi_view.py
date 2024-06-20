@@ -1,5 +1,5 @@
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 
 from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
@@ -13,7 +13,7 @@ from population_analysis.quantification.magnitude_quotient import MagQuoQuantifi
 def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
 
     ufilt = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(

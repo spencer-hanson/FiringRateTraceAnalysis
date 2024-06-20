@@ -11,10 +11,11 @@ from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import CustomUnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import QualityMetricsUnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import ZetaUnitFilter
+from population_analysis.processors.nwb.rp_peri_calculator import RpPeriCalculator
 
 
-class NWBSessionProcessor(object):
-    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath, filter_mixed=True):
+class NWBSession(object):
+    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath, filter_mixed=True, use_normalized_units=True):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
         graph_prefix = f"{graph_folderpath}/{filename}"
 
@@ -24,6 +25,8 @@ class NWBSessionProcessor(object):
         nwbio = NWBHDF5IO(filepath)
         nwb = nwbio.read()
 
+        self.use_normalized_units = use_normalized_units
+        self._normalized_rp_peri = None
         self.probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
         self.saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
         self.mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
@@ -72,20 +75,31 @@ class NWBSessionProcessor(object):
         return self.nwb.processing["behavior"]["trial_durations_idxs"].data[:]  # (trials, 2)  [start, stop]
 
     def probe_units(self):
-        return self.nwb.units["trial_response_firing_rates"].data[:, self.probe_trial_idxs]
+        return self.units()[:, self.probe_trial_idxs]
 
     def saccade_units(self):
-        return self.nwb.units["trial_response_firing_rates"].data[:, self.saccade_trial_idxs]
+        return self.units()[:, self.saccade_trial_idxs]
 
     def mixed_units(self):
-        return self.nwb.units["trial_response_firing_rates"].data[:, self.mixed_trial_idxs]
+        return self.units()[:, self.mixed_trial_idxs]
 
     def rp_peri_units(self):
-        return self.nwb.units["r_p_peri_trials"].data[:][:, self.mixed_filtered_idxs]  # units x trials x t
+        if self.use_normalized_units:
+            if self._normalized_rp_peri is None:
+                self._normalized_rp_peri = RpPeriCalculator(
+                    self.units(),
+                    self.saccade_trial_idxs,
+                    self.mixed_trial_idxs
+                ).calculate()
+            return self._normalized_rp_peri
+        else:
+            return self.nwb.units["r_p_peri_trials"].data[:][:, self.mixed_filtered_idxs]  # units x trials x t
 
     def units(self):
-        # return self.nwb.processing["behavior"]["units_normalized"].data[:].swapaxes(0, 1)  # TODO?
-        return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
+        if self.use_normalized_units:
+            return self.nwb.processing["behavior"]["units_normalized"].data[:].swapaxes(0, 1)  # TODO fix swapaxes?
+        else:
+            return self.nwb.units["trial_response_firing_rates"].data[:]  # units x trials x t
 
     def unit_filter_qm(self) -> UnitFilter:
         return QualityMetricsUnitFilter(self.quality_metrics, self.num_units)
@@ -94,8 +108,18 @@ class NWBSessionProcessor(object):
         return ZetaUnitFilter(self.nwb.units["probe_zeta_scores"][:])
 
     def unit_filter_custom(self, spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore) -> UnitFilter:
-        return CustomUnitFilter(spike_count_threshold, trial_threshold, missing_threshold, min_missing, baseline_mean_zscore, baseline_time_std_zscore, self.nwb.units["trial_spike_flags"], self.units(), self.probe_trial_idxs, self.num_units)
+        return CustomUnitFilter(
+            spike_count_threshold,
+            trial_threshold,
+            missing_threshold,
+            min_missing,
+            baseline_mean_zscore,
+            baseline_time_std_zscore,
+            self.nwb.units["trial_spike_flags"],
+            self.units(),
+            self.probe_trial_idxs,
+            self.num_units
+        )
 
     def trial_motion_filter(self, motion_direction) -> TrialFilter:
         return MotionDirectionTrialFilter(motion_direction, self.trial_motion_directions())
-

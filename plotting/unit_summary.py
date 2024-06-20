@@ -4,7 +4,7 @@ import numpy as np
 
 from plotting.unit_lib_summary_plots import multi_raster_plot
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSessionProcessor, UnitFilter
+from population_analysis.processors.nwb import NWBSession, UnitFilter
 from population_analysis.processors.nwb.filters import Filter
 from population_analysis.processors.nwb.filters.trial_filters.basic import BasicTrialFilter
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ def get_spike_idxs(bbool_counts, unit_number, trial_idxs, unit_filter: Optional[
     return spike_idxss
 
 
-def unit_summary(sess: NWBSessionProcessor, unit_num: int):
+def unit_summary(sess: NWBSession, unit_num: int):
     """
     Graph a single unit's mean response of each trial type in each motion direction with rasters
     """
@@ -132,7 +132,7 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
     unit_filter = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(
             sess.unit_filter_custom(5, .2, 1, 1, .9, .4)

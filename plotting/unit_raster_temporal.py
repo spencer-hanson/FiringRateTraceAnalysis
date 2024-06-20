@@ -2,14 +2,14 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 
 
 def main():
     filename = "2023-05-15_mlati7_output"
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
     trial_start_stops = sess.trial_durations()
     trials_spikes = sess.spikes()
     units = sess.units()

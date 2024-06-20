@@ -6,7 +6,7 @@ from pynwb import NWBHDF5IO
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.population.plots.pca_meta import run_pca
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
 
@@ -173,7 +173,7 @@ def mean_response(data_dict):
 
 def main():
     filename = "2023-05-15_mlati7_output"
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
 
     # shuffle = True
     # split_data = probe_units

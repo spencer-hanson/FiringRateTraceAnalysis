@@ -1,6 +1,6 @@
 from matplotlib import animation
 
-from population_analysis.processors.nwb import NWBSessionProcessor
+from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 
 
@@ -31,7 +31,7 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSessionProcessor("../scripts", filename, "../graphs")
+    sess = NWBSession("../scripts", filename, "../graphs")
     ani_unit_trials(sess, sess.probe_trial_idxs, 190)
 
 
