@@ -2,7 +2,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 
-from population_analysis.processors.nwb.filters.__init__ import BasicFilter
+from population_analysis.processors.nwb.filters import BasicFilter
 from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.quantification.magnitude_difference import MagDiffQuantification

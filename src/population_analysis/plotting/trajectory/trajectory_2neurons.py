@@ -8,7 +8,12 @@ import matplotlib.pyplot as plt
 def plot_2neuron_trajectory(sess, ufilt):
     fig, main_axs = plt.subplots(2, 2)
 
-    for idx, resp_trial_filter in enumerate([BasicFilter(sess.probe_trial_idxs, sess.num_trials), BasicFilter(sess.mixed_trial_idxs, sess.num_trials)]):
+    neurons = [
+        BasicFilter(sess.probe_trial_idxs, sess.num_trials),
+        BasicFilter(sess.mixed_trial_idxs, sess.num_trials)
+    ]
+
+    for idx, resp_trial_filter in enumerate(neurons):
         axs = main_axs[:, idx]
         for motdir, ax in zip([-1, 1], axs):
             trial_filt = sess.trial_motion_filter(motdir).append(resp_trial_filter)
@@ -30,12 +35,11 @@ def plot_2neuron_trajectory(sess, ufilt):
                 ax.set_ylabel(f"motion={motdir}")
             ax.legend()
 
-        axs[1].set_xlabel("Unit 233 activity")
-        axs[1].set_ylabel("Unit 273 activity motion=1")
+        axs[1].set_xlabel("Unit 373 activity")
 
-    main_axs[0, 0].set_title("Extrasaccadic")
-    main_axs[0, 1].set_title("Perisaccadic")
-
+    main_axs[1, 0].set_ylabel("Unit 233 activity motion=1")
+    main_axs[0, 0].set_title("Extrasaccadic - RpExtra")
+    main_axs[0, 1].set_title("Perisaccadic - Rmixed")
 
     plt.show()
     pass
