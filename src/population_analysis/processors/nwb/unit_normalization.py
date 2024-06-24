@@ -40,7 +40,18 @@ class UnitNormalizer(object):
             rate = hist / bin_size
             units.append(rate)
 
-        return np.array(units)
+        from scipy.ndimage import gaussian_filter1d
+        import matplotlib.pyplot as plt
+
+        def do_plot(d):
+            plt.plot(d)
+            plt.show()
+
+        units = np.array(units)
+        for idx in range(units.shape[0]):
+            units[idx, :] = gaussian_filter1d(units[idx], 2)
+
+        return units
 
     def find_idx_from_relative_seconds(self, start_idx, relative_seconds):
         # Find the index into the spike_timings that is relative seconds away from the start_idx
@@ -63,6 +74,7 @@ class UnitNormalizer(object):
             cur_val = self.timings[cur_idx]
 
         ret = np.clip(cur_idx, 0, len(self.timings))
+
         return ret
 
     def normalize(self):

@@ -4,6 +4,7 @@ import numpy as np
 from pynwb import NWBHDF5IO
 
 from population_analysis.consts import METRIC_NAMES
+from population_analysis.processors.nwb.filters import BasicFilter
 from population_analysis.processors.nwb.filters.trial_filters import TrialFilter
 from population_analysis.processors.nwb.filters.trial_filters.motiondir import MotionDirectionTrialFilter
 from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
@@ -127,3 +128,13 @@ class NWBSession(object):
 
     def trial_filter_rp_peri(self, additional_filters):
         return RelativeTrialFilter(additional_filters, self.mixed_trial_idxs)
+
+    def trial_filter_rp_extra(self):
+        return BasicFilter(self.probe_trial_idxs, self.num_trials)
+
+    def trial_filter_rs(self):
+        return BasicFilter(self.saccade_trial_idxs, self.num_trials)
+
+    def trial_filter_rmixed(self):
+        return BasicFilter(self.mixed_trial_idxs, self.num_trials)
+

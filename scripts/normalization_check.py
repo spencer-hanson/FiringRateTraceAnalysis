@@ -39,9 +39,7 @@ def main():
         cluster_unit_labels,  # want the cluster specific unit numbers to iterate over
         sess.trial_motion_directions(),
         pref_dir
-    )
-
-    norm.normalize()
+    ).normalize()
     tw = 2
 
 

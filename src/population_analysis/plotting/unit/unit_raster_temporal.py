@@ -1,15 +1,14 @@
+import os.path
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
 from population_analysis.processors.nwb import NWBSession
+from population_analysis.processors.nwb.filters import BasicFilter, Filter
 
 
-def main():
-    filename = "2023-05-15_mlati7_output"
-    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
-
-    sess = NWBSession("../scripts", filename, "../graphs")
+def do_raster(sess, unit_filter):
     trial_start_stops = sess.trial_durations()
     trials_spikes = sess.spikes()
     units = sess.units()
@@ -17,8 +16,9 @@ def main():
     offsets = {
         "probe": 0,
         "saccade": 700,
-        "mixed": 700*2
+        "mixed": 700 * 2
     }
+
     def do_offset(val, name):
         off = offsets[name]
         newv = []
@@ -49,7 +49,7 @@ def main():
     print("Sorting..")
     sorted_durations = sorted(all_trial_durations, key=lambda x: x[1][0])  # Sort by start time
 
-    for unit_num in range(units.shape[0]):
+    for unit_num in unit_filter.idxs():
         print(f"Rendering unit {unit_num}")
         eventplot_data = []
         offset_eventplot_data = []
@@ -78,12 +78,26 @@ def main():
         axs[1].hlines(0, 0, 700)
         fig.suptitle(f"Unit {unit_num}")
 
-        fig.savefig(f"time_raster_u{unit_num}.png")
+        fig.savefig(f"unit_raster_temporal_plots/time_raster_u{unit_num}.png")
         plt.close(fig)
         tw = 2
 
     tw = 2
-    # standard_all_summary(sess)
+
+
+def main():
+    # filename = "not_smoothed_2023-05-15_mlati7_output"
+    filename = "2023-05-15_mlati7_output"
+
+    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+
+    sess = NWBSession("../../../../scripts", filename, "../graphs")
+
+    if not os.path.exists("unit_raster_temporal_plots"):
+        os.mkdir("unit_raster_temporal_plots")
+
+    # do_raster(sess, BasicFilter([233], sess.num_units))
+    do_raster(sess, Filter.empty(sess.num_units))
 
     pass
 

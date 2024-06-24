@@ -1,3 +1,4 @@
+import os.path
 from typing import Optional
 
 import numpy as np
@@ -123,7 +124,7 @@ def unit_summary(sess: NWBSession, unit_num: int):
     raster_axs[0].set_ylabel("Trial #")
     raster_axs[0].set_xlabel("Time (ms)")
 
-    plt.savefig(f"unit-{unit_num}.png")
+    plt.savefig(f"unit_summary_plots/unit-{unit_num}.png")
 
 
 def main():
@@ -136,6 +137,9 @@ def main():
             sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
         )
     )
+
+    if not os.path.exists("unit_summary_plots"):
+        os.mkdir("unit_summary_plots")
 
     # for unit_num in unit_filter.idxs():
     # for unit_num in [0, 5]:

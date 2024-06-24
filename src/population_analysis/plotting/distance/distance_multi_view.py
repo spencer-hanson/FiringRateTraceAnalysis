@@ -20,14 +20,14 @@ def main():
     #     )
     # )
 
-    # Look at unit 185
-    ufilt = BasicFilter([373, 233], sess.units().shape[1])
+    # ufilt = BasicFilter([373, 233], sess.units().shape[1])
+    ufilt = BasicFilter([189, 265, 317, 373, 374, 375, 414, 431, 436, 441], sess.units().shape[1])
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
 
     quantification_list = [
-        MagQuoQuantification(),
+        # MagQuoQuantification(),
         EuclidianQuantification(),
         MagDiffQuantification(),
     ]

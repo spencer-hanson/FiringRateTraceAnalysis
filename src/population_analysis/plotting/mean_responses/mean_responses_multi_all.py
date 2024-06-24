@@ -4,7 +4,7 @@ from population_analysis.plotting.mean_responses.mean_responses_r_mixed import p
 from population_analysis.plotting.mean_responses.mean_responses_rp_extra import plot_rp_extra_mean_responses
 from population_analysis.plotting.mean_responses.mean_responses_rp_peri import plot_rp_peri_mean_responses
 from population_analysis.plotting.mean_responses.mean_responses_rs import plot_rs_mean_responses
-from population_analysis.processors.nwb import NWBSession
+from population_analysis.processors.nwb import NWBSession, BasicFilter
 
 
 def plot_multi_mean_responses(sess, unit_filter):
@@ -43,13 +43,15 @@ def main():
     filename = "2023-05-15_mlati7_output"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
+    sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=True)
     # sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
-    unit_filter = sess.unit_filter_qm().append(
-        sess.unit_filter_probe_zeta().append(
-            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
-        )
-    )
+    # unit_filter = sess.unit_filter_qm().append(
+    #     sess.unit_filter_probe_zeta().append(
+    #         sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+    #     )
+    # )
+
+    unit_filter = BasicFilter([189, 265, 317, 373, 374, 375, 414, 431, 436, 441], sess.units().shape[1])
 
     plot_multi_mean_responses(sess, unit_filter)
 
