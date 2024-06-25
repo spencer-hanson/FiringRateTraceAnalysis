@@ -32,35 +32,37 @@ def unit_summary(sess: NWBSession, unit_num: int):
     # First we want to start with mean responses
     print("Rendering mean responses")
     motion_trial_filters = [
-        ("motion=-1", sess.trial_motion_filter(-1)),
-        ("motion=1", sess.trial_motion_filter(1)),
+        ("motion=-1", -1),
+        ("motion=1", 1),
     ]
 
     response_trial_filters = [
-        ("RpExtra", BasicFilter(sess.probe_trial_idxs, sess.num_trials)),
-        ("Rs", BasicFilter(sess.saccade_trial_idxs, sess.num_trials)),
-        ("Rmixed", BasicFilter(sess.mixed_trial_idxs, sess.num_trials))
+        ("RpExtra", (BasicFilter, sess.probe_trial_idxs, sess.num_trials)),
+        ("Rs", (BasicFilter, sess.saccade_trial_idxs, sess.num_trials)),
+        ("Rmixed", (BasicFilter, sess.mixed_trial_idxs, sess.num_trials))
     ]
-    # Rows + 1 for rasters, Cols + 1 for rp peri
-    fig, axs = plt.subplots(len(motion_trial_filters) + 1, len(response_trial_filters) + 1,
+    # Rows + 2 for rasters, Cols + 1 for rp peri
+    fig, axs = plt.subplots(len(motion_trial_filters) + 2, len(response_trial_filters) + 1,
                             figsize=(16, 8))
     fig.subplots_adjust(wspace=0.2, hspace=.3)
 
-    row_maxs = [0] * (len(response_trial_filters) + 1)
-    row_mins = [999] * (len(response_trial_filters) + 1)
+    row_maxs = [0] * len(motion_trial_filters)
+    row_mins = [999] * len(motion_trial_filters)
     xvals = np.array(range(NUM_FIRINGRATE_SAMPLES)) - 10  # 10 is time of probe
 
     row_idx = 0
-    for mot_name, mot_filt in motion_trial_filters:
+    for mot_name, motdir in motion_trial_filters:
         col_idx = 0
         for resp_name, resp_filt in response_trial_filters:
-            trial_filt = mot_filt.copy().append(resp_filt.copy())
+            tfilt = resp_filt[0](*resp_filt[1:])
+            trial_filt = sess.trial_motion_filter(motdir).append(tfilt)
             unitdata = sess.units()[:, trial_filt.idxs()][unit_num]
             avg = np.mean(unitdata, axis=0)  # Average over trials
 
-            if row_maxs[row_idx] < np.max(avg):
+            if np.max(avg) > row_maxs[row_idx]:
                 row_maxs[row_idx] = np.max(avg)
-            if row_mins[row_idx] > np.min(avg):
+
+            if np.min(avg) < row_mins[row_idx]:
                 row_mins[row_idx] = np.min(avg)
 
             ax = axs[row_idx, col_idx]
@@ -70,25 +72,27 @@ def unit_summary(sess: NWBSession, unit_num: int):
 
     # RpPeri
     rp_peri_units = sess.rp_peri_units()
-
-    for i, mot in enumerate(motion_trial_filters):
-        mot_name, mot_filt = mot
-        filt = RelativeTrialFilter(mot_filt, sess.mixed_trial_idxs)
-        ax = axs[i, len(response_trial_filters)]
+    for rpp_idx, mot in enumerate(motion_trial_filters):
+        mot_name, motdir = mot
+        mot_filt = sess.trial_motion_filter(motdir)
+        filt = sess.trial_filter_rp_peri(mot_filt)
+        ax = axs[rpp_idx, len(response_trial_filters)]
         units = rp_peri_units[:, filt.idxs()][unit_num]
         avg = np.mean(units, axis=0)
 
-        if row_maxs[i] < np.max(avg):
-            row_maxs[i] = np.max(avg)
-        if row_mins[i] > np.min(avg):
-            row_mins[i] = np.min(avg)
+        if np.max(avg) > row_maxs[rpp_idx]:
+            row_maxs[rpp_idx] = np.max(avg)
+
+        if np.min(avg) < row_mins[rpp_idx]:
+            row_mins[rpp_idx] = np.min(avg)
+
         ax.plot(xvals, avg)
-        ax.set_ylim(row_mins[i], row_maxs[i])
+        ax.set_ylim(row_mins[rpp_idx], row_maxs[rpp_idx])
         ax.set_yticks([])
 
-        if i == 0:
+        if rpp_idx == 0:
             ax.set_title("RpPeri")
-        if i == len(motion_trial_filters) - 1:
+        if rpp_idx == len(motion_trial_filters) - 1:
             ax.set_xlabel("Time from probe (20ms bins)")
         else:
             ax.set_xticks([])
@@ -112,19 +116,26 @@ def unit_summary(sess: NWBSession, unit_num: int):
 
     # Raster plots
     print("Rendering rasters")
-    raster_axs = axs[len(motion_trial_filters)]
-    spikes = sess.nwb.units["trial_spike_flags"]
+    for motidx, motdir in enumerate([-1, 1]):
+        raster_axs = axs[len(motion_trial_filters) + motidx]
+        spikes = sess.spikes()
 
-    for idx, trial in enumerate(response_trial_filters):
-        trial_name, trial_filt = trial
-        ax = raster_axs[idx]
-        spike_idxs = get_spike_idxs(spikes, unit_num, trial_filt.idxs())
-        ax.eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
+        for idx, trial in enumerate(response_trial_filters):
+            trial_name, trialdata = trial
+            trial_filt = trialdata[0](*trialdata[1:])
+            trial_filt = trial_filt.append(sess.trial_motion_filter(motdir))
 
-    raster_axs[0].set_ylabel("Trial #")
-    raster_axs[0].set_xlabel("Time (ms)")
+            ax = raster_axs[idx]
+            spike_idxs = get_spike_idxs(spikes, unit_num, trial_filt.idxs())
+            ax.eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
+            ax.set_title(f"{trial_name} motion={motdir}")
 
+        raster_axs[0].set_ylabel("Trial #")
+        raster_axs[0].set_xlabel("Time (ms)")
+
+    # plt.show()
     plt.savefig(f"unit_summary_plots/unit-{unit_num}.png")
+    tw = 2
 
 
 def main():
@@ -142,7 +153,7 @@ def main():
         os.mkdir("unit_summary_plots")
 
     # for unit_num in unit_filter.idxs():
-    # for unit_num in [0, 5]:
+    #for unit_num in [373]:
     for unit_num in Filter.empty(sess.units().shape[0]).idxs():
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)

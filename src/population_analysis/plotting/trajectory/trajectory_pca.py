@@ -37,8 +37,27 @@ def plot_pca_explained_variance(pca, ax, x_offset=0):
     ax.set_xticks(range(len(variance)))
 
 
-def plot_trajectory_pca(fig, axs, datas):
+def preprocess_data_pca(pca_training_units, pca_training_trial_filters):
+    # pca_training_trial_filters is a list of trial filters used to create the sample
+    # pca_training_units is an np arr (units, trials, t)
+    processed_units = []
+
+    for trial_filt in pca_training_trial_filters:
+        mean_units = np.mean(pca_training_units[:, trial_filt.idxs()], axis=1)
+        processed_units.append(mean_units)
+    concat_units = np.hstack(processed_units)
+
+    return concat_units
+
+
+def plot_trajectory_pca(fig, axs, datas, pca_training_units, pca_training_trial_filters):
     n_components = 2  # 2d graph
+    # pca_training_trial_filters is a list of trial filters used to create the sample
+    # pca_training_units is a np arr (units, trials, t)
+
+    # (units, t*len(pca_training_trial_filters))
+    # pca_training_data = preprocess_data_pca(pca_training_units, pca_training_trial_filters)
+    # pca = train_pca(pca_training_data, n_components)
 
     pcas = []
 
@@ -49,7 +68,12 @@ def plot_trajectory_pca(fig, axs, datas):
         unit_data = response_info[3]
         color = response_info[4]
 
+        # response_data = preprocess_data_pca(unit_data, [trial_filter])  # (t, units)
+
+        tw = 2
+
         p_ax = axs[response_info[1][0]][response_info[1][1]]
+
 
         raw_response_data = unit_data[:, trial_filter.idxs()]
 
@@ -64,7 +88,6 @@ def plot_trajectory_pca(fig, axs, datas):
         # TODO test pca mean before train
         pca = train_pca(response_data, n_components)  # train pca and reduce our pop vecs down to 2d, data is (n_samples, num_components)
         pcas.append(pca)
-
         sample_val = np.mean(raw_response_data, axis=1)  # mean over trials, left with (units, t)
         sample_val = sample_val.swapaxes(0, 1)  # want each timepoint as a point in pca space, being 'units'-dimensional
 
@@ -94,7 +117,12 @@ def plot_trajectory_summary(sess, ufilt):
     ]
 
     # Actual trajectories
-    pcas = plot_trajectory_pca(fig, axs, datas)
+    pcas = plot_trajectory_pca(fig, axs, datas, sess.units()[ufilt.idxs()], [
+        sess.trial_motion_filter(-1).append(sess.trial_filter_rp_extra()),  # 4 groups to split data on and train
+        sess.trial_motion_filter(1).append(sess.trial_filter_rp_extra()),
+        sess.trial_filter_rp_peri(sess.trial_motion_filter(-1)),
+        sess.trial_filter_rp_peri(sess.trial_motion_filter(1))
+    ])
 
     for idx, response_data in enumerate(datas):  # Plot only first 4
         row, col = response_data[1]

@@ -48,8 +48,8 @@ class UnitNormalizer(object):
             plt.show()
 
         units = np.array(units)
-        for idx in range(units.shape[0]):
-            units[idx, :] = gaussian_filter1d(units[idx], 2)
+        # for idx in range(units.shape[0]):  # TODO ???
+        #     units[idx, :] = gaussian_filter1d(units[idx], 2)
 
         return units
 

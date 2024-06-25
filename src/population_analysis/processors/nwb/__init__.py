@@ -65,7 +65,7 @@ class NWBSession(object):
         return num_trials
 
     def spikes(self):
-        return self.nwb.units["trial_spike_flags"]  # (units, trials, 700)
+        return self.nwb.units["trial_spike_flags"].data[:]  # (units, trials, 700)
 
     def trial_motion_directions(self):
         return self.nwb.processing["behavior"]["trial_motion_directions"].data[:]
@@ -89,7 +89,8 @@ class NWBSession(object):
         if self.use_normalized_units:
             if self._normalized_rp_peri is None:
                 self._normalized_rp_peri = RpPeriCalculator(
-                    self.units(),
+                    # self.units(),
+                    self.nwb.units["trial_response_firing_rates"].data[:],  # use pre normalized data
                     self.saccade_trial_idxs,
                     self.mixed_trial_idxs
                 ).calculate()
