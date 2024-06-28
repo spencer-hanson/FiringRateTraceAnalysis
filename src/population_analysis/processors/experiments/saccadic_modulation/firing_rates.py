@@ -1,9 +1,17 @@
+import os
+
 import numpy as np
 
 from population_analysis.processors.experiments.saccadic_modulation import ModulationTrialGroup
+from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calculator import RpPeriCalculator
 
 
 class FiringRateCalculator(object):
+    FIRING_RATE_FILENAME = "calc_firingrates.npy"
+    NORMALIZED_FILENAME = "calc_norm_firingrates.npy"
+    RP_PERI_FIRING_RATE = "calc_rpperi_firingrates.npy"
+    RP_PERI_NORMALIZED = "calc_rpperi_norm_firingrates.npy"
+
     def __init__(self, firing_rates, trial_group: ModulationTrialGroup):
         self.firing_rates = firing_rates
         self.trial_group = trial_group
@@ -28,23 +36,36 @@ class FiringRateCalculator(object):
 
         return np.array(preferred)
 
-    def calculate(self):
+    def _calculate_rp_peri(self, firing_rates):
+        # firing_rates (units, trials, t)
+        rppc = RpPeriCalculator(firing_rates, self.trial_group.trial_type_idxs["saccade"], self.trial_group.trial_type_idxs["mixed"])
+        raw_rpp = rppc.calculate()
+        return raw_rpp
+
+    def calculate(self, load_precalculated=True):
         # |--A-10sec---|--B-10sec---|-C-.2sec--|---Probe--|
         # baseline mean C
         # std over just A
 
-        import matplotlib.pyplot as plt
-
-        def p(d):
-            plt.plot(d)
-            plt.show()
+        if load_precalculated:
+            print("Attempting to load a precalculated firing rate from local directory..")
+            if os.path.exists(FiringRateCalculator.FIRING_RATE_FILENAME) and os.path.exists(FiringRateCalculator.NORMALIZED_FILENAME) and os.path.exists(FiringRateCalculator.RP_PERI_FIRING_RATE) and os.path.exists(FiringRateCalculator.RP_PERI_NORMALIZED):
+                return {
+                    "firing_rate": np.load(FiringRateCalculator.FIRING_RATE_FILENAME),
+                    "normalized_firing_rate": np.load(FiringRateCalculator.NORMALIZED_FILENAME),
+                    "rp_peri_firing_rate": np.load(FiringRateCalculator.RP_PERI_FIRING_RATE),
+                    "rp_peri_normalized_firing_rate": np.load(FiringRateCalculator.RP_PERI_NORMALIZED)
+                }
+            else:
+                print(f"One of the precalculated files for firing rate calculations does not exist, generating..")
 
         print("Calculating firing rates..", end="")
         unit_std_groups = {i: [] for i in range(self.firing_rates.shape[0])}  # {unit_num: [<baseline mean1>, ..], ..}
-        normalized_frs = np.full((self.num_units, self.num_trials, 35), -888)
 
-        all_trial_firing_rates = []
+        all_trial_firing_rates = []  # (trials, units, t) see rpperi but with diff idxs
         all_normalized_firing_rates = []
+        all_rp_peri_firing_rates = []  # Keep track of rp_peri calculations arr like [[[firing rates of -1000idx, end_idx for one unit], <another unit>], ..more trials]
+        all_normalized_rp_peri_firing_rates = []
 
         for trial_idx, trial in enumerate(self.trial_group.all_trials()):
             if trial_idx % int(self.num_trials/10) == 0:
@@ -55,20 +76,40 @@ class FiringRateCalculator(object):
 
             trial_firing_rates = []
             trial_normalized_firing_rates = []
+            rp_peri_firing_rates = []
+            normalized_rp_peri_firing_rates = []
 
             for unit_num in range(self.num_units):
+                # regular firing rates
                 v = self.firing_rates[unit_num, trial_start_idx:trial_end_idx]
                 trial_firing_rates.append(v)
+
+                # normalized firing rates
                 baseline = self.firing_rates[unit_num, trial_start_idx:trial_start_idx + 10]  # Mean firing rate from -200, 0ms (relative to probe)
-                baseline = v - np.mean(baseline)
-                trial_normalized_firing_rates.append(baseline)  # Will be adding on firingrates
-                tw = 2
+                baseline = np.mean(baseline)
+                trial_normalized_firing_rates.append(v - baseline)  # Will be adding on firingrates
 
-            all_normalized_firing_rates.append(trial_normalized_firing_rates)
+                # rp peri firing rates
+                # Include whole range so we can calc all stats
+                rp_peri_firing_rates.append(
+                    self.firing_rates[unit_num, trial_start_idx - 1000: trial_end_idx]
+                )
+                normalized_rp_peri_firing_rates.append(
+                    self.firing_rates[unit_num, trial_start_idx - 1000: trial_end_idx] - baseline
+                )
+
             all_trial_firing_rates.append(trial_firing_rates)
+            all_normalized_firing_rates.append(trial_normalized_firing_rates)
+            all_rp_peri_firing_rates.append(rp_peri_firing_rates)
+            all_normalized_rp_peri_firing_rates.append(normalized_rp_peri_firing_rates)
 
-        all_normalized_firing_rates = np.array(all_normalized_firing_rates)
-        all_trial_firing_rates = np.array(all_trial_firing_rates)
+        all_normalized_firing_rates = np.array(all_normalized_firing_rates).swapaxes(0, 1)
+        all_trial_firing_rates = np.array(all_trial_firing_rates).swapaxes(0, 1)
+        all_rp_peri_firing_rates = np.array(all_rp_peri_firing_rates).swapaxes(0, 1)
+        all_normalized_rp_peri_firing_rates = np.array(all_normalized_rp_peri_firing_rates).swapaxes(0, 1)
+
+        all_rp_peri_firing_rates = self._calculate_rp_peri(all_rp_peri_firing_rates)  # (units, trials, t)
+        all_normalized_rp_peri_firing_rates = self._calculate_rp_peri(all_normalized_rp_peri_firing_rates)  # has all trials, need to filter out only mixed
 
         print("\nNormalizing firing rates..")
         preferred = self._calculate_preferred_motion_direction(all_trial_firing_rates)  # (units,)
@@ -77,9 +118,31 @@ class FiringRateCalculator(object):
             motdir = preferred[unit_num]
 
             for trial_idx, trial in enumerate(self.trial_group.get_trials_by_motion(motdir)):
-                unit_std_groups[unit_num].append(self.firing_rates[unit_num, trial.start_idx - 1000:trial.start_idx - 500])  # from -1000idx, -500idx is -20sec, -10sec
+                baseline_frs = np.mean(self.firing_rates[unit_num, trial.start_idx - 1000:trial.start_idx - 500])
+                unit_std_groups[unit_num].append(baseline_frs)  # from -1000idx, -500idx is -20sec, -10sec
 
+        unit_stds = []
         for unit_num in range(self.num_units):
             ustd = np.std(unit_std_groups[unit_num])
-            tw = 2
+            unit_stds.append(ustd)
 
+        raw_unit_stds = np.array(unit_stds)
+        raw_unit_stds[unit_stds == 0] = 1
+        unit_stds = np.broadcast_to(unit_stds[:, None, None], (self.num_units, self.num_trials, 35))
+        # Need a different shape for the rp_peri stds
+        rpperi_unit_stds = np.broadcast_to(unit_stds[:, None, None], (self.num_units, all_rp_peri_firing_rates.shape[1], 35))
+        all_normalized_firing_rates /= unit_stds
+        all_normalized_rp_peri_firing_rates /= rpperi_unit_stds
+
+        print("Saving firing rates to file..")
+        np.save(FiringRateCalculator.FIRING_RATE_FILENAME, all_trial_firing_rates)
+        np.save(FiringRateCalculator.NORMALIZED_FILENAME, all_normalized_firing_rates)
+        np.save(FiringRateCalculator.RP_PERI_FIRING_RATE, all_rp_peri_firing_rates)
+        np.save(FiringRateCalculator.RP_PERI_NORMALIZED, all_normalized_rp_peri_firing_rates)
+
+        return {
+            "firing_rate": all_trial_firing_rates,
+            "normalized_firing_rate": all_normalized_firing_rates,
+            "rp_peri_firing_rate": all_rp_peri_firing_rates,
+            "rp_peri_normalized_firing_rate": all_normalized_rp_peri_firing_rates
+        }

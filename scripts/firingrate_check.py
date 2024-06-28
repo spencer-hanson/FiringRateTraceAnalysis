@@ -102,15 +102,12 @@ def main():
     # Grab the trials for the events
     events = _event_timings(raw_data, grating_windows)
 
-    # First grating window, start is the beginning of our recording we're interested in, in seconds
-    cutoff_time = events["grating_windows"][0][0]
-
     # Separate the trials into Rs, RpExtra and Rmixed
     smp = SaccadicModulationTrialProcessor(fr_bins, events)
     trials = smp.calculate()
 
     tfrc = FiringRateCalculator(fr, trials)
-    tfrs = tfrc.calculate()
+    firing_rates = tfrc.calculate()
 
     tw = 2
 

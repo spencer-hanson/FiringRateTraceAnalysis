@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 from pynwb import NWBHDF5IO
 
@@ -13,7 +11,7 @@ from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import CustomUnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import QualityMetricsUnitFilter
 from population_analysis.processors.nwb.filters.unit_filters import ZetaUnitFilter
-from population_analysis.processors.nwb.rp_peri_calculator import RpPeriCalculator
+from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calculator import RpPeriCalculator
 
 
 class NWBSession(object):
