@@ -124,9 +124,6 @@ class UnitNormalizer(object):
             stds = np.broadcast_to(stds[None, :, None], normalized_arr[:, pref_unit_idxs, :].shape)
             normalized_arr[:, pref_unit_idxs, :] = normalized_arr[:, pref_unit_idxs, :] / stds
 
-        import matplotlib.pyplot as plt
-        [plt.plot(g) for g in np.mean(normalized_arr[self.trial_motion_dirs == -1], axis=0)]
-
         print("")
         return normalized_arr
 

@@ -55,19 +55,19 @@ class KilosortProcessor(object):
         return firing_rates, time_bins
 
     def calculate_spikes(self, load_precalculated):
-        if load_precalculated:
-            print("Attempting to load a precalculated spikes from local directory..")
-            if os.path.exists(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME):
-                return np.load(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME)
-            else:
-                print(f"Precalculated file '{KilosortProcessor.SPIKES_PRECALCULATE_FILENAME}' does not exist, generating..")
-
         spike_start_time = np.min(self.spike_timings)
         spike_end_time = np.max(self.spike_timings)
         max_spikes = int((spike_end_time - spike_start_time) / .001)  # Number of ms in entire recording
         spike_bins = np.arange(spike_start_time, spike_end_time, 0.001)
         if spike_bins[-1] != spike_end_time:
             spike_bins = np.append(spike_bins, spike_end_time)  # Add end time if we don't cut exactly
+
+        if load_precalculated:
+            print("Attempting to load a precalculated spikes from local directory..")
+            if os.path.exists(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME):
+                return np.load(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME)
+            else:
+                print(f"Precalculated file '{KilosortProcessor.SPIKES_PRECALCULATE_FILENAME}' does not exist, generating..")
 
         spikes = np.full((self.num_units, max_spikes), -1, dtype="int")  # Use -1 to double check after processing, that we didn't miss any spikes
 
@@ -87,4 +87,4 @@ class KilosortProcessor(object):
 
         print(f"Finished, writing to file '{KilosortProcessor.SPIKES_PRECALCULATE_FILENAME}'..")
         np.save(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME, spikes)
-        return spikes, spike_bins
+        return spikes

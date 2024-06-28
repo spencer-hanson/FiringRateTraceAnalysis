@@ -49,6 +49,9 @@ def main():
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
     data_files = {"idk": "output.hdf"}
 
+    dd = dictify_hd5(h5py.File("output.hdf"))
+    tw = 2
+
     for filename in list(data_files.values()):
         try:
             print(f"Processing '{filename}'")
