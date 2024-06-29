@@ -9,3 +9,4 @@ graphs/*
 *.nwb
 *.png
 *.gif
+*.npy

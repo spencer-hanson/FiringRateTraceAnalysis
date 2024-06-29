@@ -1,4 +1,4 @@
-from population_analysis.processors.nwb.filters import Filter
+from population_analysis.processors.filters import Filter
 
 
 class TrialFilter(Filter):

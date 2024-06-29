@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters.__init__ import BasicFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def plot_r_mixed_mean_responses(sess, unit_filter, ax_list=None):
@@ -34,7 +34,8 @@ def plot_r_mixed_mean_responses(sess, unit_filter, ax_list=None):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    # filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     # sess = NWBSession("../scripts", filename, "../graphs")

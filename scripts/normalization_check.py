@@ -1,11 +1,9 @@
-import random
-
 import numpy as np
 
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
-from population_analysis.processors.nwb.unit_preferred_direction import UnitPreferredDirection
-from population_analysis.processors.raw import RawSessionProcessor
+from population_analysis.processors.nwb import UnitNormalizer
+from population_analysis.processors.nwb import UnitPreferredDirection
+from population_analysis.processors.experiments.saccadic_modulation.raw import RawSessionProcessor
 
 
 def main():

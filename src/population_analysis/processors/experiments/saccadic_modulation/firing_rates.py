@@ -51,10 +51,10 @@ class FiringRateCalculator(object):
             print("Attempting to load a precalculated firing rate from local directory..")
             if os.path.exists(FiringRateCalculator.FIRING_RATE_FILENAME) and os.path.exists(FiringRateCalculator.NORMALIZED_FILENAME) and os.path.exists(FiringRateCalculator.RP_PERI_FIRING_RATE) and os.path.exists(FiringRateCalculator.RP_PERI_NORMALIZED):
                 return {
-                    "firing_rate": np.load(FiringRateCalculator.FIRING_RATE_FILENAME),
-                    "normalized_firing_rate": np.load(FiringRateCalculator.NORMALIZED_FILENAME),
-                    "rp_peri_firing_rate": np.load(FiringRateCalculator.RP_PERI_FIRING_RATE),
-                    "rp_peri_normalized_firing_rate": np.load(FiringRateCalculator.RP_PERI_NORMALIZED)
+                    "firing_rate": np.load(FiringRateCalculator.FIRING_RATE_FILENAME, mmap_mode='r'),
+                    "normalized_firing_rate": np.load(FiringRateCalculator.NORMALIZED_FILENAME, mmap_mode='r'),
+                    "rp_peri_firing_rate": np.load(FiringRateCalculator.RP_PERI_FIRING_RATE, mmap_mode='r'),
+                    "rp_peri_normalized_firing_rate": np.load(FiringRateCalculator.RP_PERI_NORMALIZED, mmap_mode='r')
                 }
             else:
                 print(f"One of the precalculated files for firing rate calculations does not exist, generating..")
@@ -152,9 +152,12 @@ class FiringRateCalculator(object):
         np.save(FiringRateCalculator.NORMALIZED_FILENAME, all_normalized_firing_rates)
         np.save(FiringRateCalculator.RP_PERI_NORMALIZED, all_normalized_rp_peri_firing_rates)
 
+        del all_normalized_rp_peri_firing_rates
+        del all_normalized_firing_rates
+
         return {
-            "firing_rate": np.load(FiringRateCalculator.FIRING_RATE_FILENAME),
-            "normalized_firing_rate": all_normalized_firing_rates,
-            "rp_peri_firing_rate": np.load(FiringRateCalculator.RP_PERI_FIRING_RATE),
-            "rp_peri_normalized_firing_rate": all_normalized_rp_peri_firing_rates
+            "firing_rate": np.load(FiringRateCalculator.FIRING_RATE_FILENAME, mmap_mode='r'),
+            "normalized_firing_rate": np.load(FiringRateCalculator.NORMALIZED_FILENAME, mmap_mode='r'),
+            "rp_peri_firing_rate": np.load(FiringRateCalculator.RP_PERI_FIRING_RATE, mmap_mode='r'),
+            "rp_peri_normalized_firing_rate": np.load(FiringRateCalculator.RP_PERI_NORMALIZED, mmap_mode='r')
         }

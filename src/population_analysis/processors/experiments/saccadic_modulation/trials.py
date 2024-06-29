@@ -36,6 +36,13 @@ class ModulationTrialGroup(object):
     def all_trials(self) -> np.ndarray:
         return self._trials
 
+    def get_trials_attribute(self, attribute_name):
+        # Get a list of attributes by name from the trials
+        data = []
+        for tr in self._trials:
+            data.append(getattr(tr, attribute_name))
+        return np.array(data)
+
 
 class ModulationTrial(object):
     def __init__(self, start_idx, end_idx, event_idx, event_time, trial_label, motion_direction, block_num, events):

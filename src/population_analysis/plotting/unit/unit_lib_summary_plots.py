@@ -1,15 +1,11 @@
-import functools
-import math
 from typing import Optional
 
 import matplotlib
 import numpy as np
-from pynwb import NWBHDF5IO
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters.unit_filters import UnitFilter
+from population_analysis.processors.nwb import UnitFilter
 
 """
 NOT FINISHED

@@ -1,16 +1,9 @@
-import os
-import time
-
 import numpy as np
-from pynwb import NWBHDF5IO
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.population.plots.pca_meta import run_pca
 from population_analysis.processors.nwb import NWBSession
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
-
-from population_analysis.quantification.spectral import SpectralQuantification
 
 """
 Plots relating to distance between response types, eg Rs, Rp(Peri), etc..

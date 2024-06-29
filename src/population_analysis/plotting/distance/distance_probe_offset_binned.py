@@ -3,9 +3,9 @@ from matplotlib import pyplot as plt
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters.__init__ import BasicFilter
-from population_analysis.processors.nwb.filters.trial_filters.probe_offset import ProbeOffsetTrialFilter
-from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
+from population_analysis.processors.nwb import BasicFilter
+from population_analysis.processors.nwb import ProbeOffsetTrialFilter
+from population_analysis.processors.nwb import RelativeTrialFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 
 

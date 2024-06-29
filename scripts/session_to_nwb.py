@@ -1,13 +1,8 @@
 import os
-import warnings
-import re
 
 import h5py
-import numpy as np
 
-from population_analysis.consts import TOTAL_TRIAL_MS, PRE_TRIAL_MS, POST_TRIAL_MS
-from population_analysis.population.units import UnitPopulation
-from population_analysis.processors.raw import RawSessionProcessor
+from population_analysis.processors.experiments.saccadic_modulation.raw import RawSessionProcessor
 
 SESSION_DATA_PATH = "E:\\PopulationAnalysis"
 

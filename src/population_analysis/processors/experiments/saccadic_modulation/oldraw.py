@@ -1,4 +1,3 @@
-import random
 from typing import Optional
 
 import h5py
@@ -11,11 +10,9 @@ from simply_nwb import SimpleNWB
 from population_analysis.consts import PRE_TRIAL_MS, POST_TRIAL_MS, SESSION_DESCRIPTION, EXPERIMENTERS, \
     EXPERIMENT_DESCRIPTION, MOUSE_DETAILS, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
     NUM_BASELINE_POINTS, UNIT_ZETA_P_VALUE, TOTAL_TRIAL_MS, METRIC_NAMES, MIXED_THRESHOLD
-from population_analysis.population.units import UnitPopulation
-from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
 
 
-class RawSessionProcessor(object):
+class asdfRawSessionProcessor(object):
     def __init__(self, filename, mouse_name):
         data = h5py.File(filename)
 

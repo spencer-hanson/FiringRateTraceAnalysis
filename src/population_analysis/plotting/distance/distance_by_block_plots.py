@@ -1,7 +1,6 @@
 import numpy as np
 
 from population_analysis.processors.nwb import NWBSession
-from distance_plots import calc_dists
 import matplotlib.pyplot as plt
 
 from population_analysis.quantification.euclidian import EuclidianQuantification

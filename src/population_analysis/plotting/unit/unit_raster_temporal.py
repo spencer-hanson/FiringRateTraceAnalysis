@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters import BasicFilter, Filter
+from population_analysis.processors.filters import Filter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def do_raster(sess, unit_filter):
@@ -87,7 +87,7 @@ def do_raster(sess, unit_filter):
 
 def main():
     # filename = "not_smoothed_2023-05-15_mlati7_output"
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
 
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 

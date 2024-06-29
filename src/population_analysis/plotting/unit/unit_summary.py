@@ -4,11 +4,10 @@ from typing import Optional
 import numpy as np
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSession, UnitFilter
-from population_analysis.processors.nwb.filters import BasicFilter, Filter
+from population_analysis.processors.filters import BasicFilter, Filter
+from population_analysis.processors.filters.unit_filters import UnitFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
-
-from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
 
 
 def get_spike_idxs(bbool_counts, unit_number, trial_idxs, unit_filter: Optional[UnitFilter] = None):
@@ -139,7 +138,7 @@ def unit_summary(sess: NWBSession, unit_num: int):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSession("../../../../scripts", filename, "../../../../graphs")

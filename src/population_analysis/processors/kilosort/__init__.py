@@ -39,7 +39,7 @@ class KilosortProcessor(object):
         if load_precalculated:
             print("Attempting to load a precalculated firing rate from local directory..")
             if os.path.exists(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME):
-                return np.load(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME), time_bins
+                return np.load(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME, mmap_mode='r'), time_bins
             else:
                 print(f"Precalculated file '{KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME}' does not exist, generating..")
 
@@ -51,8 +51,10 @@ class KilosortProcessor(object):
 
         print(f"Finished, writing to file '{KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME}'..")
         np.save(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME, firing_rates)
+        del firing_rates
 
-        return firing_rates, time_bins
+        fr = np.load(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME, mmap_mode='r')
+        return fr, time_bins
 
     def calculate_spikes(self, load_precalculated):
         spike_start_time = np.min(self.spike_timings)
@@ -65,7 +67,7 @@ class KilosortProcessor(object):
         if load_precalculated:
             print("Attempting to load a precalculated spikes from local directory..")
             if os.path.exists(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME):
-                return np.load(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME)
+                return np.load(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME, mmap_mode='r')
             else:
                 print(f"Precalculated file '{KilosortProcessor.SPIKES_PRECALCULATE_FILENAME}' does not exist, generating..")
 
@@ -87,4 +89,7 @@ class KilosortProcessor(object):
 
         print(f"Finished, writing to file '{KilosortProcessor.SPIKES_PRECALCULATE_FILENAME}'..")
         np.save(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME, spikes)
-        return spikes
+        del spikes
+        sp = np.load(KilosortProcessor.SPIKES_PRECALCULATE_FILENAME, mmap_mode='r')
+
+        return sp

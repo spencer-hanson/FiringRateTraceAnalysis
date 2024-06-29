@@ -1,5 +1,4 @@
 from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.unit_normalization import UnitNormalizer
 
 
 def main():

@@ -4,7 +4,8 @@ from population_analysis.plotting.mean_responses.mean_responses_r_mixed import p
 from population_analysis.plotting.mean_responses.mean_responses_rp_extra import plot_rp_extra_mean_responses
 from population_analysis.plotting.mean_responses.mean_responses_rp_peri import plot_rp_peri_mean_responses
 from population_analysis.plotting.mean_responses.mean_responses_rs import plot_rs_mean_responses
-from population_analysis.processors.nwb import NWBSession, BasicFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def plot_multi_mean_responses(sess, unit_filter):

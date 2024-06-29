@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters.__init__ import BasicFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def plot_rp_extra_mean_responses(sess, unit_filter, ax_list=None):

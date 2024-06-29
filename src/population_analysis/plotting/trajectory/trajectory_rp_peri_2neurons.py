@@ -1,7 +1,7 @@
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb.filters import BasicFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
 
 
@@ -47,7 +47,7 @@ def plot_rp_peri_2neuron_trajectory(sess: NWBSession, ufilt):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
 

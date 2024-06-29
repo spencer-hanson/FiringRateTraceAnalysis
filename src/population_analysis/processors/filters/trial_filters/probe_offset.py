@@ -1,6 +1,6 @@
 import numpy as np
 
-from population_analysis.processors.nwb.filters.trial_filters import TrialFilter
+from population_analysis.processors.nwb import TrialFilter
 
 
 class ProbeOffsetTrialFilter(TrialFilter):

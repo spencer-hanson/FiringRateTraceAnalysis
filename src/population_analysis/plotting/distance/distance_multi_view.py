@@ -1,12 +1,11 @@
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 
-from population_analysis.processors.nwb.filters import BasicFilter
-from population_analysis.processors.nwb.filters.trial_filters.rp_peri import RelativeTrialFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
+from population_analysis.sessions.saccadic_modulation import NWBSession
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.quantification.magnitude_difference import MagDiffQuantification
-from population_analysis.quantification.magnitude_quotient import MagQuoQuantification
 
 
 def main():
