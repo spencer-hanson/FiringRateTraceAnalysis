@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from population_analysis.processors.filters import BasicFilter
+from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.sessions.saccadic_modulation import NWBSession
 
 

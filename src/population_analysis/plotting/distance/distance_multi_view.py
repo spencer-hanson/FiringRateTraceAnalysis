@@ -9,7 +9,7 @@ from population_analysis.quantification.magnitude_difference import MagDiffQuant
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
 
@@ -20,7 +20,7 @@ def main():
     # )
 
     # ufilt = BasicFilter([373, 233], sess.units().shape[1])
-    ufilt = BasicFilter([189, 265, 317, 373, 374, 375, 414, 431, 436, 441], sess.units().shape[1])
+    ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]

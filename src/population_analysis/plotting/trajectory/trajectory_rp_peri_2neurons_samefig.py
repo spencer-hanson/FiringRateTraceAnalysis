@@ -54,7 +54,7 @@ def main():
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
 
-    ufilt = BasicFilter([373, 233], sess.units().shape[1])
+    ufilt = BasicFilter([189, 244], sess.units().shape[1])
     plot_rp_peri_2neuron_samefig_trajectory(sess, ufilt)
 
     # ufilt = sess.unit_filter_qm().append(

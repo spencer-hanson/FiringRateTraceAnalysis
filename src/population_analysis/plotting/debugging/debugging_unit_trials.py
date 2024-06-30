@@ -1,19 +1,21 @@
-from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
 import numpy as np
+
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def main():
     # filename = "not_smoothed_2023-05-15_mlati7_output"
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../../../../graphs")
 
-    unit_num = 373
+    unit_num = 244
     # unit_num = 233
 
     for motdir in [-1, 1]:
         filt = sess.trial_motion_filter(motdir)
+        filt.append(sess.trial_filter_rmixed())
 
         spikes = sess.spikes()[:, filt.idxs()]
         unit_spikes = spikes[unit_num]

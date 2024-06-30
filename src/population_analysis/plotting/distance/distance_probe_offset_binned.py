@@ -2,17 +2,17 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSession
-from population_analysis.processors.nwb import BasicFilter
-from population_analysis.processors.nwb import ProbeOffsetTrialFilter
-from population_analysis.processors.nwb import RelativeTrialFilter
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.processors.filters.trial_filters.probe_offset import ProbeOffsetTrialFilter
+from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../scripts", filename, "../graphs", filter_mixed=False)
+    sess = NWBSession("../../../../scripts", filename, "../graphs", filter_mixed=False)
 
     ufilt = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(
@@ -40,17 +40,22 @@ def main():
                 BasicFilter(sess.mixed_trial_idxs, units.shape[1])  # Filter by mixed
             )
 
-            rp_peri = sess.rp_peri_units()[ufilt.idxs()][:, rp_peri_filt.idxs()]
-            rp_extra = units[ufilt.idxs()][:, rp_extra_filt.idxs()]
-            for t in range(NUM_FIRINGRATE_SAMPLES):
-                dist = quan.calculate(
-                    rp_peri[:, :, t],
-                    rp_extra[:, :, t]
-                )
-                if dist > max_val:
-                    max_val = dist
+            rp_peri_idxs = rp_peri_filt.idxs()
+            if len(rp_peri_idxs) == 0:
+                for t in range(NUM_FIRINGRATE_SAMPLES):
+                    dist_from_time[t].append(0)
+            else:
+                rp_peri = sess.rp_peri_units()[ufilt.idxs()][:, rp_peri_idxs]
+                rp_extra = units[ufilt.idxs()][:, rp_extra_filt.idxs()]
+                for t in range(NUM_FIRINGRATE_SAMPLES):
+                    dist = quan.calculate(
+                        rp_peri[:, :, t],
+                        rp_extra[:, :, t]
+                    )
+                    if dist > max_val:
+                        max_val = dist
 
-                dist_from_time[t].append(dist)
+                    dist_from_time[t].append(dist)
         # get distribution of dists
         all_dists = []
         for t in range(NUM_FIRINGRATE_SAMPLES):
@@ -89,7 +94,6 @@ def main():
 
         tw = 2
     tw = 2
-
 
 
 if __name__ == "__main__":

@@ -41,7 +41,7 @@ def plot_multi_mean_responses(sess, unit_filter):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
     sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=True)
@@ -52,7 +52,7 @@ def main():
     #     )
     # )
 
-    unit_filter = BasicFilter([189, 265, 317, 373, 374, 375, 414, 431, 436, 441], sess.units().shape[1])
+    unit_filter = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
 
     plot_multi_mean_responses(sess, unit_filter)
 

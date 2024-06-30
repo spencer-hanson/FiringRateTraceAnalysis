@@ -151,7 +151,7 @@ def main():
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
 
-    ufilt = BasicFilter([189, 265, 317, 373, 374, 375, 414, 431, 436, 441], sess.units().shape[1])
+    ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
     # ufilt = sess.unit_filter_qm().append(
     #     sess.unit_filter_probe_zeta().append(
     #         sess.unit_filter_custom(5, .2, 1, 1, .9, .4)

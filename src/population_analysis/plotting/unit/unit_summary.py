@@ -128,6 +128,8 @@ def unit_summary(sess: NWBSession, unit_num: int):
             spike_idxs = get_spike_idxs(spikes, unit_num, trial_filt.idxs())
             ax.eventplot(spike_idxs, colors="black", lineoffsets=1, linelengths=1)
             ax.set_title(f"{trial_name} motion={motdir}")
+            ax.set_xlim([0, 700])
+            ax.set_xticks(np.arange(0, 700, 100))
 
         raster_axs[0].set_ylabel("Trial #")
         raster_axs[0].set_xlabel("Time (ms)")
@@ -153,7 +155,10 @@ def main():
 
     # for unit_num in unit_filter.idxs():
     #for unit_num in [373]:
-    for unit_num in Filter.empty(sess.units().shape[0]).idxs():
+    #all units u > 324
+    # for unit_num in Filter.empty(sess.units().shape[0]).idxs():
+    # for unit_num in range(324, sess.units().shape[0]):
+    for unit_num in [244]:
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)
 

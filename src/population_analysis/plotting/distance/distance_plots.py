@@ -1,9 +1,10 @@
 import numpy as np
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.processors.nwb import NWBSession
 from population_analysis.quantification.euclidian import EuclidianQuantification
 import matplotlib.pyplot as plt
+
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 """
 Plots relating to distance between response types, eg Rs, Rp(Peri), etc..
@@ -165,8 +166,8 @@ def mean_response(data_dict):
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
-    sess = NWBSession("../scripts", filename, "../graphs")
+    filename = "new_test"
+    sess = NWBSession("../../../../scripts", filename, "../graphs")
 
     # shuffle = True
     # split_data = probe_units
