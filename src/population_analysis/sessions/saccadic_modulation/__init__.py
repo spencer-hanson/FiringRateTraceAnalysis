@@ -44,6 +44,9 @@ class NWBSession(object):
             self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
 
         self.nwb = nwb
+
+        self.num_trials = self.nwb.processing["behavior"]["trial_motion_directions"].data[:].shape[0]
+        self.num_units = self.nwb.processing["behavior"]["unit_labels"].data[:].shape[0]
         tw = 2
 
     def _extract_quality_metrics(self, nwb):
@@ -51,16 +54,6 @@ class NWBSession(object):
         for metric_name in METRIC_NAMES.values():
             metrics[metric_name] = nwb.processing["behavior"][f"metric-{metric_name}"].data[:]
         return metrics
-
-    @property
-    def num_units(self):
-        num_units = self.nwb.processing["behavior"]["trial_spike_times"].data[:].shape[0]  # units x trials x 700
-        return num_units
-
-    @property
-    def num_trials(self):
-        num_trials = self.nwb.processing["behavior"]["trial_spike_times"].data[:].shape[1]
-        return num_trials
 
     def spikes(self):
         return self.nwb.processing["behavior"]["trial_spike_times"].data[:]  # (units, trials, 700)
@@ -94,6 +87,13 @@ class NWBSession(object):
             return self.nwb.processing["behavior"]["normalized_trial_response_firing_rates"].data[:]
         else:
             return self.nwb.processing["behavior"]["trial_response_firing_rates"].data[:]  # units x trials x t
+
+    def unit_filter_premade(self) -> UnitFilter:
+        return self.unit_filter_qm().append(
+            self.unit_filter_probe_zeta().append(
+                self.unit_filter_custom(5, .2, 1, 1, .9, .4)
+            )
+        )
 
     def unit_filter_qm(self) -> UnitFilter:
         return QualityMetricsUnitFilter(self.quality_metrics, self.num_units)

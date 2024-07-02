@@ -1,7 +1,7 @@
 from matplotlib import animation
-
-from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
+
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def ani_unit_trials(sess, trial_idxs, unit_num):

@@ -1,15 +1,13 @@
 import numpy as np
-
-from population_analysis.processors.nwb import NWBSession
 import matplotlib.pyplot as plt
-
 from population_analysis.quantification.euclidian import EuclidianQuantification
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def main():
-    filename = "2023-05-15_mlati7_output"
+    filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../scripts", filename, "../graphs")
+    sess = NWBSession("../../../../scripts", filename, "../graphs")
 
     filt = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(

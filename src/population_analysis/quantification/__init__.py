@@ -46,8 +46,10 @@ class QuanDistribution(object):
     """
 
     NUM_SAMPLES = 10000
+    # NUM_SAMPLES = 7
 
     def __init__(self, class_1_data, class_2_data, quan: Quantification):
+        # Expects data in (units, trials, t)
         self.quan: Quantification = quan
         self.class_1_data = class_1_data
         self.class_2_data = class_2_data
@@ -65,8 +67,8 @@ class QuanDistribution(object):
         else:
             display = False
 
-        all_values = np.vstack([self.class_1_data, self.class_2_data])
-        values_len = len(all_values)
+        all_values = np.concatenate([self.class_1_data, self.class_2_data], axis=1)
+        values_len = all_values.shape[1]
         half = int(values_len / 2)
         quan_values = []
 
@@ -74,6 +76,8 @@ class QuanDistribution(object):
             print("Calculating quantification 10k times -", end="")
 
         one_tenth = int(num_samples / 10)
+        one_tenth = one_tenth if one_tenth != 0 else 1
+
         # start = pendulum.now()
         for progress in range(num_samples):  # Calculate quan 10k times
 
@@ -85,10 +89,12 @@ class QuanDistribution(object):
                 # start = pendulum.now()
 
             np.random.shuffle(all_values)
-            new_class_1 = all_values[:half]
-            new_class_2 = all_values[half:]
-            val = self.quan.calculate(new_class_1, new_class_2)
-            quan_values.append(val)
+            new_class_1 = all_values[:, :half]
+            new_class_2 = all_values[:, half:]
+            timepoints = []
+            for t in range(all_values.shape[2]):  # Calculate at each timepoint
+                timepoints.append(self.quan.calculate(new_class_1[:, :, t], new_class_2[:, :, t]))
+            quan_values.append(timepoints)
 
         return quan_values
 
@@ -110,4 +116,4 @@ class QuanDistribution(object):
             for r in results:
                 dists.extend(r)
 
-            return dists
+            return np.array(dists)

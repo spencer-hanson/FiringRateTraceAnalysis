@@ -2,7 +2,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-from population_analysis.processors.nwb import NWBSession
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def main():
