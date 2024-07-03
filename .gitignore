@@ -10,3 +10,4 @@ graphs/*
 *.png
 *.gif
 *.npy
+*.pickle

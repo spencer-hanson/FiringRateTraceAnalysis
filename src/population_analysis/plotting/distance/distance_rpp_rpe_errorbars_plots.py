@@ -11,24 +11,31 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 
 
-def mean_confidence_interval(data, confidence=0.95):
-    samp_size = data.shape[0]
-    std = np.std(data)
+def confidence_interval(data, confidence_val, plot=False):
+    # data is an arr (10k,)
+    hist = np.histogram(data, bins=200)
 
-    # a = 1.0 * np.array(data)
-    # n = len(a)
-    # m, se = np.mean(a), st.sem(a)
-    # h = se * st.t.ppf((1 + confidence) / 2., n-1)
-    # return m, h
-    z = st.norm.ppf(q=0.00005)
-    err = z * (std/math.sqrt(samp_size))
-    return np.mean(data), np.abs(err)
+    pdf = hist[0] / sum(hist[0])
+    cdf = np.cumsum(pdf)
+
+    lower_idx = np.where(cdf > 1 - confidence_val)[0][0]
+    lower = hist[1][lower_idx + 1]
+
+    upper_idx = np.where(cdf > confidence_val)[0][0]
+    upper = hist[1][upper_idx + 1]
+
+    if plot:
+        plt.plot(hist[1][1:], cdf)
+        plt.vlines(lower, 0, 1.0, color="red")
+        plt.vlines(upper, 0, 1.0, color="red")
+        plt.show()
+    return lower, upper
 
 
-def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict):
+def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_val):
     # quan_dist_motdir_dict is a dict with the keys as 1 or -1 and the data as (10k, 35) for the quan distribution
     fig, axs = plt.subplots(ncols=2)
-    fig.tight_layout()
+    # fig.tight_layout()
 
     ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
 
@@ -47,15 +54,22 @@ def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict):
         for t in range(NUM_FIRINGRATE_SAMPLES):
             dist_arr.append(quan.calculate(rpp[:, :, t], rpe[:, :, t]))
         quan_dist_data = quan_dist_motdir_dict[motdir]
-        # ax.plot(dist_arr)
+        ax.plot(dist_arr)
 
-        confdiffs = []
         means = []
+        uppers = []
+        lowers = []
         for t in range(NUM_FIRINGRATE_SAMPLES):
-            mean, diff = mean_confidence_interval(quan_dist_data[:, t])
-            confdiffs.append(diff)
+            lower, upper = confidence_interval(quan_dist_data[:, t], confidence_val)
+            mean = np.mean(quan_dist_data[:, t], axis=0)
             means.append(mean)
-        ax.errorbar(range(35), np.mean(quan_dist_data, axis=0), yerr=confdiffs, ecolor="red")
+            uppers.append(upper)
+            lowers.append(lower)
+
+        ax.plot(means, color="orange")
+        ax.plot(uppers, color="orange", linestyle="dotted")
+        ax.plot(lowers, color="orange", linestyle="dotted")
+        # np.mean(quan_dist_data, axis=0)
         # ax.plot(means, color="orange")
 
         tw = 2
@@ -70,10 +84,14 @@ def main():
     filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
-    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, suppress_plot=True)
-    rpp_rpe_errorbars(sess, EuclidianQuantification(), quan_dist_motdir_dict)
 
-    # plot_verif_rpe_v_rpe(sess, False)
+    confidence = 0.95
+
+    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, True, suppress_plot=True)
+    # quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, False, suppress_plot=True)
+    rpp_rpe_errorbars(sess, EuclidianQuantification(), quan_dist_motdir_dict, confidence)
+
+    confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval
     tw = 2
 
 

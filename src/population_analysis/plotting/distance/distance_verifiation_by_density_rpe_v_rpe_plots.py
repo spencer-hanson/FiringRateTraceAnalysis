@@ -9,6 +9,8 @@ from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 
+PICKLE_FILENAME_FMT = "quan_dist_rpe_v_rpe_mot_{motdir}.pickle"
+
 
 def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     # data1/2 is (units, trials, t)
@@ -39,7 +41,7 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, used_cached=True, suppress_plot=False
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
 
     for motdir in [-1, 1]:
-        pickle_fn = f"quan_dist_rpe_v_rpe_mot_{motdir}.pickle"
+        pickle_fn = PICKLE_FILENAME_FMT.format(motdir=motdir)
         if used_cached and os.path.exists(pickle_fn):
             with open(pickle_fn, "rb") as fff:
                 motdata[motdir] = pickle.load(fff)
@@ -51,7 +53,7 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, used_cached=True, suppress_plot=False
         quan = EuclidianQuantification()
         print("Calculating unit idxs and filter idxs..")
         units = sess.units()[ufilt.idxs()][:, trial_filter.idxs()]
-        half_num_trials = int(units.shape[1]/2)
+        proportion = int(units.shape[1]/100)
 
         # plot_distance_density(
         #     units[:, :half_num_trials], "RpExtra1",
@@ -63,8 +65,8 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, used_cached=True, suppress_plot=False
         quan_dist = QuanDistribution(
             # units[:, :half_num_trials],
             # units[:, half_num_trials:],
-            units[:, :40],
-            units[:, 40:],
+            units[:, :proportion],
+            units[:, proportion:],
             quan
         )
 
@@ -85,7 +87,6 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, used_cached=True, suppress_plot=False
         plt.show()
 
     return motdata
-    tw = 2
 
 
 def main():
