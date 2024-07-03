@@ -47,6 +47,7 @@ def main():
             for t in range(NUM_FIRINGRATE_SAMPLES):
                 dist_arr.append(quan.calculate(rpp[:, :, t], rpe[:, :, t]))
             axis.plot(dist_arr)
+            tw = 2
             axis.title.set_text(f"Rpp vs Rpe {quan.get_name()} - Motion={motdir}")
 
             if row_idx == len(quantification_list) - 1:

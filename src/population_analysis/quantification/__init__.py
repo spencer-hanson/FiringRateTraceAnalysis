@@ -55,9 +55,6 @@ class QuanDistribution(object):
         self.class_2_data = class_2_data
         self._progress = 0
 
-    def original(self):
-        return self.quan.calculate(self.class_1_data, self.class_2_data)
-
     def get_name(self):
         return self.quan.get_name()
 
@@ -68,8 +65,7 @@ class QuanDistribution(object):
             display = False
 
         all_values = np.concatenate([self.class_1_data, self.class_2_data], axis=1)
-        values_len = all_values.shape[1]
-        half = int(values_len / 2)
+        part = self.class_1_data.shape[1]  # part is the 'half' or section to cut the data on
         quan_values = []
 
         if display:
@@ -88,9 +84,11 @@ class QuanDistribution(object):
                 # print(start.diff(end).in_seconds())
                 # start = pendulum.now()
 
-            np.random.shuffle(all_values)
-            new_class_1 = all_values[:, :half]
-            new_class_2 = all_values[:, half:]
+            all_values = all_values.swapaxes(0, 1)  # swap units, trials
+            np.random.shuffle(all_values)  # shuffle on first axis
+            all_values = all_values.swapaxes(0, 1)  # swap back
+            new_class_1 = all_values[:, :part]
+            new_class_2 = all_values[:, part:]
             timepoints = []
             for t in range(all_values.shape[2]):  # Calculate at each timepoint
                 timepoints.append(self.quan.calculate(new_class_1[:, :, t], new_class_2[:, :, t]))
