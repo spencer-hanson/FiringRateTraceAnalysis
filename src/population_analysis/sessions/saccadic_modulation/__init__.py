@@ -15,8 +15,9 @@ from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calc
 
 
 class NWBSession(object):
-    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath, filter_mixed=True, use_normalized_units=True):
+    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath=None, filter_mixed=True, use_normalized_units=True):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
+        self.filename_no_ext = filename
         graph_prefix = f"{graph_folderpath}/{filename}"
 
         if filename.endswith(".nwb"):

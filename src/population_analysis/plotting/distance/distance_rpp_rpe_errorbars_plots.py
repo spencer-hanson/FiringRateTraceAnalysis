@@ -85,8 +85,11 @@ def main():
     # filepath = "../../../../scripts"
     # filename = "new_test"
 
-    filepath = "../../../../scripts/generated"
-    filename = "generated.hdf-nwb"
+    # filepath = "../../../../scripts/generated"
+    # filename = "generated.hdf-nwb"
+
+    filepath = "../../../../scripts/05-26-2023-output"
+    filename = "05-26-2023-output.hdf-nwb"
 
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession(filepath, filename, "../graphs")

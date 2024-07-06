@@ -1,4 +1,6 @@
+import math
 import os.path
+from multiprocessing import Pool
 from typing import Optional
 
 import numpy as np
@@ -23,7 +25,7 @@ def get_spike_idxs(bbool_counts, unit_number, trial_idxs, unit_filter: Optional[
     return spike_idxss
 
 
-def unit_summary(sess: NWBSession, unit_num: int):
+def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
     """
     Graph a single unit's mean response of each trial type in each motion direction with rasters
     """
@@ -135,9 +137,45 @@ def unit_summary(sess: NWBSession, unit_num: int):
         raster_axs[0].set_xlabel("Time (ms)")
 
     # plt.show()
-    plt.savefig(f"unit_summary_plots/unit-{unit_num}.png")
+    if not os.path.exists(foldername):
+        os.mkdir(foldername)
+
+    plt.savefig(f"{foldername}/unit-{unit_num}.png")
     plt.close(fig)
     tw = 2
+
+
+def _calc_pool_args(num_pools, sample_list, sess):
+    num_samples = len(sample_list)
+
+    val = math.floor(num_samples / num_pools)
+    remainder = num_samples % num_pools
+
+    nums = [val] * num_pools
+    nums[-1] = (nums[-1] + remainder, True)
+    # return nums
+
+    # [filepath, filename], [2, .. 28 etc], False unless remainder pool, foldername is sess name
+    # sess_args, sample_list, display, foldername
+
+
+def multiprocess_func(sess_args, sample_list, display, foldername):
+    sess = NWBSession(*sess_args)
+    num_samples = len(sample_list)
+
+    if display:
+        print("Rendering units with multiprocessing -", end="")
+
+    one_tenth = int(num_samples / 10)
+    one_tenth = one_tenth if one_tenth != 0 else 1
+
+    # start = pendulum.now()
+    for progress, unit_num in enumerate(sample_list):
+
+        if display and progress % one_tenth == 0:
+            print(f" {round(progress / num_samples, 2)*100}%", end="")
+
+        unit_summary(sess, unit_num, foldername)
 
 
 def main():
@@ -147,27 +185,25 @@ def main():
     filepath = "../../../../scripts/generated"
     filename = "generated.hdf-nwb"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    sess_args = [filepath, filename]
+    sess = NWBSession(*sess_args)
 
-    sess = NWBSession(filepath, filename, "../../../../graphs")
-    unit_filter = sess.unit_filter_qm().append(
-        sess.unit_filter_probe_zeta().append(
-            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
-        )
-    )
+    ufilt = BasicFilter.empty(sess.num_units)
 
-    if not os.path.exists("unit_summary_plots"):
-        os.mkdir("unit_summary_plots")
+    num_pools = 8
+    with Pool(num_pools + 1) as p:
+        p.map(
+            multiprocess_func,
+            _calc_pool_args(num_pools, ufilt.idxs(), sess)
+        )  # TODO Finish argument mapping for pool multiprocessing
 
-    # for unit_num in unit_filter.idxs():
-    #for unit_num in [373]:
-    #all units u > 324
-    for unit_num in Filter.empty(sess.num_units).idxs():
+    # for unit_num in Filter.empty(sess.num_units).idxs():
     # for unit_num in range(sess.num_units-1, 0, -1):
     # for unit_num in range(320, 0, -1):
     # for unit_num in range(30, sess.num_units):
     # for unit_num in [107?, 206?]:
-        print(f"Rendering unit {unit_num}..")
-        unit_summary(sess, unit_num)
+    #     print(f"Rendering unit {unit_num}..")
+    #     unit_summary(sess, unit_num, "default_unit_summary")
 
 
 if __name__ == "__main__":
