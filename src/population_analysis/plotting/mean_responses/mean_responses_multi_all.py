@@ -41,10 +41,14 @@ def plot_multi_mean_responses(sess, unit_filter):
 
 
 def main():
-    filename = "new_test"
+    # filepath = "../../../../scripts"
+    # filename = "new_test"
+
+    filepath = "../../../../scripts/generated"
+    filename = "generated.hdf-nwb"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=True)
+    sess = NWBSession(filepath, filename, "../../../../graphs", use_normalized_units=True)
     # sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
     # unit_filter = sess.unit_filter_qm().append(
     #     sess.unit_filter_probe_zeta().append(
@@ -52,7 +56,8 @@ def main():
     #     )
     # )
 
-    unit_filter = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
+    # unit_filter = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
+    unit_filter = BasicFilter.empty(sess.num_units)
 
     plot_multi_mean_responses(sess, unit_filter)
 

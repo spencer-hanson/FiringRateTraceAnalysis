@@ -87,7 +87,8 @@ def do_raster(sess, unit_filter):
 
 def main():
     # filename = "not_smoothed_2023-05-15_mlati7_output"
-    filename = "new_test"
+    # filename = "new_test"
+    filename = "output-mlati6-2023-05-12.hdf-nwb"
 
     matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 

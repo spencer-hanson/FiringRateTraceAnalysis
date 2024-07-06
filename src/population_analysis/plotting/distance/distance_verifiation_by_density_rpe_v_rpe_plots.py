@@ -37,23 +37,22 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def plot_verif_rpe_v_rpe(sess: NWBSession, used_cached=True, suppress_plot=False):
+def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plot=False):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
 
     for motdir in [-1, 1]:
         pickle_fn = PICKLE_FILENAME_FMT.format(motdir=motdir)
         if used_cached and os.path.exists(pickle_fn):
+            print(f"Loading unit filter and trial filter for mot={motdir}..")
             with open(pickle_fn, "rb") as fff:
                 motdata[motdir] = pickle.load(fff)
                 continue
-        print(f"Loading unit filter and trial filter for mot={motdir}..")
-        # ufilt = sess.unit_filter_premade()
-        ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
         trial_filter = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(motdir))
         quan = EuclidianQuantification()
         print("Calculating unit idxs and filter idxs..")
         units = sess.units()[ufilt.idxs()][:, trial_filter.idxs()]
         proportion = int(units.shape[1]/100)
+        proportion = 1 if proportion <= 0 else proportion
 
         # plot_distance_density(
         #     units[:, :half_num_trials], "RpExtra1",
@@ -93,7 +92,9 @@ def main():
     filename = "new_test"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession("../../../../scripts", filename, "../graphs")
-    plot_verif_rpe_v_rpe(sess)
+    ufilt = BasicFilter.empty(sess.num_units)
+
+    plot_verif_rpe_v_rpe(sess, ufilt)
     # plot_verif_rpe_v_rpe(sess, False)
     tw = 2
 

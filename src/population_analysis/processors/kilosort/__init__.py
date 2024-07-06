@@ -1,3 +1,4 @@
+import math
 import os.path
 import warnings
 
@@ -56,10 +57,18 @@ class KilosortProcessor(object):
         fr = np.load(KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME, mmap_mode='r')
         return fr, time_bins
 
+    def _round_float(self, flt):
+        base = int(math.floor(flt))
+        deciml = flt - base
+        if deciml > .9:
+            return round(flt)
+        else:
+            return int(flt)
+
     def calculate_spikes(self, load_precalculated):
         spike_start_time = np.min(self.spike_timings)
         spike_end_time = np.max(self.spike_timings)
-        max_spikes = int((spike_end_time - spike_start_time) / .001)  # Number of ms in entire recording
+        max_spikes = self._round_float((spike_end_time - spike_start_time) / .001)  # Number of ms in entire recording
         spike_bins = np.arange(spike_start_time, spike_end_time, 0.001)
         if spike_bins[-1] != spike_end_time:
             spike_bins = np.append(spike_bins, spike_end_time)  # Add end time if we don't cut exactly

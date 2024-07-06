@@ -9,9 +9,13 @@ from population_analysis.quantification.magnitude_difference import MagDiffQuant
 
 
 def main():
-    filename = "new_test"
+    # filepath = "../../../../scripts"
+    # filename = "new_test"
+
+    filepath = "../../../../scripts/generated"
+    filename = "generated.hdf-nwb"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../../../../scripts", filename, "../graphs")
+    sess = NWBSession(filepath, filename, "../graphs")
 
     # ufilt = sess.unit_filter_qm().append(
     #     sess.unit_filter_probe_zeta().append(
@@ -20,7 +24,8 @@ def main():
     # )
 
     # ufilt = BasicFilter([373, 233], sess.units().shape[1])
-    ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
+    # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
+    ufilt = BasicFilter.empty(sess.num_units)
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]

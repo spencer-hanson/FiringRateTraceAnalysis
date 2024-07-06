@@ -2,7 +2,7 @@ import os
 
 import h5py
 
-from population_analysis.processors.experiments.saccadic_modulation.raw import RawSessionProcessor
+from population_analysis.processors.experiments.saccadic_modulation.hdf import HDFSessionProcessor
 
 SESSION_DATA_PATH = "E:\\PopulationAnalysis"
 
@@ -42,19 +42,25 @@ def main():
     #     check_for_data(os.path.join(SESSION_DATA_PATH, folder), data_files)
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
-    data_files = {"idk": "output.hdf"}
+    data_files = {
+        # "idk": "../output-mlati6-2023-05-12.hdf"
+        "idk": "05-26-2023-output.hdf",
+        # "idk": "generated.hdf"
+    }
 
-    dd = dictify_hd5(h5py.File("output.hdf"))
-    tw = 2
+    # dd = dictify_hd5(h5py.File("output.hdf"))
+    # tw = 2
 
     for filename in list(data_files.values()):
         try:
             print(f"Processing '{filename}'")
-            sess = RawSessionProcessor(filename, "mlati7")
-            # +1 for leading \\, -4 for '.hdf'
-            # nwb_filename = "_".join(re.split("\\\\|/", filename[len(SESSION_DATA_PATH)+1:]))[:-4] + ".nwb"
-            nwb_filename = "2023-05-15_mlati7_output.nwb"
-            sess.save_to_nwb(nwb_filename, "session0")  # TODO change me
+            name = ".".join(filename.split(".")[:-1])
+            if not os.path.exists(name):
+                os.mkdir(name)
+            os.chdir(name)
+            filename = f"../{filename}"
+            raw = HDFSessionProcessor(filename, "mlati7", "session0")
+            raw.save_to_nwb(f"{name}/{filename}-nwb.nwb", load_precalculated=False)
         except Exception as e:
             raise e
             # warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")

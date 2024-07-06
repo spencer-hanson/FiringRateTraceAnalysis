@@ -42,7 +42,12 @@ class FiringRateCalculator(object):
         raw_rpp = rppc.calculate()
         return raw_rpp
 
-    def calculate(self, load_precalculated=True):
+    def _check_for_nan(self, arr):
+        if bool(np.where(np.isnan(arr.ravel()))[0]):
+            raise ValueError("Array contains a NaN! Fix pls!")
+        tw = 2
+
+    def calculate(self, load_precalculated):
         # |--A-10sec---|--B-10sec---|-C-.2sec--|---Probe--|
         # baseline mean C
         # std over just A
@@ -66,6 +71,8 @@ class FiringRateCalculator(object):
         all_normalized_firing_rates = []
         all_rp_peri_firing_rates = []  # Keep track of rp_peri calculations arr like [[[firing rates of -1000idx, end_idx for one unit], <another unit>], ..more trials]
         all_normalized_rp_peri_firing_rates = []
+        first_trial = self.trial_group.all_trials()[0]
+        trial_idx_len = first_trial.end_idx - first_trial.start_idx
 
         for trial_idx, trial in enumerate(self.trial_group.all_trials()):
             if trial_idx % int(self.num_trials/10) == 0:
@@ -73,6 +80,9 @@ class FiringRateCalculator(object):
 
             trial_start_idx = trial.start_idx
             trial_end_idx = trial.end_idx
+            assert trial_end_idx - trial_start_idx == trial_idx_len  # Make sure each trial is the same length
+            assert trial_end_idx < self.firing_rates.shape[1]  # Need to have enough firing rate data for all trials
+            assert trial_start_idx >= 0
 
             trial_firing_rates = []
             trial_normalized_firing_rates = []
@@ -82,10 +92,12 @@ class FiringRateCalculator(object):
             for unit_num in range(self.num_units):
                 # regular firing rates
                 v = self.firing_rates[unit_num, trial_start_idx:trial_end_idx]
+                assert len(v) > 0
                 trial_firing_rates.append(v)
 
                 # normalized firing rates
                 baseline = self.firing_rates[unit_num, trial_start_idx:trial_start_idx + 10]  # Mean firing rate from -200, 0ms (relative to probe)
+                assert len(baseline) > 0
                 baseline = np.mean(baseline)
                 trial_normalized_firing_rates.append(v - baseline)  # Will be adding on firingrates
 
@@ -107,6 +119,11 @@ class FiringRateCalculator(object):
         all_trial_firing_rates = np.array(all_trial_firing_rates).swapaxes(0, 1)
         all_rp_peri_firing_rates = np.array(all_rp_peri_firing_rates).swapaxes(0, 1)
         all_normalized_rp_peri_firing_rates = np.array(all_normalized_rp_peri_firing_rates).swapaxes(0, 1)
+
+        self._check_for_nan(all_normalized_firing_rates)
+        self._check_for_nan(all_trial_firing_rates)
+        self._check_for_nan(all_rp_peri_firing_rates)
+        self._check_for_nan(all_normalized_rp_peri_firing_rates)
 
         preferred = self._calculate_preferred_motion_direction(all_trial_firing_rates)  # (units,)
 
@@ -131,7 +148,9 @@ class FiringRateCalculator(object):
             motdir = preferred[unit_num]
 
             for trial_idx, trial in enumerate(self.trial_group.get_trials_by_motion(motdir)):
-                baseline_frs = np.mean(self.firing_rates[unit_num, trial.start_idx - 1000:trial.start_idx - 500])
+                arrr = self.firing_rates[unit_num, trial.start_idx - 1000:trial.start_idx - 500]
+                baseline_frs = np.mean(arrr)
+                assert len(arrr) > 0
                 unit_std_groups[unit_num].append(baseline_frs)  # from -1000idx, -500idx is -20sec, -10sec
 
         raw_unit_stds = []

@@ -19,6 +19,8 @@ class NWBSession(object):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
         graph_prefix = f"{graph_folderpath}/{filename}"
 
+        if filename.endswith(".nwb"):
+            print("FILENAME SHOULD NOT END WITH .nwb in args (on disk todo fix this) remove in str")
         # if not os.path.exists(graph_prefix):  # TODO
         #     os.makedirs(graph_prefix)
 

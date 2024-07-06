@@ -37,7 +37,11 @@ class SaccadicModulationTrialProcessor(object):
             block = blocks[idx]
 
             hist, _ = np.histogram(timing, bins=self.firing_rate_bins)
-            firing_rate_idx = np.where(hist)[0][0]  # Index of this event in firing rate idxs
+            where_my_val = np.where(hist)[0]
+            if not bool(where_my_val):
+                raise ValueError("Not enough recording! TODO fix?")
+            else:
+                firing_rate_idx = where_my_val[0]  # Index of this event in firing rate idxs
             start_idx = firing_rate_idx - 10  # TODO? Assuming bins are 20ms and window is (-200ms, 500ms) -10idxs = 20ms * -10idxs = -200ms
             end_idx = firing_rate_idx + 25  # 25idx * 20ms = +500ms
             event_idx = firing_rate_idx

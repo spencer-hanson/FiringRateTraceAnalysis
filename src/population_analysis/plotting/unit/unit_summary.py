@@ -45,8 +45,8 @@ def unit_summary(sess: NWBSession, unit_num: int):
                             figsize=(16, 8))
     fig.subplots_adjust(wspace=0.2, hspace=.3)
 
-    row_maxs = [0] * len(motion_trial_filters)
-    row_mins = [999] * len(motion_trial_filters)
+    row_maxs = [-9999] * len(motion_trial_filters)
+    row_mins = [9999] * len(motion_trial_filters)
     xvals = np.array(range(NUM_FIRINGRATE_SAMPLES)) - 10  # 10 is time of probe
 
     row_idx = 0
@@ -136,14 +136,19 @@ def unit_summary(sess: NWBSession, unit_num: int):
 
     # plt.show()
     plt.savefig(f"unit_summary_plots/unit-{unit_num}.png")
+    plt.close(fig)
     tw = 2
 
 
 def main():
-    filename = "new_test"
+    # filepath = "../../../../scripts"
+    # filename = "new_test"
+    # filename = "output-mlati6-2023-05-12.hdf-nwb"
+    filepath = "../../../../scripts/generated"
+    filename = "generated.hdf-nwb"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
 
-    sess = NWBSession("../../../../scripts", filename, "../../../../graphs")
+    sess = NWBSession(filepath, filename, "../../../../graphs")
     unit_filter = sess.unit_filter_qm().append(
         sess.unit_filter_probe_zeta().append(
             sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
@@ -156,9 +161,11 @@ def main():
     # for unit_num in unit_filter.idxs():
     #for unit_num in [373]:
     #all units u > 324
-    # for unit_num in Filter.empty(sess.units().shape[0]).idxs():
-    # for unit_num in range(324, sess.units().shape[0]):
-    for unit_num in [244]:
+    for unit_num in Filter.empty(sess.num_units).idxs():
+    # for unit_num in range(sess.num_units-1, 0, -1):
+    # for unit_num in range(320, 0, -1):
+    # for unit_num in range(30, sess.num_units):
+    # for unit_num in [107?, 206?]:
         print(f"Rendering unit {unit_num}..")
         unit_summary(sess, unit_num)
 

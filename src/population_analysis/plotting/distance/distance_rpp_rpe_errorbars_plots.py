@@ -32,12 +32,10 @@ def confidence_interval(data, confidence_val, plot=False):
     return lower, upper
 
 
-def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_val):
+def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_val, ufilt):
     # quan_dist_motdir_dict is a dict with the keys as 1 or -1 and the data as (10k, 35) for the quan distribution
     fig, axs = plt.subplots(ncols=2)
     # fig.tight_layout()
-
-    ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
@@ -81,15 +79,33 @@ def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_
 
 
 def main():
-    filename = "new_test"
+    # filename = "new_test"
+    # filename = "output-mlati6-2023-05-12.hdf-nwb"
+
+    # filepath = "../../../../scripts"
+    # filename = "new_test"
+
+    filepath = "../../../../scripts/generated"
+    filename = "generated.hdf-nwb"
+
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../../../../scripts", filename, "../graphs")
+    sess = NWBSession(filepath, filename, "../graphs")
 
     confidence = 0.95
+    # for 05-15
+    # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
+    # ufilt = BasicFilter([244, 365], sess.num_units)
+    # ufilt = BasicFilter([TODO for 05-12], sess.num_units)
+    ufilt = sess.unit_filter_qm().append(
+        sess.unit_filter_probe_zeta().append(
+            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
+        )
+    )
+    ufilt = BasicFilter.empty(sess.num_units)
 
-    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, True, suppress_plot=True)
-    # quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, False, suppress_plot=True)
-    rpp_rpe_errorbars(sess, EuclidianQuantification(), quan_dist_motdir_dict, confidence)
+    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, False, suppress_plot=True)
+    # quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, True, suppress_plot=True)
+    rpp_rpe_errorbars(sess, EuclidianQuantification(), quan_dist_motdir_dict, confidence, ufilt)
 
     confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval
     tw = 2
