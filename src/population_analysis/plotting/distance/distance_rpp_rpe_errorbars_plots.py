@@ -5,6 +5,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import plot_verif_rpe_v_rpe
 from population_analysis.processors.filters import BasicFilter
 from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
+from population_analysis.quantification.angle import AngleQuantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
@@ -79,8 +80,8 @@ def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_
 
 
 def main():
-    # filename = "new_test"
-    # filename = "output-mlati6-2023-05-12.hdf-nwb"
+    filepath = "../../../../scripts/05-15-2023-output"
+    filename = "05-15-2023-output.hdf-nwb"
 
     # filepath = "../../../../scripts"
     # filename = "new_test"
@@ -88,8 +89,8 @@ def main():
     # filepath = "../../../../scripts/generated"
     # filename = "generated.hdf-nwb"
 
-    filepath = "../../../../scripts/05-26-2023-output"
-    filename = "05-26-2023-output.hdf-nwb"
+    # filepath = "../../../../scripts/05-26-2023-output"
+    # filename = "05-26-2023-output.hdf-nwb"
 
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession(filepath, filename, "../graphs")
@@ -98,19 +99,18 @@ def main():
     # for 05-15
     # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
     # ufilt = BasicFilter([244, 365], sess.num_units)
-    # ufilt = BasicFilter([TODO for 05-12], sess.num_units)
-    ufilt = sess.unit_filter_qm().append(
-        sess.unit_filter_probe_zeta().append(
-            sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
-        )
-    )
-    ufilt = BasicFilter.empty(sess.num_units)
+    ufilt = sess.unit_filter_premade()
+    # ufilt = BasicFilter.empty(sess.num_units)
+    use_cached = False
+    # use_cached = True
 
-    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, False, suppress_plot=True)
-    # quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, True, suppress_plot=True)
-    rpp_rpe_errorbars(sess, EuclidianQuantification(), quan_dist_motdir_dict, confidence, ufilt)
+    # quan = EuclidianQuantification()
+    quan = AngleQuantification()
 
-    confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval
+    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, used_cached=use_cached, suppress_plot=True, quan=quan)
+    rpp_rpe_errorbars(sess, quan, quan_dist_motdir_dict, confidence, ufilt)
+
+    # confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval
     tw = 2
 
 

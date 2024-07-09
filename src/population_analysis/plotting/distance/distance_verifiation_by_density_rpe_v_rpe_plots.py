@@ -37,8 +37,11 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plot=False):
+def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plot=False, quan=None):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
+
+    if quan is None:
+        quan = EuclidianQuantification()
 
     for motdir in [-1, 1]:
         pickle_fn = PICKLE_FILENAME_FMT.format(motdir=motdir)
@@ -48,7 +51,6 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plo
                 motdata[motdir] = pickle.load(fff)
                 continue
         trial_filter = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(motdir))
-        quan = EuclidianQuantification()
         print("Calculating unit idxs and filter idxs..")
         units = sess.units()[ufilt.idxs()][:, trial_filter.idxs()]
         proportion = int(units.shape[1]/100)

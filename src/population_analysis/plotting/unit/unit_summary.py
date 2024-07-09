@@ -1,3 +1,4 @@
+import glob
 import math
 import os.path
 from multiprocessing import Pool
@@ -25,13 +26,17 @@ def get_spike_idxs(bbool_counts, unit_number, trial_idxs, unit_filter: Optional[
     return spike_idxss
 
 
-def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
+def unit_summary(sess: NWBSession, unit_num: int, foldername: str, skip_existing: bool):
     """
     Graph a single unit's mean response of each trial type in each motion direction with rasters
     """
 
-    print(f"Plotting unit {unit_num}..")
+    figure_filename = f"{foldername}/unit-{unit_num}.png"
+    if os.path.exists(figure_filename) and skip_existing:
+        print(f"Unit {unit_num} already plotted, skip_existing=True so skipping..")
+        return
 
+    print(f"Plotting unit {unit_num}..")
     # First we want to start with mean responses
     # print("Rendering mean responses")
     motion_trial_filters = [
@@ -142,12 +147,12 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
     if not os.path.exists(foldername):
         os.mkdir(foldername)
 
-    plt.savefig(f"{foldername}/unit-{unit_num}.png")
+    plt.savefig(figure_filename)
     plt.close(fig)
     tw = 2
 
 
-def _calc_pool_args(num_pools, sample_list, sess: NWBSession):
+def _calc_pool_args(num_pools, sample_list, sess: NWBSession, skip_existing):
     # Returns num_pools + 1 args since there is an extra pool for the remainder
 
     num_samples = len(sample_list)
@@ -167,20 +172,22 @@ def _calc_pool_args(num_pools, sample_list, sess: NWBSession):
             [sess.filepath_prefix_no_ext, sess.filename_no_ext],
             sample_list[(multiple - 1) * batch_size: multiple * batch_size],  # Slice the sample list into batch size
             disp,  # Display
-            foldername
+            foldername,
+            skip_existing
         ])
     arglist.append([
         [sess.filepath_prefix_no_ext, sess.filename_no_ext],
         sample_list[-1*remainder:],  # Last samples are the remainder
         False,
-        foldername
+        foldername,
+        skip_existing
     ])
 
     return arglist
 
 
 def multiprocess_func(args):
-    sess_args, sample_list, display, foldername = args
+    sess_args, sample_list, display, foldername, skip_existing = args
 
     sess = NWBSession(*sess_args)
 
@@ -188,17 +195,11 @@ def multiprocess_func(args):
         print("Rendering units with multiprocessing")
 
     for progress, unit_num in enumerate(sample_list):
-        unit_summary(sess, unit_num, foldername)
+        unit_summary(sess, unit_num, foldername, skip_existing=skip_existing)
 
 
-def main():
-    # filepath = "../../../../scripts"
-    # filename = "new_test"
-    # filename = "output-mlati6-2023-05-12.hdf-nwb"
-    # filepath = "../../../../scripts/generated"
-    # filename = "generated.hdf-nwb"
-    filepath = "../../../../scripts/05-26-2023-output"
-    filename = "05-26-2023-output.hdf-nwb"
+def run_unit_summary(filepath, filename, skip_existing=False):
+
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     sess_args = [filepath, filename]
     sess = NWBSession(*sess_args)
@@ -206,12 +207,11 @@ def main():
     ufilt = BasicFilter.empty(sess.num_units)
 
     num_pools = 4
-    _calc_pool_args(num_pools, ufilt.idxs(), sess)
     print(f"Setting up pool multiprocessing with {num_pools + 1} pools")
     with Pool(num_pools + 1) as p:  # Add extra pool for remainder of batch size
         p.map(
             multiprocess_func,
-            _calc_pool_args(num_pools, ufilt.idxs(), sess)
+            _calc_pool_args(num_pools, ufilt.idxs(), sess, skip_existing)
         )
 
     # for unit_num in Filter.empty(sess.num_units).idxs():
@@ -221,6 +221,29 @@ def main():
     # for unit_num in [107?, 206?]:
     #     print(f"Rendering unit {unit_num}..")
     #     unit_summary(sess, unit_num, "default_unit_summary")
+
+
+def main():
+    # filepath = "../../../../scripts"
+    # filename = "new_test"
+    # filename = "output-mlati6-2023-05-12.hdf-nwb"
+    # filepath = "../../../../scripts/generated"
+    # filename = "generated.hdf-nwb"
+    # filepath = "../../../../scripts/05-26-2023-output"
+    # filename = "05-26-2023-output.hdf-nwb"
+    # filepath = "../../../../scripts/05-15-2023-output"
+    # filename = "05-15-2023-output.hdf-nwb"
+    # run_unit_summary(filepath, filename, skip_existing=True)
+    import time
+    print("Sleeping for 4 hours to wait for processing to finish..")
+    time.sleep(60*4)  # Sleep for 4 hours
+    print("Starting unit rendering..")
+    nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
+    for file in nwbfiles:
+        filepath = os.path.dirname(file)
+        filename = os.path.basename(file)[:-len(".nwb")]
+        tw = 2
+        run_unit_summary(filepath, filename, skip_existing=True)
 
 
 if __name__ == "__main__":
