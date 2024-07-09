@@ -235,8 +235,8 @@ def main():
     # filename = "05-15-2023-output.hdf-nwb"
     # run_unit_summary(filepath, filename, skip_existing=True)
     import time
-    print("Sleeping for 4 hours to wait for processing to finish..")
-    time.sleep(60*4)  # Sleep for 4 hours
+    print("Sleeping for 6 hours to wait for processing to finish..")
+    time.sleep(60*6)  # Sleep for 6 hours
     print("Starting unit rendering..")
     nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
     for file in nwbfiles:

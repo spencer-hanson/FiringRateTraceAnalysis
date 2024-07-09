@@ -36,10 +36,11 @@ def main():
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
     # data_files = {
-        # "idk": "../output-mlati6-2023-05-12.hdf"
-        # "idk": "05-26-2023-output.hdf",
-        # "idk": "05-15-2023-output.hdf",
-        # "idk": "generated.hdf"
+    #     # "idk": "../output-mlati6-2023-05-12.hdf"
+    #     # "idk": "05-26-2023-output.hdf",
+    #     # "idk": "05-15-2023-output.hdf",
+    #     "generated.hdf": "../scripts\\generated.hdf",
+    #     "generated2.hdf": "../scripts\\generated2.hdf"
     # }
 
     # dd = dictify_hd5(h5py.File("output.hdf"))
@@ -52,9 +53,8 @@ def main():
             if not os.path.exists(name):
                 os.mkdir(name)
             os.chdir(name)
-            filename = f"../{filename}"
-            raw = HDFSessionProcessor(filepath, "mlati7", "session0")
-            raw.save_to_nwb(f"{name}/{filename}-nwb.nwb", load_precalculated=False)
+            raw = HDFSessionProcessor("../" + filepath, "mlati7", "session0")
+            raw.save_to_nwb(f"{filename}-nwb.nwb", load_precalculated=False)
             del raw
             os.chdir("../")
         except Exception as e:

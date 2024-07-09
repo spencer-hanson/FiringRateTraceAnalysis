@@ -30,8 +30,8 @@ def waveform_generator(unit_num, timestamp_offset_in_ms, suppress=False, disable
         waveform_shape = new_wv
     if disable:
         new_wv = []
-        for wvt, _ in waveform_shape:
-            new_wv.append([wvt, 0.001])
+        for wvt, wvp in waveform_shape:
+            new_wv.append([wvt, 0.1*wvp])
         waveform_shape = new_wv
 
     cur_idx = 0
