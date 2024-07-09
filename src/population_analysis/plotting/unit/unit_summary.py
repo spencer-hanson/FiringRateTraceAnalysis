@@ -30,8 +30,10 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
     Graph a single unit's mean response of each trial type in each motion direction with rasters
     """
 
+    print(f"Plotting unit {unit_num}..")
+
     # First we want to start with mean responses
-    print("Rendering mean responses")
+    # print("Rendering mean responses")
     motion_trial_filters = [
         ("motion=-1", -1),
         ("motion=1", 1),
@@ -116,7 +118,7 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
                 ax.set_xlabel("Time from probe (20ms bins)")
 
     # Raster plots
-    print("Rendering rasters")
+    # print("Rendering rasters")
     for motidx, motdir in enumerate([-1, 1]):
         raster_axs = axs[len(motion_trial_filters) + motidx]
         spikes = sess.spikes()
@@ -145,36 +147,47 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str):
     tw = 2
 
 
-def _calc_pool_args(num_pools, sample_list, sess):
-    num_samples = len(sample_list)
+def _calc_pool_args(num_pools, sample_list, sess: NWBSession):
+    # Returns num_pools + 1 args since there is an extra pool for the remainder
 
-    val = math.floor(num_samples / num_pools)
+    num_samples = len(sample_list)
+    foldername = f"{sess.filename_no_ext}_unit_summary"
+
+    batch_size = math.floor(num_samples / num_pools)
     remainder = num_samples % num_pools
 
-    nums = [val] * num_pools
-    nums[-1] = (nums[-1] + remainder, True)
-    # return nums
+    arglist = []
+    for multiple in range(1, num_pools + 1):
+        if multiple == 1:
+            disp = True
+        else:
+            disp = False
 
-    # [filepath, filename], [2, .. 28 etc], False unless remainder pool, foldername is sess name
-    # sess_args, sample_list, display, foldername
+        arglist.append([
+            [sess.filepath_prefix_no_ext, sess.filename_no_ext],
+            sample_list[(multiple - 1) * batch_size: multiple * batch_size],  # Slice the sample list into batch size
+            disp,  # Display
+            foldername
+        ])
+    arglist.append([
+        [sess.filepath_prefix_no_ext, sess.filename_no_ext],
+        sample_list[-1*remainder:],  # Last samples are the remainder
+        False,
+        foldername
+    ])
+
+    return arglist
 
 
-def multiprocess_func(sess_args, sample_list, display, foldername):
+def multiprocess_func(args):
+    sess_args, sample_list, display, foldername = args
+
     sess = NWBSession(*sess_args)
-    num_samples = len(sample_list)
 
     if display:
-        print("Rendering units with multiprocessing -", end="")
+        print("Rendering units with multiprocessing")
 
-    one_tenth = int(num_samples / 10)
-    one_tenth = one_tenth if one_tenth != 0 else 1
-
-    # start = pendulum.now()
     for progress, unit_num in enumerate(sample_list):
-
-        if display and progress % one_tenth == 0:
-            print(f" {round(progress / num_samples, 2)*100}%", end="")
-
         unit_summary(sess, unit_num, foldername)
 
 
@@ -182,20 +195,24 @@ def main():
     # filepath = "../../../../scripts"
     # filename = "new_test"
     # filename = "output-mlati6-2023-05-12.hdf-nwb"
-    filepath = "../../../../scripts/generated"
-    filename = "generated.hdf-nwb"
+    # filepath = "../../../../scripts/generated"
+    # filename = "generated.hdf-nwb"
+    filepath = "../../../../scripts/05-26-2023-output"
+    filename = "05-26-2023-output.hdf-nwb"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     sess_args = [filepath, filename]
     sess = NWBSession(*sess_args)
 
     ufilt = BasicFilter.empty(sess.num_units)
 
-    num_pools = 8
-    with Pool(num_pools + 1) as p:
+    num_pools = 4
+    _calc_pool_args(num_pools, ufilt.idxs(), sess)
+    print(f"Setting up pool multiprocessing with {num_pools + 1} pools")
+    with Pool(num_pools + 1) as p:  # Add extra pool for remainder of batch size
         p.map(
             multiprocess_func,
             _calc_pool_args(num_pools, ufilt.idxs(), sess)
-        )  # TODO Finish argument mapping for pool multiprocessing
+        )
 
     # for unit_num in Filter.empty(sess.num_units).idxs():
     # for unit_num in range(sess.num_units-1, 0, -1):

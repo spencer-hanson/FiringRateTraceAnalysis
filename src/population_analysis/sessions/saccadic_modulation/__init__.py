@@ -18,6 +18,7 @@ class NWBSession(object):
     def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath=None, filter_mixed=True, use_normalized_units=True):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
         self.filename_no_ext = filename
+        self.filepath_prefix_no_ext = filepath_prefix_no_ext
         graph_prefix = f"{graph_folderpath}/{filename}"
 
         if filename.endswith(".nwb"):
