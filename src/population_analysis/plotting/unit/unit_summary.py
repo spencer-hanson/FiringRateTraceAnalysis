@@ -152,11 +152,15 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str, skip_existing
     tw = 2
 
 
+def get_foldername(filename_no_ext):
+    return f"{filename_no_ext}_unit_summary"
+
+
 def _calc_pool_args(num_pools, sample_list, sess: NWBSession, skip_existing):
     # Returns num_pools + 1 args since there is an extra pool for the remainder
 
     num_samples = len(sample_list)
-    foldername = f"{sess.filename_no_ext}_unit_summary"
+    foldername = get_foldername(sess.filename_no_ext)
 
     batch_size = math.floor(num_samples / num_pools)
     remainder = num_samples % num_pools
@@ -198,22 +202,25 @@ def multiprocess_func(args):
         unit_summary(sess, unit_num, foldername, skip_existing=skip_existing)
 
 
-def run_unit_summary(filepath, filename, skip_existing=False):
+def run_unit_summary(filepath, filename, ufilt_generator, skip_existing=False, multiprocess=True):
 
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     sess_args = [filepath, filename]
     sess = NWBSession(*sess_args)
+    ufilt = ufilt_generator(sess.num_units)
 
-    ufilt = BasicFilter.empty(sess.num_units)
-
-    num_pools = 4
-    print(f"Setting up pool multiprocessing with {num_pools + 1} pools")
-    with Pool(num_pools + 1) as p:  # Add extra pool for remainder of batch size
-        p.map(
-            multiprocess_func,
-            _calc_pool_args(num_pools, ufilt.idxs(), sess, skip_existing)
-        )
-
+    if multiprocess:
+        num_pools = 4
+        print(f"Setting up pool multiprocessing with {num_pools + 1} pools")
+        with Pool(num_pools + 1) as p:  # Add extra pool for remainder of batch size
+            p.map(
+                multiprocess_func,
+                _calc_pool_args(num_pools, ufilt.idxs(), sess, skip_existing)
+            )
+    else:
+        for unit_num in ufilt.idxs():
+            print(f"Rendering unit {unit_num}..")
+            unit_summary(sess, unit_num, get_foldername(sess.filename_no_ext), skip_existing=skip_existing)
     # for unit_num in Filter.empty(sess.num_units).idxs():
     # for unit_num in range(sess.num_units-1, 0, -1):
     # for unit_num in range(320, 0, -1):
@@ -234,16 +241,22 @@ def main():
     # filepath = "../../../../scripts/05-15-2023-output"
     # filename = "05-15-2023-output.hdf-nwb"
     # run_unit_summary(filepath, filename, skip_existing=True)
-    import time
-    print("Sleeping for 6 hours to wait for processing to finish..")
-    time.sleep(60*6)  # Sleep for 6 hours
+    # import time
+    # print("Sleeping to wait for processing to finish..")
+    # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
     nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
+    # multiprocess = False
+    multiprocess = True
+    
+    def ufilt_generator(num_units):
+        return BasicFilter.empty(num_units)
+
     for file in nwbfiles:
         filepath = os.path.dirname(file)
         filename = os.path.basename(file)[:-len(".nwb")]
         tw = 2
-        run_unit_summary(filepath, filename, skip_existing=True)
+        run_unit_summary(filepath, filename, ufilt_generator, skip_existing=True, multiprocess=multiprocess)
 
 
 if __name__ == "__main__":
