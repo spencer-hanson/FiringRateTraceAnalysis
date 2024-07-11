@@ -246,9 +246,9 @@ def main():
     # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
     nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
-    # multiprocess = False
-    multiprocess = True
-    
+    multiprocess = False
+    # multiprocess = True
+
     def ufilt_generator(num_units):
         return BasicFilter.empty(num_units)
 

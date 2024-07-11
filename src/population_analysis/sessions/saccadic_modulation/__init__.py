@@ -94,7 +94,7 @@ class NWBSession(object):
 
     def unit_filter_premade(self) -> UnitFilter:
         return self.unit_filter_qm().append(
-            self.unit_filter_probe_zeta().append(self.unit_filter_custom(20, .2, 1, 1, .9, .4))
+            self.unit_filter_probe_zeta().append(self.unit_filter_custom(5, .2, 1, 1, .9, .4))
         )
 
     def unit_filter_qm(self) -> UnitFilter:

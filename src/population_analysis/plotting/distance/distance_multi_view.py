@@ -13,16 +13,27 @@ def main():
     # filepath = "../../../../scripts"
     # filename = "new_test"
 
-    filepath = "../../../../scripts/05-15-2023-output"
-    filename = "05-15-2023-output.hdf-nwb"
+    day = 19
+    filepath = f"../../../../scripts/05-{day}-2023-output"
+    filename = f"05-{day}-2023-output.hdf-nwb"
+    sess = NWBSession(filepath, filename, "../graphs")
+    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
+    ufilt = sess.unit_filter_premade()
+
+    # day = 15
+    # filepath = f"../../../../scripts/05-{day}-2023-output"
+    # filename = f"05-{day}-2023-output.hdf-nwb"
+    # sess = NWBSession(filepath, filename, "../graphs")
+    # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)  # 05-15-2023
 
     # filepath = "../../../../scripts/generated"
     # filename = "generated.hdf-nwb"
 
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession(filepath, filename, "../graphs")
 
-    ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)  # 05-15-2023
+
+
+
     # ufilt = sess.unit_filter_premade()
     # ufilt = BasicFilter.empty(sess.num_units)
 

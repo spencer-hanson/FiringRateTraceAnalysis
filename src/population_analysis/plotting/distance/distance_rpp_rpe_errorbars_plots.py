@@ -80,26 +80,30 @@ def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_
 
 
 def main():
-    filepath = "../../../../scripts/05-15-2023-output"
-    filename = "05-15-2023-output.hdf-nwb"
+    day = 19
 
-    # filepath = "../../../../scripts"
-    # filename = "new_test"
+    filepath = f"../../../../scripts/05-{day}-2023-output"
+    filename = f"05-{day}-2023-output.hdf-nwb"
 
     # filepath = "../../../../scripts/generated"
     # filename = "generated.hdf-nwb"
-
-    # filepath = "../../../../scripts/05-26-2023-output"
-    # filename = "05-26-2023-output.hdf-nwb"
 
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
     sess = NWBSession(filepath, filename, "../graphs")
 
     confidence = 0.95
-    # for 05-15
-    # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
-    # ufilt = BasicFilter([244, 365], sess.num_units)
+    day = 19
+    filepath = f"../../../../scripts/05-{day}-2023-output"
+    filename = f"05-{day}-2023-output.hdf-nwb"
+    sess = NWBSession(filepath, filename, "../graphs")
+    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
     ufilt = sess.unit_filter_premade()
+
+    # for 05-15
+    # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)  # 05-15-2023
+    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
+    # ufilt = BasicFilter([244, 365], sess.num_units)
+    # ufilt = sess.unit_filter_premade()
     # ufilt = BasicFilter.empty(sess.num_units)
     use_cached = False
     # use_cached = True

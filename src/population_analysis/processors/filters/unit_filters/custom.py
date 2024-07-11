@@ -35,13 +35,12 @@ class CustomUnitFilter(UnitFilter):
                 baseline_time_std_zscore=bzs
 
                 Want units that spike at least <spike_count_threshold> times,
-                in at least trial_threshold % of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
-                at most there can be missing_threshold% close to zero trials,
+                in at least trial_threshold % (out of 1.0) of the trials (NOTE CURRENTLY ONLY CHECKING Rp_Extra trials)
+                at most there can be missing_threshold% (out of 1.0) close to zero trials,
                 "close to zero trials" is any trial with less than <min_missing> spikes
-                param baseline_mean_zscore:
-                The zscore of the mean of the first 8 timepoints across trials and of the same units needs to be strictly less than this
-                param baseline_time_std_zscore
-                The zscore of the std of the first 8 timepoints, across trials of the same units needs to be strictly less than this
+
+                param baseline_mean_zscore: The zscore of the mean of the first 8 timepoints across trials and of the same units needs to be strictly less than this
+                param baseline_time_std_zscore: The zscore of the std of the first 8 timepoints, across trials of the same units needs to be strictly less than this
             """
 
             # baseline_mean = np.mean(np.mean(np.mean(self.units()[:, self.probe_trial_idxs, :][:, :, :8], axis=1), axis=0))
@@ -89,5 +88,5 @@ class CustomUnitFilter(UnitFilter):
         return activity_threshold_unit_filter
 
     def get_basename(self):
-        return f"qm_zeta_activity_{self.spike_count_threshold}sp_{self.trial_threshold}tr_{self.missing_threshold}ms_{self.min_missing}mn_{self.baseline_mean_zscore}bzm_{self.baseline_time_std_zscore}bzs"
+        return f"cust_{self.spike_count_threshold}sp_{self.trial_threshold}tr_{self.missing_threshold}ms_{self.min_missing}mn_{self.baseline_mean_zscore}bzm_{self.baseline_time_std_zscore}bzs"
 

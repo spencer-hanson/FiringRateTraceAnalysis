@@ -52,7 +52,7 @@ class Filter(object):
                 f"Cannot append filter, unit nums don't match! self != other {self.num_units} != {filt.num_units}")
 
         self._funcs.extend(filt._funcs)
-        self.names.append(filt.get_basename())
+        self.names.extend(filt.names)
         return self
 
 
