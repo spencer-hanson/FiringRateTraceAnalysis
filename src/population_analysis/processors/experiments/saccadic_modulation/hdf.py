@@ -71,6 +71,16 @@ class HDFSessionProcessor(object):
 
         print("Writing to file (this may take a while)..")
         SimpleNWB.write(nwb, nwb_filename)
+        print("Clearing memmaps..")
+        raw_firing_rates._mmap.close()
+        raw_spike_times._mmap.close()
+        trial_spike_times._mmap.close()
+        for _, val in all_firing_rates.items():
+            val._mmap.close()
+        del raw_spike_times
+        del raw_firing_rates
+        del trial_spike_times
+        del all_firing_rates
         print("Done!")
 
     def _calc_trial_spike_duration_idxs(self, trialgroup):

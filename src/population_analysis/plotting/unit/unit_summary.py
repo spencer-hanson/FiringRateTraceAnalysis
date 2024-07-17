@@ -1,6 +1,7 @@
 import glob
 import math
 import os.path
+import time
 from multiprocessing import Pool
 from typing import Optional
 
@@ -210,7 +211,7 @@ def run_unit_summary(filepath, filename, ufilt_generator, skip_existing=False, m
     ufilt = ufilt_generator(sess.num_units)
 
     if multiprocess:
-        num_pools = 4
+        num_pools = 3
         print(f"Setting up pool multiprocessing with {num_pools + 1} pools")
         with Pool(num_pools + 1) as p:  # Add extra pool for remainder of batch size
             p.map(
@@ -246,18 +247,23 @@ def main():
     # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
     nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
-    multiprocess = False
-    # multiprocess = True
+    # multiprocess = False
+    multiprocess = True
 
-    def ufilt_generator(num_units):
-        return BasicFilter.empty(num_units)
+    while True:
+        for file in nwbfiles:
+            def ufilt_generator(num_units):
+                sess = NWBSession(filepath, filename)
+                # return BasicFilter.empty(num_units)
+                return sess.unit_filter_premade()
 
-    for file in nwbfiles:
-        filepath = os.path.dirname(file)
-        filename = os.path.basename(file)[:-len(".nwb")]
-        tw = 2
-        run_unit_summary(filepath, filename, ufilt_generator, skip_existing=True, multiprocess=multiprocess)
+            filepath = os.path.dirname(file)
+            filename = os.path.basename(file)[:-len(".nwb")]
+            tw = 2
+            run_unit_summary(filepath, filename, ufilt_generator, skip_existing=True, multiprocess=multiprocess)
 
+        print("Sleeping 5 mins")
+        time.sleep(60*5)  # Sleep 5 mins
 
 if __name__ == "__main__":
     main()

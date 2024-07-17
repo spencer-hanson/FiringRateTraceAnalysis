@@ -1,4 +1,5 @@
 import os
+import time
 
 import h5py
 
@@ -31,7 +32,7 @@ def check_for_data(folder_path):
 
 
 def main():
-    sessions_path = "../scripts"  # Same folder lol
+    sessions_path = "google_drive/"  # Same folder lol
     data_files = check_for_data(sessions_path)
 
     # data_files = {"idk": "E:\\PopulationAnalysis\\2023-05-15\\mlati7\\output.hdf"}
@@ -45,21 +46,38 @@ def main():
 
     # dd = dictify_hd5(h5py.File("output.hdf"))
     # tw = 2
+    # data_files = {"05-16-2023-output.hdf": "05-16-2023-output.hdf"}
+    # data_files = {"mlati7-2023-05-15-output.hdf": "google_drive/mlati7-2023-05-15-output.hdf"}
 
-    for filename, filepath in data_files.items():
-        try:
+    while True:
+        print("Scanning for files to process..")
+        for filename, filepath in data_files.items():
             print(f"Processing '{filename}'")
             name = ".".join(filename.split(".")[:-1])
+
             if not os.path.exists(name):
                 os.mkdir(name)
             os.chdir(name)
+            nwb_filename = f"{filename}-nwb.nwb"
+            if os.path.exists(nwb_filename):
+                print("Already processed, skipping..")
+                os.chdir("../")
+                continue
+
             raw = HDFSessionProcessor("../" + filepath, "mlati7", "session0")
-            raw.save_to_nwb(f"{filename}-nwb.nwb", load_precalculated=False)
+            raw.save_to_nwb(nwb_filename, load_precalculated=True)
             del raw
+            to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy"]
+            for fn in to_remove:
+                print(f"Removing {fn}..")
+                try:
+                    os.remove(fn)
+                except Exception as e:
+                    print(f"Couldn't remove '{fn}' Error: '{str(e)}'")
+
             os.chdir("../")
-        except Exception as e:
-            raise e
-            # warnings.warn(f"Exception processing file '{filename}' skipping. Error: '{str(e)}'")
+        print("Sleeping for 5 minutes before re-scanning..")
+        time.sleep(60*5)  # Sleep for 5 minutes
 
 
 if __name__ == "__main__":

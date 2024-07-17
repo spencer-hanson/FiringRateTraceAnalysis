@@ -1,5 +1,5 @@
 h5py
-numpy
+numpy<2,>=1.22.4,
 scipy
 scikit-learn
 jupyterlab
@@ -12,3 +12,6 @@ numexpr
 llvmlite
 numba
 graph-judge==0.0.6
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

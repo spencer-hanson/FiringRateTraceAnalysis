@@ -16,7 +16,7 @@ class SpikeTrialOrganizer(object):
         if load_precalculated:
             print("Attempting to load a precalculated spike trials from local directory..")
             if os.path.exists(SpikeTrialOrganizer.SPIKE_TRIALS_FILENAME):
-                return np.load(SpikeTrialOrganizer.SPIKE_TRIALS_FILENAME)
+                return np.load(SpikeTrialOrganizer.SPIKE_TRIALS_FILENAME, mmap_mode='r')
             else:
                 print(f"Precalculated file does not exist, generating..")
 
@@ -31,5 +31,7 @@ class SpikeTrialOrganizer(object):
 
         with open(SpikeTrialOrganizer.SPIKE_TRIALS_FILENAME, "wb") as f:
             np.save(f, all_spike_trials)
+        del all_spike_trials
 
+        all_spike_trials = np.load(SpikeTrialOrganizer.SPIKE_TRIALS_FILENAME, mmap_mode='r')
         return all_spike_trials
