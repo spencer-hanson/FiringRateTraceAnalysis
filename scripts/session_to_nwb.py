@@ -52,30 +52,39 @@ def main():
     while True:
         print("Scanning for files to process..")
         for filename, filepath in data_files.items():
-            print(f"Processing '{filename}'")
-            name = ".".join(filename.split(".")[:-1])
+            try:
+                print(f"Processing '{filename}'")
+                name = ".".join(filename.split(".")[:-1])
 
-            if not os.path.exists(name):
-                os.mkdir(name)
-            os.chdir(name)
-            nwb_filename = f"{filename}-nwb.nwb"
-            if os.path.exists(nwb_filename):
-                print("Already processed, skipping..")
+                if not os.path.exists(name):
+                    os.mkdir(name)
+                os.chdir(name)
+                nwb_filename = f"{filename}-nwb.nwb"
+                if os.path.exists(nwb_filename):
+                    print("Already processed, skipping..")
+                    os.chdir("../")
+                    continue
+
+                raw = HDFSessionProcessor("../" + filepath, "mlati7", "session0")
+                raw.save_to_nwb(nwb_filename, load_precalculated=True)
+                del raw
+                to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy"]
+                for fn in to_remove:
+                    print(f"Removing {fn}..")
+                    try:
+                        os.remove(fn)
+                    except Exception as e:
+                        print(f"Couldn't remove '{fn}' Error: '{str(e)}'")
+
                 os.chdir("../")
+            except Exception as e2:
+                os.chdir("../")
+                print(f"Error with file {filename} Skipping, Exception {e2}")
+                fppp = open(f"error-{filename}.txt", "w")
+                fppp.write(str(e2))
+                fppp.close()
                 continue
 
-            raw = HDFSessionProcessor("../" + filepath, "mlati7", "session0")
-            raw.save_to_nwb(nwb_filename, load_precalculated=True)
-            del raw
-            to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy"]
-            for fn in to_remove:
-                print(f"Removing {fn}..")
-                try:
-                    os.remove(fn)
-                except Exception as e:
-                    print(f"Couldn't remove '{fn}' Error: '{str(e)}'")
-
-            os.chdir("../")
         print("Sleeping for 5 minutes before re-scanning..")
         time.sleep(60*5)  # Sleep for 5 minutes
 

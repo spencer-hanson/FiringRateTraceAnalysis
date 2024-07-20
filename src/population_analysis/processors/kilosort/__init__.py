@@ -68,10 +68,11 @@ class KilosortProcessor(object):
     def calculate_spikes(self, load_precalculated):
         spike_start_time = np.min(self.spike_timings)
         spike_end_time = np.max(self.spike_timings)
-        max_spikes = self._round_float((spike_end_time - spike_start_time) / .001)  # Number of ms in entire recording
         spike_bins = np.arange(spike_start_time, spike_end_time, 0.001)
         if spike_bins[-1] != spike_end_time:
             spike_bins = np.append(spike_bins, spike_end_time)  # Add end time if we don't cut exactly
+
+        max_spikes = spike_bins.shape[0] - 1  # Number of ms in entire recording, minus one for the bin offset
 
         if load_precalculated:
             print("Attempting to load a precalculated spikes from local directory..")
@@ -87,7 +88,7 @@ class KilosortProcessor(object):
             unit_spikes = self._unit_firingrate(unit_num, spike_bins, 1)
             unit_non_spikes = unit_spikes == 0
             unit_spike_idxs = np.where(np.logical_not(unit_non_spikes))[0]
-            unit_nonspike_idxs = np.where(unit_non_spikes)
+            unit_nonspike_idxs = np.where(unit_non_spikes)[0]
 
             spikes[idx][unit_spike_idxs] = 1
             spikes[idx][unit_nonspike_idxs] = 0

@@ -247,8 +247,8 @@ def main():
     # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
     nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
-    # multiprocess = False
-    multiprocess = True
+    multiprocess = False
+    # multiprocess = True
 
     while True:
         for file in nwbfiles:
@@ -264,6 +264,7 @@ def main():
 
         print("Sleeping 5 mins")
         time.sleep(60*5)  # Sleep 5 mins
+
 
 if __name__ == "__main__":
     main()
