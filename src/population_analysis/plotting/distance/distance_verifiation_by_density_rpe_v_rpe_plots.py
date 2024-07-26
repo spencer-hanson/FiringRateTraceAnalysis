@@ -37,7 +37,7 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plot=False, quan=None):
+def calc_quandist(sess, ufilt, sess_filter, quan=None, use_cached=False):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
 
     if quan is None:
@@ -45,27 +45,19 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plo
 
     for motdir in [-1, 1]:
         pickle_fn = PICKLE_FILENAME_FMT.format(motdir=motdir)
-        if used_cached and os.path.exists(pickle_fn):
+        if use_cached and os.path.exists(pickle_fn):
             print(f"Loading unit filter and trial filter for mot={motdir}..")
             with open(pickle_fn, "rb") as fff:
                 motdata[motdir] = pickle.load(fff)
                 continue
-        trial_filter = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(motdir))
+        trial_filter = sess_filter.append(sess.trial_motion_filter(motdir))
         print("Calculating unit idxs and filter idxs..")
         units = sess.units()[ufilt.idxs()][:, trial_filter.idxs()]
-        proportion = int(units.shape[1]/100)
+        proportion = int(units.shape[1] / 100)
         proportion = 1 if proportion <= 0 else proportion
 
-        # plot_distance_density(
-        #     units[:, :half_num_trials], "RpExtra1",
-        #     units[:, half_num_trials:], "RpExtra2",
-        #     quan,
-        #     True
-        # )
         print("Starting Quantity Distribution calculations..")
         quan_dist = QuanDistribution(
-            # units[:, :half_num_trials],
-            # units[:, half_num_trials:],
             units[:, :proportion],
             units[:, proportion:],
             quan
@@ -77,6 +69,12 @@ def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, used_cached=True, suppress_plo
         fp = open(pickle_fn, "wb")
         pickle.dump(results, fp)
         fp.close()
+    return motdata
+
+
+def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, use_cached=True, suppress_plot=False, quan=None):
+    sess_filt = sess.trial_filter_rp_extra()
+    motdata = calc_quandist(sess, ufilt, sess_filt, quan=quan, use_cached=use_cached)
 
     if not suppress_plot:
         plt.title("RpExtra v RpExtra distance, 10k bootstrap mean")

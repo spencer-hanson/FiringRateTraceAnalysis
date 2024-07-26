@@ -13,12 +13,17 @@ def main():
     # filepath = "../../../../scripts"
     # filename = "new_test"
 
-    day = 19
-    filepath = f"../../../../scripts/05-{day}-2023-output"
-    filename = f"05-{day}-2023-output.hdf-nwb"
+    month = "06"
+    day = 30
+    year = 2023
+    mouse_name = "mlati9"
+    filename = f"{mouse_name}-{year}-{month}-{day}-output"
+    filepath = f"../../../../scripts/{filename}"
+    filename = f"{filename}.hdf-nwb"
+
     sess = NWBSession(filepath, filename, "../graphs")
-    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
-    ufilt = sess.unit_filter_premade()
+    ufilt = BasicFilter([70, 108], sess.num_units)  # 05-19-2023
+    # ufilt = sess.unit_filter_premade()
 
     # day = 15
     # filepath = f"../../../../scripts/05-{day}-2023-output"
@@ -30,9 +35,6 @@ def main():
     # filename = "generated.hdf-nwb"
 
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-
-
-
 
     # ufilt = sess.unit_filter_premade()
     # ufilt = BasicFilter.empty(sess.num_units)
