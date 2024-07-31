@@ -1,8 +1,10 @@
 import math
+import os
 
 import numpy as np
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import plot_verif_rpe_v_rpe
+from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import plot_verif_rpe_v_rpe, \
+    calc_quandist
 from population_analysis.processors.filters import BasicFilter
 from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.quantification.angle import AngleQuantification
@@ -10,6 +12,8 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
 import scipy.stats as st
+
+from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
 
 def confidence_interval(data, confidence_val, plot=False):
@@ -33,71 +37,102 @@ def confidence_interval(data, confidence_val, plot=False):
     return lower, upper
 
 
-def rpp_rpe_errorbars(sess: NWBSession, quan, quan_dist_motdir_dict, confidence_val, ufilt):
+def get_xaxis_vals():
+    return np.arange(35) * 20 - 200
+
+
+def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confidence_val):
+    dist_arr = []
+    for t in range(NUM_FIRINGRATE_SAMPLES):
+        dist_arr.append(quan.calculate(units1[:, :, t], units2[:, :, t]))
+
+    ax.plot(get_xaxis_vals(), dist_arr)
+
+    quan_dist_data = quandist_dict[motdir]
+
+    means = []
+    uppers = []
+    lowers = []
+    for t in range(NUM_FIRINGRATE_SAMPLES):
+        lower, upper = confidence_interval(quan_dist_data[:, t], confidence_val)
+        mean = np.mean(quan_dist_data[:, t], axis=0)
+        means.append(mean)
+        uppers.append(upper)
+        lowers.append(lower)
+
+    ax.plot(get_xaxis_vals(), means, color="orange")
+    ax.plot(get_xaxis_vals(), uppers, color="orange", linestyle="dotted")
+    ax.plot(get_xaxis_vals(), lowers, color="orange", linestyle="dotted")
+
+    ax.title.set_text(f"{quan.get_name()} {motdir}")
+    ax.set_xlabel("Time (ms)")
+
+
+def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cache_filename, save_filepath=None):
     # quan_dist_motdir_dict is a dict with the keys as 1 or -1 and the data as (10k, 35) for the quan distribution
-    fig, axs = plt.subplots(ncols=2)
-    # fig.tight_layout()
+    fig, axs = plt.subplots(ncols=2, nrows=len(quans))
 
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
 
-    for col_idx, motdir in enumerate([-1, 1]):
-        ax = axs[col_idx]
-        rp_e_filter = sess.trial_motion_filter(motdir).append(BasicFilter(sess.probe_trial_idxs, rp_extra.shape[1]))
-        rp_p_filter = RelativeTrialFilter(sess.trial_motion_filter(motdir), sess.mixed_trial_idxs)
+    for quan_idx in range(len(quans)):
+        quan = quans[quan_idx]
+        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=False)
 
-        rpe = rp_extra[:, rp_e_filter.idxs()]
-        rpp = rp_peri[:, rp_p_filter.idxs()]
+        for col_idx, motdir in enumerate([-1, 1]):
+            distance_errorbars(
+                axs[quan_idx, col_idx],
+                rp_extra[:, sess.trial_motion_filter(motdir).append(sess.trial_filter_rp_extra()).idxs()],
+                rp_peri[:, sess.trial_filter_rp_peri(sess.trial_motion_filter(motdir)).idxs()],
+                quan,
+                quan_dist_motdir_dict,
+                motdir,
+                confidence_val
+            )
 
-        dist_arr = []
-        for t in range(NUM_FIRINGRATE_SAMPLES):
-            dist_arr.append(quan.calculate(rpp[:, :, t], rpe[:, :, t]))
-        quan_dist_data = quan_dist_motdir_dict[motdir]
-        ax.plot(dist_arr)
-
-        means = []
-        uppers = []
-        lowers = []
-        for t in range(NUM_FIRINGRATE_SAMPLES):
-            lower, upper = confidence_interval(quan_dist_data[:, t], confidence_val)
-            mean = np.mean(quan_dist_data[:, t], axis=0)
-            means.append(mean)
-            uppers.append(upper)
-            lowers.append(lower)
-
-        ax.plot(means, color="orange")
-        ax.plot(uppers, color="orange", linestyle="dotted")
-        ax.plot(lowers, color="orange", linestyle="dotted")
-        # np.mean(quan_dist_data, axis=0)
-        # ax.plot(means, color="orange")
-
-        tw = 2
-        ax.title.set_text(f"Rpp vs Rpe {quan.get_name()} - Motion={motdir}")
-        ax.set_xlabel("Time (20 ms bins)")
-
-    plt.show()
+    if save_filepath is None:
+        plt.show()
+    else:
+        plt.savefig(save_filepath)
     tw = 2
 
 
 def main():
-    day = 19
-
-    filepath = f"../../../../scripts/05-{day}-2023-output"
-    filename = f"05-{day}-2023-output.hdf-nwb"
-
-    # filepath = "../../../../scripts/generated"
-    # filename = "generated.hdf-nwb"
-
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession(filepath, filename, "../graphs")
 
     confidence = 0.95
-    day = 19
-    filepath = f"../../../../scripts/05-{day}-2023-output"
-    filename = f"05-{day}-2023-output.hdf-nwb"
-    sess = NWBSession(filepath, filename, "../graphs")
-    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
-    ufilt = sess.unit_filter_premade()
+
+    print("Loading group..")
+    grp = NWBSessionGroup("../../../../scripts")
+    for name, sess in grp.session_iter():
+        use_cached = False
+        # use_cached = True
+
+        quans = [
+            EuclidianQuantification(),
+            AngleQuantification()
+        ]
+        ufilt = sess.unit_filter_premade()
+        foldername = "rpp_rpe_errorbars_plots"
+        if not os.path.exists(foldername):
+            os.mkdir(foldername)
+        save_filename = os.path.join(foldername, name + ".png")
+        if os.path.exists(save_filename):
+            print(f"Image already rendered '{save_filename}' skipping..")
+            continue
+
+        print(f"Processing '{name}'..")
+        try:
+            rpp_rpe_errorbars(sess, quans, confidence, ufilt, name, save_filepath=save_filename)
+        except Exception as e:
+            print(f"ERROR PROCESSING FILE '{name}' Skipping! Error: '{str(e)}'")
+            continue
+
+    # date = "2023-05-19"
+    # filepath = f"../../../../scripts/mlati7-{date}-output"
+    # filename = f"mlati7-{date}-output.hdf-nwb"
+    # sess = NWBSession(filepath, filename, "../graphs")
+    #
 
     # for 05-15
     # ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)  # 05-15-2023
@@ -105,14 +140,7 @@ def main():
     # ufilt = BasicFilter([244, 365], sess.num_units)
     # ufilt = sess.unit_filter_premade()
     # ufilt = BasicFilter.empty(sess.num_units)
-    use_cached = False
-    # use_cached = True
-
-    # quan = EuclidianQuantification()
-    quan = AngleQuantification()
-
-    quan_dist_motdir_dict = plot_verif_rpe_v_rpe(sess, ufilt, used_cached=use_cached, suppress_plot=True, quan=quan)
-    rpp_rpe_errorbars(sess, quan, quan_dist_motdir_dict, confidence, ufilt)
+    # ufilt = BasicFilter([231, 235], sess.num_units)  # 05-19-2023
 
     # confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval
     tw = 2

@@ -11,3 +11,7 @@ graphs/*
 *.gif
 *.npy
 *.pickle
+*hdf.txt
+token.json
+all_drive_files.json
+

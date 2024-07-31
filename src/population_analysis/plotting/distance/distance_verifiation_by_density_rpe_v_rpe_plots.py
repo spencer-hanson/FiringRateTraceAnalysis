@@ -37,17 +37,16 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def calc_quandist(sess, ufilt, sess_filter, quan=None, use_cached=False):
+def calc_quandist(sess, ufilt, sess_filter, save_filename, quan=None, use_cached=False):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
-
     if quan is None:
         quan = EuclidianQuantification()
 
     for motdir in [-1, 1]:
-        pickle_fn = PICKLE_FILENAME_FMT.format(motdir=motdir)
-        if use_cached and os.path.exists(pickle_fn):
-            print(f"Loading unit filter and trial filter for mot={motdir}..")
-            with open(pickle_fn, "rb") as fff:
+        sv_fn = f"{save_filename}-{quan.get_name()}{motdir}.pickle"
+        if use_cached and os.path.exists(sv_fn):
+            print(f"Using cached quandist result! Loading unit filter and trial filter for mot={motdir}..")
+            with open(sv_fn, "rb") as fff:
                 motdata[motdir] = pickle.load(fff)
                 continue
         trial_filter = sess_filter.append(sess.trial_motion_filter(motdir))
@@ -65,8 +64,8 @@ def calc_quandist(sess, ufilt, sess_filter, quan=None, use_cached=False):
 
         results = quan_dist.calculate()  # (10000, 35) arr of the distances
         motdata[motdir] = results
-        print(f"Writing to pickle file '{pickle_fn}'")
-        fp = open(pickle_fn, "wb")
+        print(f"Writing to pickle file '{sv_fn}'")
+        fp = open(sv_fn, "wb")
         pickle.dump(results, fp)
         fp.close()
     return motdata
@@ -74,7 +73,7 @@ def calc_quandist(sess, ufilt, sess_filter, quan=None, use_cached=False):
 
 def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, use_cached=True, suppress_plot=False, quan=None):
     sess_filt = sess.trial_filter_rp_extra()
-    motdata = calc_quandist(sess, ufilt, sess_filt, quan=quan, use_cached=use_cached)
+    motdata = calc_quandist(sess, ufilt, sess_filt, "rpe_rpe", quan=quan, use_cached=use_cached)
 
     if not suppress_plot:
         plt.title("RpExtra v RpExtra distance, 10k bootstrap mean")
