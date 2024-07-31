@@ -246,7 +246,8 @@ def main():
     # print("Sleeping to wait for processing to finish..")
     # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
-    nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
+    # nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
+    nwbfiles = ["../../../../scripts/generated/generated.hdf-nwb.nwb"]
     multiprocess = False
     # multiprocess = True
 

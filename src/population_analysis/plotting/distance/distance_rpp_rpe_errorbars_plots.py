@@ -1,5 +1,7 @@
 import math
 import os
+import pickle
+from typing import Union
 
 import numpy as np
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
@@ -41,10 +43,14 @@ def get_xaxis_vals():
     return np.arange(35) * 20 - 200
 
 
-def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confidence_val):
+def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confidence_val, save_dists: Union[bool, str] = False):
     dist_arr = []
     for t in range(NUM_FIRINGRATE_SAMPLES):
         dist_arr.append(quan.calculate(units1[:, :, t], units2[:, :, t]))
+
+    if save_dists:
+        with open(save_dists, "wb") as f:
+            pickle.dump(dist_arr, f)
 
     ax.plot(get_xaxis_vals(), dist_arr)
 
@@ -68,7 +74,7 @@ def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confiden
     ax.set_xlabel("Time (ms)")
 
 
-def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cache_filename, save_filepath=None):
+def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cache_filename, save_filepath=None, use_cached=False):
     # quan_dist_motdir_dict is a dict with the keys as 1 or -1 and the data as (10k, 35) for the quan distribution
     fig, axs = plt.subplots(ncols=2, nrows=len(quans))
 
@@ -77,7 +83,7 @@ def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cach
 
     for quan_idx in range(len(quans)):
         quan = quans[quan_idx]
-        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=False)
+        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=use_cached)
 
         for col_idx, motdir in enumerate([-1, 1]):
             distance_errorbars(
@@ -87,7 +93,8 @@ def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cach
                 quan,
                 quan_dist_motdir_dict,
                 motdir,
-                confidence_val
+                confidence_val,
+                save_dists=f"dists-{cache_filename}-{quan.get_name()}{motdir}.pickle"
             )
 
     if save_filepath is None:
@@ -104,7 +111,7 @@ def main():
 
     print("Loading group..")
     grp = NWBSessionGroup("../../../../scripts")
-    for name, sess in grp.session_iter():
+    for name, sess in grp.session_iter():  # TODO Theres a memory leak somewhere in this shit, fuck python
         use_cached = False
         # use_cached = True
 
@@ -112,7 +119,7 @@ def main():
             EuclidianQuantification(),
             AngleQuantification()
         ]
-        ufilt = sess.unit_filter_premade()
+
         foldername = "rpp_rpe_errorbars_plots"
         if not os.path.exists(foldername):
             os.mkdir(foldername)
@@ -122,8 +129,9 @@ def main():
             continue
 
         print(f"Processing '{name}'..")
+        ufilt = sess.unit_filter_premade()
         try:
-            rpp_rpe_errorbars(sess, quans, confidence, ufilt, name, save_filepath=save_filename)
+            rpp_rpe_errorbars(sess, quans, confidence, ufilt, name, save_filepath=save_filename, use_cached=True)
         except Exception as e:
             print(f"ERROR PROCESSING FILE '{name}' Skipping! Error: '{str(e)}'")
             continue

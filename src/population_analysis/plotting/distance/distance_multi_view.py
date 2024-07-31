@@ -21,9 +21,10 @@ def main():
     filepath = f"../../../../scripts/{filename}"
     filename = f"{filename}.hdf-nwb"
 
-    sess = NWBSession(filepath, filename, "../graphs")
-    ufilt = BasicFilter([70, 108], sess.num_units)  # 05-19-2023
-    # ufilt = sess.unit_filter_premade()
+    # sess = NWBSession(filepath, filename, "../graphs")
+    sess = NWBSession("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\generated", "generated.hdf-nwb", "")
+    # ufilt = BasicFilter([70, 108], sess.num_units)  # 05-19-2023
+    ufilt = sess.unit_filter_premade()
 
     # day = 15
     # filepath = f"../../../../scripts/05-{day}-2023-output"
@@ -44,9 +45,10 @@ def main():
 
     quantification_list = [
         # MagQuoQuantification(),
-        EuclidianQuantification(),
-        MagDiffQuantification(),
-        AngleQuantification()
+        # EuclidianQuantification(),
+        # MagDiffQuantification(),
+        AngleQuantification(),
+        EuclidianQuantification()
     ]
 
     fig, axs = plt.subplots(nrows=len(quantification_list), ncols=2, squeeze=True, sharex=True)  # 2 cols for motion dirs

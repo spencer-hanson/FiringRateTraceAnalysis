@@ -20,13 +20,14 @@ class NWBSession(object):
         self.filename_no_ext = filename
         self.filepath_prefix_no_ext = filepath_prefix_no_ext
         graph_prefix = f"{graph_folderpath}/{filename}"
-
+        print(f"Loading session file '{self.filename_no_ext}'..", end="")
         if filename.endswith(".nwb"):
             print("FILENAME SHOULD NOT END WITH .nwb in args (on disk todo fix this) remove in str")
         # if not os.path.exists(graph_prefix):  # TODO
         #     os.makedirs(graph_prefix)
 
         nwbio = NWBHDF5IO(filepath)
+        self.nwbio_fp = nwbio
         nwb = nwbio.read()
 
         self.use_normalized_units = use_normalized_units
@@ -52,6 +53,18 @@ class NWBSession(object):
         self.num_trials = self.nwb.processing["behavior"]["trial_motion_directions"].data[:].shape[0]
         self.num_units = self.nwb.processing["behavior"]["unit_labels"].data[:].shape[0]
         tw = 2
+        print("done")
+
+    def __del__(self):
+        print(f"[DEBUG] Deleting session object reference '{self.filename_no_ext}'..", end="")
+        self.nwbio_fp.close()
+        del self.nwb
+        del self.nwbio_fp
+        del self.probe_trial_idxs
+        del self.saccade_trial_idxs
+        del self.mixed_trial_idxs
+        del self.mixed_rel_timestamps
+        print("done")
 
     def _extract_quality_metrics(self, nwb):
         metrics = {}
