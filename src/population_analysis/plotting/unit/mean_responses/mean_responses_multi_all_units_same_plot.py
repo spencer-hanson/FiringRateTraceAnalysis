@@ -1,9 +1,12 @@
+import glob
+import os
+
 import matplotlib.pyplot as plt
 
-from population_analysis.plotting.mean_responses.mean_responses_r_mixed import plot_r_mixed_mean_responses
-from population_analysis.plotting.mean_responses.mean_responses_rp_extra import plot_rp_extra_mean_responses
-from population_analysis.plotting.mean_responses.mean_responses_rp_peri import plot_rp_peri_mean_responses
-from population_analysis.plotting.mean_responses.mean_responses_rs import plot_rs_mean_responses
+from population_analysis.plotting.unit.mean_responses.mean_responses_r_mixed import plot_r_mixed_mean_responses
+from population_analysis.plotting.unit.mean_responses.mean_responses_rp_extra import plot_rp_extra_mean_responses
+from population_analysis.plotting.unit.mean_responses.mean_responses_rp_peri import plot_rp_peri_mean_responses
+from population_analysis.plotting.unit.mean_responses.mean_responses_rs import plot_rs_mean_responses
 from population_analysis.processors.filters import BasicFilter
 from population_analysis.sessions.saccadic_modulation import NWBSession
 
@@ -41,22 +44,15 @@ def plot_multi_mean_responses(sess, unit_filter):
 
 
 def main():
-    # filepath = "../../../../scripts"
-    # filename = "new_test"
-
-    filepath = "../../../../scripts/generated"
-    filename = "generated.hdf-nwb"
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
+    nwb_filename = nwbfiles[0]
 
-    sess = NWBSession(filepath, filename, "../../../../graphs", use_normalized_units=True)
-    # sess = NWBSession("../../../../scripts", filename, "../../../../graphs", use_normalized_units=False)
-    # unit_filter = sess.unit_filter_qm().append(
-    #     sess.unit_filter_probe_zeta().append(
-    #         sess.unit_filter_custom(5, .2, 1, 1, .9, .4)
-    #     )
-    # )
+    filepath = os.path.dirname(nwb_filename)
+    filename = os.path.basename(nwb_filename)[:-len(".nwb")]
 
-    # unit_filter = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.num_units)
+    sess = NWBSession(filepath, filename)
+
     unit_filter = BasicFilter.empty(sess.num_units)
 
     plot_multi_mean_responses(sess, unit_filter)
