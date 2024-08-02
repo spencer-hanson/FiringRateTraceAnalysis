@@ -3,6 +3,9 @@ from population_analysis.processors.filters.trial_filters import TrialFilter
 
 class RelativeTrialFilter(TrialFilter):
     def __init__(self, regular_filter: TrialFilter, abs_idx_mappings):
+        if regular_filter is None:
+            regular_filter = TrialFilter.empty(9999)
+
         self.regular_filter = regular_filter
         # list of indexes that correspond 1-1 with arr, where the first element's value is the
         # index into the global trials of the first arr element

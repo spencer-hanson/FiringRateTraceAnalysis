@@ -44,7 +44,7 @@ class AngleQuantification(Quantification):
         cos_th = dot / (mag1 * mag2)
         theta = math.acos(cos_th)
         angle = self.angle_between(mean_1, mean_2)
-        if abs(theta - angle) > 0.01:
-            tw = 2
+        if abs(theta - angle) > 0.0001:
+            raise ValueError("wut")
 
         return theta

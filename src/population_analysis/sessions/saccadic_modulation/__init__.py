@@ -133,7 +133,7 @@ class NWBSession(object):
     def trial_motion_filter(self, motion_direction) -> TrialFilter:
         return MotionDirectionTrialFilter(motion_direction, self.trial_motion_directions())
 
-    def trial_filter_rp_peri(self, additional_filters):
+    def trial_filter_rp_peri(self, additional_filters=None):
         return RelativeTrialFilter(additional_filters, self.mixed_trial_idxs)
 
     def trial_filter_rp_extra(self):
