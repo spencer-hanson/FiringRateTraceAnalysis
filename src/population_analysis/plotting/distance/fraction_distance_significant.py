@@ -14,9 +14,18 @@ def get_session_significant_timepoint_list(sess_namedata, quan, motdir, confiden
     quan_fmt = f"{filename}-{quan.get_name()}{motdir}.pickle"
     dist_fmt = f"dists-{filename}-{quan.get_name()}{motdir}.pickle"
 
+    if motdir == 0:
+        quan_fmt = [f"{filename}-{quan.get_name()}1.pickle", f"{filename}-{quan.get_name()}-1.pickle"]
+
     try:
-        with open(quan_fmt, "rb") as f:
-            quandata = pickle.load(f)
+        if not isinstance(quan_fmt, list):
+            quan_fmt = [quan_fmt]
+
+        quandata = []
+        for quand in quan_fmt:
+            with open(quand, "rb") as f:
+                quandata.append(pickle.load(f))
+        quandata = np.vstack(quandata)
 
         with open(dist_fmt, "rb") as f:
             distdata = pickle.load(f)

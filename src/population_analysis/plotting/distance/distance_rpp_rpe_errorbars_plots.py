@@ -54,7 +54,10 @@ def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confiden
 
     ax.plot(get_xaxis_vals(), dist_arr)
 
-    quan_dist_data = quandist_dict[motdir]
+    if motdir == 0:  # Both dirs
+        quan_dist_data = np.vstack([quandist_dict[-1], quandist_dict[1]])
+    else:
+        quan_dist_data = quandist_dict[motdir]
 
     means = []
     uppers = []
