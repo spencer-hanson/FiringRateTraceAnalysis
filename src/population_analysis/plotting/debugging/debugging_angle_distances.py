@@ -1,11 +1,10 @@
+import glob
 import math
 import os
-import glob
 
-import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
-from population_analysis.processors.filters import BasicFilter
+
 from population_analysis.quantification.angle import AngleQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 
@@ -68,12 +67,16 @@ def plot_dist_debug(unitdata1, unitdata2, savename):
     }
 
     fig, axs = plt.subplots(nrows=len(vals_to_track.keys())+1, figsize=(4, 10))
-    for t in range(35):
+    m1 = np.average(unitdata1, axis=1)
+    m2 = np.average(unitdata2, axis=1)
 
-        mean_1 = np.average(unitdata1, axis=1)[:, t]
-        mean_2 = np.average(unitdata2, axis=1)[:, t]
-        axs[0].plot(mean_1)
-        axs[0].plot(mean_2)
+    axs[0].set_title("All units mean trials responses")
+    [axs[0].plot(x, color="blue") for x in m1]
+    [axs[0].plot(x, color="orange") for x in m2]
+
+    for t in range(35):
+        mean_1 = m1[:, t]
+        mean_2 = m2[:, t]
 
         mag1 = np.linalg.norm(mean_1)
         mag2 = np.linalg.norm(mean_2)
@@ -141,7 +144,50 @@ def plot_dist_with_offset(unitdata1, unitdata2, savename):
     plt.show()
 
 
+def plot_weighted_dist_func(unitdata1, unitdata2, savename):
+    def snr(a, axis=0):
+        m = a.mean(axis)
+        sd = a.std(axis)
+        return np.where(sd == 0, 0, m / sd)
+
+    # fig, axs = plt.subplots(nrows=2)
+    fig, axs = plt.subplots()
+    axs = [[], axs]
+
+    mean_1 = np.average(unitdata1, axis=1)  # Average trials
+    mean_2 = np.average(unitdata2, axis=1)
+
+    # snrs1 = snr(unitdata1, axis=1)  # Calculate SNR over the trials axis
+    # snrs2 = snr(unitdata2, axis=1)
+
+    amp1s = np.max(mean_1, axis=1)  # of each unit's response
+    amp2s = np.max(mean_2, axis=1)
+
+    # axs[0].plot(amp1s)
+    # axs[0].plot(amp2s)
+
+    dists = []
+    for t in range(35):
+        vec1 = mean_1[:, t] + amp1s
+        vec2 = mean_2[:, t] + amp2s
+
+        mag1 = np.linalg.norm(vec1)
+        mag2 = np.linalg.norm(vec2)
+        dot = np.dot(vec1, vec2)
+        theta = math.acos(dot/(mag1*mag2))
+        # snr_ratio_list = (snrs1[:, t] + snrs2[:, t])/2
+        # snr_ratios = np.mean(snr_ratio_list)
+        dists.append(theta)
+
+    axs[1].plot(dists)
+    plt.title("Offset angle dists")
+    plt.show()
+
+
 def debug_angle_dists(unitdata1, unitdata2, savename, folder):
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+
     os.chdir(folder)
     plot_units(unitdata1, unitdata2, savename)
     plot_means(unitdata1, unitdata2, savename)
@@ -149,22 +195,11 @@ def debug_angle_dists(unitdata1, unitdata2, savename, folder):
     plot_timepoint(unitdata1, unitdata2, 0, savename)
     plot_dist_debug(unitdata1, unitdata2, savename)
     plot_dist_with_offset(unitdata1, unitdata2, savename)
+    plot_weighted_dist_func(unitdata1, unitdata2, savename)
     os.chdir("../")
 
 
-def main():
-    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
-    # nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
-    # nwb_filename = nwbfiles[0]
-    # filepath = os.path.dirname(nwb_filename)
-    # filename = os.path.basename(nwb_filename)[:-len(".nwb")]
-    # sess = NWBSession(filepath, filename)
-    # unit_filter = BasicFilter.empty(sess.num_units)
-    # unit_filter = sess.unit_filter_premade()
-    # unit_filter = BasicFilter([0, 1], 2)
-    matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
-    # unitdata1 = sess.units()[unit_filter.idxs()][:, sess.trial_filter_rp_extra().idxs()]
-    # unitdata2 = sess.rp_peri_units()[unit_filter.idxs()][:, sess.trial_filter_rp_peri().idxs()]
+def fakedata_func():
     def plot_angleplots_with_baseline(mean):
         fakedata = np.random.normal(mean, 2, size=(10, 500, 35))
         fakedata[:, :, 10:20] += 2
@@ -174,14 +209,38 @@ def main():
 
         unitdata1 = fakedata
         unitdata2 = fakedata2
-        if not os.path.exists(str(mean)):
-            os.mkdir(str(mean))
+
+        # for unum in range(unitdata1.shape[0]):
+        #     for trnum in range(unitdata1.shape[1]):
+        #         unitdata1[unum, trnum, :] = scipy.ndimage.gaussian_filter(unitdata1[unum, trnum, :], .1)
+        #         unitdata2[unum, trnum, :] = scipy.ndimage.gaussian_filter(unitdata2[unum, trnum, :], .1)
 
         debug_angle_dists(unitdata1, unitdata2, f"mean-{mean}.png", str(mean))
 
     plot_angleplots_with_baseline(0)
-    plot_angleplots_with_baseline(1)
-    plot_angleplots_with_baseline(-1)
+    # plot_angleplots_with_baseline(1)
+    # plot_angleplots_with_baseline(-1)
+
+
+def realdata_func():
+    nwbfiles = glob.glob("../../../../scripts/*/*07-05*.nwb")
+    nwb_filename = nwbfiles[0]
+    filepath = os.path.dirname(nwb_filename)
+    filename = os.path.basename(nwb_filename)[:-len(".nwb")]
+    sess = NWBSession(filepath, filename)
+    # unit_filter = BasicFilter.empty(sess.num_units)
+    unit_filter = sess.unit_filter_premade()
+    # unit_filter = BasicFilter([0, 1], 2)
+
+    unitdata1 = sess.units()[unit_filter.idxs()][:, sess.trial_filter_rp_extra().idxs()]
+    unitdata2 = sess.rp_peri_units()[unit_filter.idxs()][:, sess.trial_filter_rp_peri().idxs()]
+    debug_angle_dists(unitdata1, unitdata2, filename + ".png", filename)
+
+
+def main():
+    # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
+    # fakedata_func()
+    realdata_func()
 
 
 if __name__ == "__main__":
