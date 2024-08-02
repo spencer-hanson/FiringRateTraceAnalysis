@@ -63,7 +63,7 @@ class SaccadicModulationTrialProcessor(object):
             for sac_idx, sac_tr in enumerate(saccade_trials):
                 sac_ev = sac_tr.event_idx
 
-                if abs(sac_ev - probe_tr.event_idx) <= 4:
+                if abs(sac_ev - probe_tr.event_idx) <= 25:  # indexes by bin so x*20ms, so 25 gives us -500ms to 500ms TODO Parameterize this?
                     num_collisions = num_collisions + 1
                     found_sac[sac_idx] = True
                     mixed_tr = ModulationTrial(

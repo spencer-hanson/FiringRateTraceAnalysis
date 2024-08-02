@@ -44,7 +44,7 @@ class NWBSession(object):
         if filter_mixed:
             mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= 0.02  # only want mixed trials 20 ms within probe
             self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
-            self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]
+            self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]  # These indexes are into mixed NOT units()
         else:
             self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
 
