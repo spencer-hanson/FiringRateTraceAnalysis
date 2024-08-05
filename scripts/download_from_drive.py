@@ -96,7 +96,7 @@ def main():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("C:\\Users\\Matrix\\Downloads\\creds.json", SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file("creds.json", SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open("token.json", "w") as token:
@@ -104,8 +104,15 @@ def main():
 
     service = build("drive", "v3", credentials=creds)
     files = get_files(service)
-    only_mlati = list(filter(lambda x: x[1].startswith("mlati"), files))
-    download_files(service, only_mlati, use_cached=True)
+    # only_mlati = list(filter(lambda x: x[1].startswith("mlati"), files))
+    # file_listdata = only_mlati
+    only_particular_date = list(filter(lambda x: x[2].startswith("2023-05-19"), files))
+    file_listdata = only_particular_date
+
+    use_cached = False
+    # use_cached = True
+
+    download_files(service, file_listdata, use_cached=use_cached)
 
     tw = 2
 
