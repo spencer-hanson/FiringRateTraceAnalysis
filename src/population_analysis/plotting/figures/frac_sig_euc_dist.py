@@ -41,7 +41,7 @@ def main():
     print("Loading group..")
     grp = NWBSessionGroup("../../../../scripts")
 
-    confidence_val = 0.95
+    confidence_val = 0.99
     frac_sig_dist_euc(grp, confidence_val)
 
 

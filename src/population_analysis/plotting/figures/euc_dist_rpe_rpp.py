@@ -26,11 +26,13 @@ def euclidian_distance_rpe_rpp(sess):
         quan,
         quan_dist_motdir_dict,
         0,
-        0.999,
+        0.99,
         save_dists=f"dists-fig-eucdist.pickle"
     )
 
-    ax.vlines(0, 0, 75, color="black", linestyles="dashed")
+    # ax.vlines(0, 0, 75, color="black", linestyles="dashed")
+    ax.vlines(0, 0, 2, color="black", linestyles="dashed")
+
     ax.set_title("RpExtra - RpPeri Euclidian Distance")
     ax.set_yticks([])
 
@@ -42,6 +44,7 @@ def euclidian_distance_rpe_rpp(sess):
 def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     nwbfiles = glob.glob("../../../../scripts/*/*-04-14*.nwb")
+    # nwbfiles = glob.glob("../../../../scripts/*/*generated*.nwb")
     nwb_filename = nwbfiles[0]
 
     filepath = os.path.dirname(nwb_filename)

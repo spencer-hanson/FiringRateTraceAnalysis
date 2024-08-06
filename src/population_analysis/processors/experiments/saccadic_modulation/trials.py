@@ -65,3 +65,12 @@ class ModulationTrial(object):
 
     def add_event(self, time_idx, label):
         self.events[label] = time_idx
+        # See processors.experiments.saccadic_modulation.__init__:SaccadicModulationTrialProcessor
+        # "probe_start": probe_start
+        # "probe_event": probe_tr.event_idx,
+        # "probe_end": probe_end,
+        # "probe_time": probe_tr.event_time,
+        # "saccade_start": sac_tr.start_idx,
+        # "saccade_event": sac_tr.event_idx,
+        # "saccade_end": sac_tr.end_idx,
+        # "saccade_time": sac_tr.event_time

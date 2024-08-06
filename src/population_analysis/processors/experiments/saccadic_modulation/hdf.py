@@ -92,6 +92,7 @@ class HDFSessionProcessor(object):
 
     def _add_rates_nwb(self, nwb, all_firing_rates, trial_spike_times, trial_spike_duration_idxs):
         datas = [
+            ("large_range_normalized_firing_rates", all_firing_rates["largerange_normalized_firing_rate"]),
             ("trial_response_firing_rates", all_firing_rates["firing_rate"]),
             ("normalized_trial_response_firing_rates", all_firing_rates["normalized_firing_rate"]),
             ("trial_rp_peri_response_firing_rates", all_firing_rates["rp_peri_firing_rate"]),
@@ -114,7 +115,7 @@ class HDFSessionProcessor(object):
         for trial_type in unique_trial_types:
             behavior_events.add(TimeSeries(name=f"unit-trial-{trial_type}",
                                            data=np.where(trial_types == trial_type)[0], rate=1.0, unit="idx",
-                                           description=f"Indices into all trials that are {trial_type} trials. Use nwbfile.units['trial_firing_rates'][unit_number][<idx goes here>] to get the firing rate of a unit in a given trial using these indicies"))
+                                           description=f"Indices into all trials that are {trial_type} trials."))
         # Relative timestamps for mixed trials
         mixed_trial_relative_timings = []
         for tr in trialgroup.get_trials_by_type("mixed"):

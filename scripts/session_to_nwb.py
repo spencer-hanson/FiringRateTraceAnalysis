@@ -47,7 +47,8 @@ def main():
     # dd = dictify_hd5(h5py.File("output.hdf"))
     # tw = 2
     # data_files = {"05-16-2023-output.hdf": "05-16-2023-output.hdf"}
-    # data_files = {"mlati7-2023-05-15-output.hdf": "google_drive/mlati7-2023-05-15-output.hdf"}
+    # data_files = {"mlati6-2023-04-14-output.hdf": "google_drive/mlati6-2023-04-14-output.hdf"}
+    # data_files = {"generated.hdf-nwb": "generated.hdf"}
 
     while True:
         print("Scanning for files to process..")
@@ -68,7 +69,7 @@ def main():
                 raw = HDFSessionProcessor("../" + filepath, "mlati7", "session0")
                 raw.save_to_nwb(nwb_filename, load_precalculated=True)
                 del raw
-                to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy"]
+                to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy", "calc_large_norm_firingrates.npy"]
                 for fn in to_remove:
                     print(f"Removing {fn}..")
                     try:
@@ -79,6 +80,7 @@ def main():
                 os.chdir("../")
             except Exception as e2:
                 os.chdir("../")
+                raise e2
                 print(f"Error with file {filename} Skipping, Exception {e2}")
                 fppp = open(f"error-{filename}.txt", "w")
                 fppp.write(str(e2))

@@ -53,6 +53,7 @@ def segmented_rpe_rpp(sess):
 def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     nwbfiles = glob.glob("../../../../scripts/*/*-04-14*.nwb")
+    # nwbfiles = glob.glob("../../../../scripts/*/*generated*.nwb")
     nwb_filename = nwbfiles[0]
 
     filepath = os.path.dirname(nwb_filename)
