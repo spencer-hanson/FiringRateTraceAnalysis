@@ -6,9 +6,10 @@ from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 class NWBSessionGroup(object):
-    def __init__(self, search_directory=None):
+    def __init__(self, search_directory=None, nwb_session_kwargs={}):
         # self._loaded_sessions = {}
         self._sessions = []
+        self.nwb_session_kwargs = nwb_session_kwargs
         if search_directory is not None:
             self.find_sessions(search_directory)
 
@@ -30,7 +31,7 @@ class NWBSessionGroup(object):
     def session_iter(self):
         for sess in self._sessions:
             folder, filename = self._get_file_details(sess)
-            yield filename, NWBSession(folder, filename)
+            yield filename, NWBSession(folder, filename, **self.nwb_session_kwargs)
 
     def session_names_iter(self):
         for sess in self._sessions:

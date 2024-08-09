@@ -9,7 +9,7 @@ from simply_nwb import SimpleNWB
 
 from population_analysis.consts import MOUSE_DETAILS, METRIC_NAMES, UNIT_ZETA_P_VALUE, SESSION_DESCRIPTION, \
     EXPERIMENTERS, EXPERIMENT_DESCRIPTION, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
-    TOTAL_TRIAL_MS, NUM_BASELINE_POINTS
+    TOTAL_TRIAL_MS, NUM_BASELINE_POINTS, SPIKE_BIN_MS
 from population_analysis.processors.experiments.saccadic_modulation import SaccadicModulationTrialProcessor
 from population_analysis.processors.experiments.saccadic_modulation.firing_rates import FiringRateCalculator
 from population_analysis.processors.experiments.saccadic_modulation.spikes import SpikeTrialOrganizer
@@ -40,7 +40,7 @@ class HDFSessionProcessor(object):
     def save_to_nwb(self, nwb_filename, load_precalculated=True):
         kp = KilosortProcessor(self.spike_clusters, self.spike_timings)
 
-        raw_firing_rates, fr_bins = kp.calculate_firingrates(20, load_precalculated)  # Bin size is 20ms in seconds
+        raw_firing_rates, fr_bins = kp.calculate_firingrates(SPIKE_BIN_MS, load_precalculated)
         raw_spike_times = kp.calculate_spikes(load_precalculated)
         grating_windows = self._calc_grating_windows(self.raw_data)
         # Grab the trials for the events
@@ -50,7 +50,7 @@ class HDFSessionProcessor(object):
         smp = SaccadicModulationTrialProcessor(fr_bins, events)
         trialgroup = smp.calculate()
         trial_spike_duration_idxs = self._calc_trial_spike_duration_idxs(trialgroup)
-
+        # debug check offset aa = [tr.events["saccade_time"] - tr.events["probe_time"] for tr in trialgroup.get_trials_by_type("mixed")]
         tfrc = FiringRateCalculator(raw_firing_rates, trialgroup)
         all_firing_rates = tfrc.calculate(load_precalculated)
 
@@ -86,8 +86,7 @@ class HDFSessionProcessor(object):
     def _calc_trial_spike_duration_idxs(self, trialgroup):
         dur = []
         for tr in trialgroup.all_trials():
-            # TODO 20ms multiply?
-            dur.append([tr.start_idx*20, tr.end_idx*20])
+            dur.append([tr.start_idx*SPIKE_BIN_MS, tr.end_idx*SPIKE_BIN_MS])  # TODO more precisely calculate start and stop times for the trials
         return np.array(dur)
 
     def _add_rates_nwb(self, nwb, all_firing_rates, trial_spike_times, trial_spike_duration_idxs):
@@ -120,6 +119,7 @@ class HDFSessionProcessor(object):
         mixed_trial_relative_timings = []
         for tr in trialgroup.get_trials_by_type("mixed"):
             mixed_trial_relative_timings.append(tr.events["saccade_time"] - tr.events["probe_time"])
+
         mixed_trial_relative_timings = np.array(mixed_trial_relative_timings)
         behavior_events.add(TimeSeries(
                 name=f"mixed-trial-saccade-relative-timestamps",
@@ -153,7 +153,6 @@ class HDFSessionProcessor(object):
                 cluster_num=unit_num
             )
             tw = 2
-
 
     def _initialize_nwb(self):
         birthday_diff = pendulum.now().diff(self.mouse_birthday)

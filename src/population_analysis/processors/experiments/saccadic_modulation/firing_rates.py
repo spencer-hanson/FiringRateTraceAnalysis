@@ -120,11 +120,9 @@ class FiringRateCalculator(object):
                 # Include whole range so we can calc all stats
                 rp_peri_firing_rates.append(
                     self.firing_rates[unit_num, trial_start_idx - 35: trial_end_idx + 35]
-                    # self.firing_rates[unit_num, trial_start_idx: trial_end_idx]
                 )
                 normalized_rp_peri_firing_rates.append(
                     self.firing_rates[unit_num, trial_start_idx - 35: trial_end_idx + 35] - baseline
-                    # self.firing_rates[unit_num, trial_start_idx: trial_end_idx] - baseline
                 )
 
                 largerange_normalized_firing_rates.append(

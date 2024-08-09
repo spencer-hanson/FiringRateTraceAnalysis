@@ -76,6 +76,7 @@ def distance_errorbars(ax, units1, units2, quan, quandist_dict, motdir, confiden
     ax.title.set_text(f"{quan.get_name()} {motdir}")
     ax.set_xlabel("Time (ms)")
 
+    return dist_arr, means, uppers, lowers
 
 def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cache_filename, save_filepath=None, use_cached=False):
     # quan_dist_motdir_dict is a dict with the keys as 1 or -1 and the data as (10k, 35) for the quan distribution

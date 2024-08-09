@@ -21,8 +21,10 @@ def pca_sess(sess, units1, units2, n_components):
     # want to turn each into a vector training example
 
     print("Preparing training data..", end="")
-    u1data = format_to_trainingdata(units1)
-    u2data = format_to_trainingdata(units2)
+    # u1data = format_to_trainingdata(units1)
+    # u2data = format_to_trainingdata(units2)
+    u1data = format_to_trainingdata(np.mean(units1, axis=1)[:, None, :])
+    u2data = format_to_trainingdata(np.mean(units2, axis=1)[:, None, :])
     print("done")
     alldata = np.vstack([u1data, u2data])
 
@@ -49,28 +51,39 @@ def rpp_rpe_pca(sess, n_components):
     return pca, rpp_path, rpe_path
 
 
-def rpp_rpe_pca_2d(sess):
+def rpp_rpe_pca_2d(sess, title):
     pca, rpp_path, rpe_path = rpp_rpe_pca(sess, 2)
     fig, ax = plt.subplots()
     ax.plot(rpp_path[:, 0], rpp_path[:, 1], color="orange", label="RpPeri")
     ax.plot(rpe_path[:, 0], rpe_path[:, 1], color="blue", label="RpExtra")
     ax.scatter(rpp_path[:, 0], rpp_path[:, 1], color="orange")
     ax.scatter(rpe_path[:, 0], rpe_path[:, 1], color="blue")
+    for idx in range(rpe_path.shape[0]):
+        ax.text(rpe_path[idx, 0], rpe_path[idx, 1], str(idx))
+        ax.text(rpp_path[idx, 0], rpp_path[idx, 1], str(idx))
+    plt.title(title)
     plt.legend()
     plt.show()
 
 
 def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
-    nwbfiles = glob.glob("../../../../scripts/*/*-04-14*.nwb")
+    nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
     # nwbfiles = glob.glob("../../../../scripts/*/*generated*.nwb")
+    # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*04-14*.nwb")
+    # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*05-15*.nwb")
     nwb_filename = nwbfiles[0]
 
-    filepath = os.path.dirname(nwb_filename)
-    filename = os.path.basename(nwb_filename)[:-len(".nwb")]
+    for nwb_filename in nwbfiles:
+        try:
+            filepath = os.path.dirname(nwb_filename)
+            filename = os.path.basename(nwb_filename)[:-len(".nwb")]
 
-    sess = NWBSession(filepath, filename)
-    rpp_rpe_pca_2d(sess)
+            sess = NWBSession(filepath, filename)
+            rpp_rpe_pca_2d(sess, nwb_filename)
+        except Exception as e:
+            print(f"Error with file '{nwb_filename}' Skipping.. Error '{str(e)}'")
+            continue
 
 
 if __name__ == "__main__":

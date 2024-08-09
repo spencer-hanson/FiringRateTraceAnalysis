@@ -15,7 +15,7 @@ from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calc
 
 
 class NWBSession(object):
-    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath=None, filter_mixed=True, use_normalized_units=True):
+    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath=None, filter_mixed=True, use_normalized_units=True, mixed_probe_range=0.02):
         filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
         self.filename_no_ext = filename
         self.filepath_prefix_no_ext = filepath_prefix_no_ext
@@ -42,7 +42,7 @@ class NWBSession(object):
         self.mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
 
         if filter_mixed:
-            mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= 0.02  # only want mixed trials 20 ms within probe
+            mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= mixed_probe_range  # only want mixed trials 20 ms within probe default 0.02
             self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
             self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]  # These indexes are into mixed NOT units()
         else:

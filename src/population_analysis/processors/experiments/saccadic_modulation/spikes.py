@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 
+from population_analysis.consts import SPIKE_BIN_MS
 from population_analysis.processors.experiments.saccadic_modulation import ModulationTrialGroup
 
 
@@ -24,7 +25,7 @@ class SpikeTrialOrganizer(object):
         for tr in self.trialgroup.all_trials():
             units_spike_trial = []
             for unit_idx in range(self.all_spikes.shape[0]):
-                val = self.all_spikes[unit_idx, tr.start_idx*20:tr.end_idx*20]  # spikes are binned in 20ms bins
+                val = self.all_spikes[unit_idx, tr.start_idx*SPIKE_BIN_MS:tr.end_idx*SPIKE_BIN_MS]  # spikes are binned in 20ms bins
                 units_spike_trial.append(val)
             all_spike_trials.append(units_spike_trial)
         all_spike_trials = np.array(all_spike_trials).swapaxes(0, 1)  # want them in (units, trials, 700)
