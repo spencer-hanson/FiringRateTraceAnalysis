@@ -125,6 +125,8 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
     plt.xticks(rotation=90)
     plt.subplots_adjust(bottom=.2)
     plt.show()
+    with open("fraction-significant-distances-latency.pickle", "wb") as f:
+        pickle.dump(yvals, f)
     tw = 2
 
 
