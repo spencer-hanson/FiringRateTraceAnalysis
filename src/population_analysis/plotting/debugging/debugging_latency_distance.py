@@ -59,13 +59,13 @@ def debug_latency_dists(sess, confidence_val, filename):
                 means.append(mean)
                 uppers.append(upper)
                 lowers.append(lower)
-            for ax in [oneax, allax[i]]:
+            for j, ax in enumerate([oneax, allax[i]]):
                 ax.plot(get_xaxis_vals(), distances, color="blue")
                 ax.plot(get_xaxis_vals(), means, color="orange")
                 ax.plot(get_xaxis_vals(), uppers, color="orange", linestyle="dotted")
                 ax.plot(get_xaxis_vals(), lowers, color="orange", linestyle="dotted")
                 ax.title.set_text(latency_key)
-                if i != 0:
+                if i != 0 and j == 1:
                     ax.set_yticks([])
 
             save_fn = save_fn_fmt.format(latency_key)
@@ -85,13 +85,14 @@ def debug_latency_dists(sess, confidence_val, filename):
 
 def main():
     print("Loading group..")
-    grp = NWBSessionGroup("../../../../scripts")
-    confidence_val = 0.9999
+    # grp = NWBSessionGroup("../../../../scripts")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    confidence_val = 0.95
     if not os.path.exists("latency_debug"):
         os.mkdir("latency_debug")
 
-    # for filename, sess in grp.session_iter():
-    #     debug_latency_dists(sess, confidence_val, filename)
+    for filename, sess in grp.session_iter():
+        debug_latency_dists(sess, confidence_val, filename)
 
     all_files = glob.glob("latency_debug/**/*all*.png")
     if not os.path.exists(os.path.join("latency_debug", "all")):

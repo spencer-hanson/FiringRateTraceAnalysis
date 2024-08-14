@@ -37,6 +37,9 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
         d[k] = d[k] + 1
 
     for filename, sess in sess_group.session_iter():
+        if sess is None:
+            tw = 2
+            continue
         rpextra_error_distribution_fn = f"{filename}-{quan.get_name()}{motdir}.pickle"
         if not ensure_rpextra_exists(rpextra_error_distribution_fn, sess, filename, quan)[0]:
             print(f"Error calculating RpExtra distance distribution for '{filename}'.. Skipping..")
@@ -135,7 +138,8 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
 
 def main():
     print("Loading group..")
-    grp = NWBSessionGroup("../../../../scripts")
+    # grp = NWBSessionGroup("../../../../scripts")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
 
     confidence_val = 0.9999
     frac_sig_dist_euc_max_vals_bars(grp, confidence_val)

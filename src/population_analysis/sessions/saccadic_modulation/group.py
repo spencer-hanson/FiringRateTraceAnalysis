@@ -19,7 +19,8 @@ class NWBSessionGroup(object):
         return date
 
     def find_sessions(self, direc):
-        for filename in glob.glob(direc + "/**/*.nwb", recursive=True):
+        found = glob.glob(os.path.join(direc, "**/*.nwb"), recursive=True)
+        for filename in found:
             self._sessions.append(filename)
 
     def _get_file_details(self, sess_name):
@@ -31,7 +32,11 @@ class NWBSessionGroup(object):
     def session_iter(self):
         for sess in self._sessions:
             folder, filename = self._get_file_details(sess)
-            yield filename, NWBSession(folder, filename, **self.nwb_session_kwargs)
+            try:
+                sess = NWBSession(folder, filename, **self.nwb_session_kwargs)
+                yield filename, sess
+            except Exception as e:
+                yield (filename, e), None
 
     def session_names_iter(self):
         for sess in self._sessions:

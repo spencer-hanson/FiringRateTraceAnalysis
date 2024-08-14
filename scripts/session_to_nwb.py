@@ -27,13 +27,13 @@ def check_for_data(folder_path):
 
     for file in os.listdir(folder_path):
         if file.endswith(".hdf"):
-            data_files[file] = os.path.join(folder_path, file)
+            data_files[file] = os.path.abspath(os.path.join(folder_path, file))
     return data_files
 
 
 def main():
     # sessions_path = "google_drive/"  # Same folder lol
-    sessions_path = "E:\\PopulationAnalysisRawHDF\\google_drive"  # NEEDS TO BE AN ABSOLUTE PATH
+    sessions_path = "D:\\PopulationAnalysisRawHDF\\google_drive"  # NEEDS TO BE AN ABSOLUTE PATH
     data_files = check_for_data(sessions_path)
     force = False
 
@@ -60,9 +60,13 @@ def main():
                 print(f"Processing '{filename}'")
                 name = ".".join(filename.split(".")[:-1])
 
+                nwb_prefix = "D:\\PopulationAnalysisNWBs"
+                name = os.path.join(nwb_prefix, name)
+
                 if not os.path.exists(name):
                     os.mkdir(name)
                 os.chdir(name)
+
                 nwb_filename = f"{filename}-nwb.nwb"
                 if os.path.exists(nwb_filename) and not force:
                     print("Already processed, skipping..")
