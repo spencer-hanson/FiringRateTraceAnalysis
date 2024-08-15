@@ -87,8 +87,8 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
-    grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
+    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
     confidence_val = 0.95
     if not os.path.exists("latency_debug"):
         os.mkdir("latency_debug")

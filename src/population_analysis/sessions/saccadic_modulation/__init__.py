@@ -41,12 +41,14 @@ class NWBSession(object):
         # Filter out mixed trials that saccades are more than 20ms away from the probe
         self.mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
 
-        if filter_mixed:
-            mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= mixed_probe_range  # only want mixed trials 20 ms within probe default 0.02
-            self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
-            self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]  # These indexes are into mixed NOT units()
-        else:
-            self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
+        # TODO UN-INVERT ME BY PROCESSING TIMESTAMPS DIFFERENT
+        self.mixed_rel_timestamps = self.mixed_rel_timestamps * -1
+        # if filter_mixed:
+        #     mixed_filtered_idxs = np.abs(self.mixed_rel_timestamps) <= mixed_probe_range  # only want mixed trials 20 ms within probe default 0.02
+        #     self.mixed_trial_idxs = self.mixed_trial_idxs[mixed_filtered_idxs]
+        #     self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]  # These indexes are into mixed NOT units()
+        # else:
+        #     self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
 
         self.nwb = nwb
 
@@ -133,8 +135,13 @@ class NWBSession(object):
     def trial_motion_filter(self, motion_direction) -> TrialFilter:
         return MotionDirectionTrialFilter(motion_direction, self.trial_motion_directions())
 
-    def trial_filter_rp_peri(self, additional_filters=None):
-        return RelativeTrialFilter(additional_filters, self.mixed_trial_idxs)
+    def trial_filter_rp_peri(self, latency_start, latency_end, additional_filters=None):
+        lt = self.mixed_rel_timestamps >= latency_start
+        gt = self.mixed_rel_timestamps <= latency_end
+        andd = np.logical_and(lt, gt)
+        rp_peri_trial_idxs = np.where(andd)[0]
+
+        return RelativeTrialFilter(additional_filters, rp_peri_trial_idxs)
 
     def trial_filter_rp_extra(self):
         return BasicFilter(self.probe_trial_idxs, self.num_trials)

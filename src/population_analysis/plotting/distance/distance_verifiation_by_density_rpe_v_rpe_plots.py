@@ -37,12 +37,14 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def calc_quandist(sess, ufilt, sess_filter, save_filename, base_prop, quan=None, use_cached=False):
+def calc_quandist(sess, ufilt, sess_filter, save_filename, base_prop, quan=None, use_cached=False, motions=None):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
     if quan is None:
         quan = EuclidianQuantification()
+    if motions is None:
+        motions = [-1, 1]
 
-    for motdir in [-1, 1]:
+    for motdir in motions:
         sv_fn = f"{save_filename}-{quan.get_name()}{motdir}.pickle"
         if use_cached and os.path.exists(sv_fn):
             print(f"Using cached quandist result! Loading unit filter and trial filter for mot={motdir}..")

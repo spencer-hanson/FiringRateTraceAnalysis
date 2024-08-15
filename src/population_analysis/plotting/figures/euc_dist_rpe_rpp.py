@@ -9,6 +9,7 @@ from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v
 from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
+from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
 
 def euclidian_distance_rpe_rpp(sess):
@@ -23,16 +24,23 @@ def euclidian_distance_rpe_rpp(sess):
     rpperi = sess.rp_peri_units().shape[1]
     rpextra = len(sess.trial_filter_rp_extra().idxs())
     prop = rpperi / rpextra
+    prop = prop / 10
+    prop = prop / 2  # TODO motion direction ratio
 
+    motions = [1]
+    # quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "fig-eucdist", prop, quan=quan, use_cached=cache, motions=motions)
 
-    quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "fig-eucdist", prop, quan=quan, use_cached=cache)
+    fn = "C:\\Users\\denma\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\\population_analysis\\\plotting\\\debugging\\mlati10-2023-07-06-output.hdf-nwb-Euclidian1.pickle"
+    with open(fn, "rb") as f:
+        quan_dist_motdir_dict = pickle.load(f)
+    quan_dist_motdir_dict = {1: quan_dist_motdir_dict}
     dist_arr, rpe_means, rpe_uppers, rpe_lowers = distance_errorbars(
         ax,
         rp_extra,
         rp_peri,
         quan,
         quan_dist_motdir_dict,
-        0,
+        1,
         0.99,
         save_dists=f"dists-fig-eucdist.pickle"
     )
@@ -64,15 +72,17 @@ def main():
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
     # nwbfiles = glob.glob("../../../../scripts/*/*-04-14*.nwb")
     # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*04-14*.nwb")
-    nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*05-15*.nwb")
-    # nwbfiles = glob.glob("../../../../scripts/*/*generated*.nwb")
-    nwb_filename = nwbfiles[0]
-
-    filepath = os.path.dirname(nwb_filename)
-    filename = os.path.basename(nwb_filename)[:-len(".nwb")]
-
-    sess = NWBSession(filepath, filename, mixed_probe_range=.1)  # For final figure want with 100ms range
+    # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*05-15*.nwb")
+    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    _, sess = next(grp.session_iter())
     euclidian_distance_rpe_rpp(sess)
+
+    # nwbfiles = glob.glob("../../../../scripts/*/*generated*.nwb")
+    # nwb_filename = nwbfiles[0]
+    # filepath = os.path.dirname(nwb_filename)
+    # filename = os.path.basename(nwb_filename)[:-len(".nwb")]
+    # sess = NWBSession(filepath, filename, mixed_probe_range=.1)  # For final figure want with 100ms range
+    # euclidian_distance_rpe_rpp(sess)
 
 
 if __name__ == "__main__":

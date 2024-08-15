@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
+from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
@@ -15,8 +16,31 @@ def debug_rpe_baseline(sess: NWBSession, use_cached):
         rpperi = sess.rp_peri_units().shape[1]
         rpextra = len(sess.trial_filter_rp_extra().idxs())
         prop = rpperi / rpextra
-        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), sess.filename_no_ext, quan=quan, use_cached=use_cached, base_prop=prop)
+        prop = prop / 10  # divide by 10 since we have 10 latencies
+        prop = prop / 2  # divide by 2 since we have 2 directions  TODO find proportion of directions
+        rpp_intervals = {}
+        rpp_names = {}
+        rpp_latencies = {}
 
+        mmax = 10
+        for i in range(mmax):
+            st = (i - (mmax / 2)) / 10
+            end = ((i - (mmax / 2)) / 10) + .1
+            rnd = lambda x: int(x * 1000)
+
+            lt = sess.mixed_rel_timestamps >= st
+            gt = sess.mixed_rel_timestamps <= end
+            andd = np.logical_and(lt, gt)
+            latency_key = f"{rnd(st)},{rnd(end)}"
+            rpp_intervals[i] = andd
+            rpp_names[i] = latency_key
+            rpp_latencies[i] = (st, end)
+
+        motions = [1]
+        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), sess.filename_no_ext, quan=quan, use_cached=use_cached, base_prop=prop, motions=motions)
+        # fig, ax = plt.subplots()
+        # ax.plot(np.mean(quan_dist_motdir_dict[1], axis=0))
+        # plt.show()
     except Exception as e:
         raise e
         print(f"Error in session '{sess.filename_no_ext}' Error: '{str(e)}'")
@@ -54,14 +78,49 @@ def dist_compare():
     tw = 2
 
 
+def rpp_distance(sess: NWBSession):
+    print("Initializing unit filters..")
+    ufilt = sess.unit_filter_premade()
+    ufilt.idxs()
+
+    motdir = 1
+
+    rpp_trial_filt = sess.trial_filter_rp_peri(0.4, 0.5, sess.trial_motion_filter(motdir))
+    rpe_trial_filt = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(motdir))
+
+    rpp = sess.rp_peri_units()[ufilt.idxs()][:, rpp_trial_filt.idxs()]
+    rpe = sess.units()[ufilt.idxs()][:, rpe_trial_filt.idxs()]
+    print("Calculating dists..")
+
+    quan = EuclidianQuantification()
+    dists = []
+    for t in range(35):  # (units, trials, t) -> (units, trials)
+        dists.append(quan.calculate(rpp[:, :, t], rpe[:, :, t]))  # x
+    plt.plot(dists, color="blue")
+
+    baseline_fn = "mlati10-2023-07-06-output.hdf-nwb-Euclidian1.pickle"
+    with open(baseline_fn, "rb") as f:
+        baseline_dist = pickle.load(f)
+    plt.plot(np.mean(baseline_dist, axis=0), color="orange")
+    plt.show()
+    tw = 2
+
+
+# def baseline_plots(baseline_fn):
+#     fig, ax = plt.subplots()
+#     with open(baseline_fn, "rb") as f:
+#         dists = pickle.load(f)
+#     ax.plot()
+
 
 def main():
     # print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
-    # filename, sess = next(grp.session_iter())
+    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    filename, sess = next(grp.session_iter())
     # debug_rpe_baseline(sess, False)
-    dist_compare()
+    rpp_distance(sess)
+    # dist_compare()
     # testing()
 
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")

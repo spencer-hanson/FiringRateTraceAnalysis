@@ -49,7 +49,7 @@ class Filter(object):
     def append(self, filt: 'Filter') -> 'Filter':
         if filt.num_units != self.num_units:
             raise ValueError(
-                f"Cannot append filter, unit nums don't match! self != other {self.num_units} != {filt.num_units}")
+                f"Cannot append filter, element numbers don't match! self != other {self.num_units} != {filt.num_units}")
 
         self._funcs.extend(filt._funcs)
         self.names.extend(filt.names)
