@@ -37,7 +37,7 @@ def plot_distance_density(data1, name1, data2, name2, quan, shuffle):
     plt.show()
 
 
-def calc_quandist(sess, ufilt, sess_filter, save_filename, quan=None, use_cached=False):
+def calc_quandist(sess, ufilt, sess_filter, save_filename, base_prop, quan=None, use_cached=False):
     motdata = {}  # {1: <arr like (samples10k, 35), -1: ..}
     if quan is None:
         quan = EuclidianQuantification()
@@ -52,11 +52,16 @@ def calc_quandist(sess, ufilt, sess_filter, save_filename, quan=None, use_cached
         trial_filter = sess_filter.append(sess.trial_motion_filter(motdir))
         print("Calculating unit idxs and filter idxs..")
         units = sess.units()[ufilt.idxs()][:, trial_filter.idxs()]
-        proportion = int(units.shape[1] / 100)
-        proportion = 1 if proportion <= 0 else proportion
+        if base_prop > 1 or base_prop < 0:
+            raise ValueError("Cannot split proportion > 1 or < 0!")
+        proportion = int(units.shape[1] * base_prop)
+        if proportion < 5:
+            raise ValueError("Error! Split has less than 5 entries!")
 
         print("Starting Quantity Distribution calculations..")
         quan_dist = QuanDistribution(
+            # units,
+            # sess.rp_peri_units()[ufilt.idxs()],
             units[:, :proportion],
             units[:, proportion:],
             quan
@@ -73,7 +78,11 @@ def calc_quandist(sess, ufilt, sess_filter, save_filename, quan=None, use_cached
 
 def plot_verif_rpe_v_rpe(sess: NWBSession, ufilt, use_cached=True, suppress_plot=False, quan=None):
     sess_filt = sess.trial_filter_rp_extra()
-    motdata = calc_quandist(sess, ufilt, sess_filt, "rpe_rpe", quan=quan, use_cached=use_cached)
+    rpperi = sess.rp_peri_units().shape[1]
+    rpextra = len(sess.trial_filter_rp_extra().idxs())
+    prop = rpperi / rpextra
+
+    motdata = calc_quandist(sess, ufilt, sess_filt, "rpe_rpe", prop, quan=quan, use_cached=use_cached)
 
     if not suppress_plot:
         plt.title("RpExtra v RpExtra distance, 10k bootstrap mean")

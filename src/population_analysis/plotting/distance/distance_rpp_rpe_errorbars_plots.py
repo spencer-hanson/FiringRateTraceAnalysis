@@ -86,9 +86,14 @@ def rpp_rpe_errorbars(sess: NWBSession, quans: list, confidence_val, ufilt, cach
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
 
+    rpperi = rp_peri.shape[1]
+    rpextra = len(sess.trial_filter_rp_extra().idxs())
+    prop = rpperi / rpextra
+
     for quan_idx in range(len(quans)):
         quan = quans[quan_idx]
-        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=use_cached)
+
+        quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), cache_filename, prop, quan=quan, use_cached=use_cached)
 
         for col_idx, motdir in enumerate([-1, 1]):
             distance_errorbars(

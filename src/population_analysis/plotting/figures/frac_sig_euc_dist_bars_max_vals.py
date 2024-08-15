@@ -17,7 +17,11 @@ def ensure_rpextra_exists(fn, sess, cache_filename, quan):
     if os.path.exists(fn):
         return True, 1
     try:
-        calc_quandist(sess, sess.unit_filter_premade(), sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=True)
+        rpperi = sess.rp_peri_units().shape[1]
+        rpextra = len(sess.trial_filter_rp_extra().idxs())
+        prop = rpperi / rpextra
+
+        calc_quandist(sess, sess.unit_filter_premade(), sess.trial_filter_rp_extra(), cache_filename, prop, quan=quan, use_cached=True)
         return True, 1
     except Exception as e:
         return False, e
@@ -84,7 +88,7 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
                         continue
 
                     rpperi = sess.rp_peri_units()[ufilt.idxs()]
-                    rpextra = sess.units()[ufilt.idxs()][:]
+                    rpextra = sess.units()[ufilt.idxs()][:, sess.trial_filter_rp_extra().idxs()]
 
                 print(f"Calculating latency {latency_key} distances..", end="")
                 lt = mixed_rel_timestamps >= st
@@ -92,7 +96,6 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
                 andd = np.logical_and(lt, gt)
                 if not np.any(andd):
                     print(f"No latency data found for {latency_key} for session '{filename}, skipping..'")
-                    time.sleep(2)
                     continue
 
                 distances = []
@@ -139,7 +142,9 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
 
     confidence_val = 0.9999
     frac_sig_dist_euc_max_vals_bars(grp, confidence_val)

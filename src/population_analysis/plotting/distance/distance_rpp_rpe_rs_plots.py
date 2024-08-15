@@ -104,7 +104,12 @@ def main():
 
     # quan = EuclidianQuantification()
     quan = AngleQuantification()
-    quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "rpp_rpe_rs", quan=quan, use_cached=use_cached)
+
+    rpperi = sess.rp_peri_units().shape[1]
+    rpextra = len(sess.trial_filter_rp_extra().idxs())
+    prop = rpperi / rpextra
+
+    quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "rpp_rpe_rs", prop, quan=quan, use_cached=use_cached)
     rpp_rpe_rs_errorbars(sess, quan, quan_dist_motdir_dict, confidence, ufilt)
 
     # confidence_interval(quan_dist_motdir_dict[-1][:, 0], confidence, plot=True)  # plot first timepoints CDF for 95% conf interval

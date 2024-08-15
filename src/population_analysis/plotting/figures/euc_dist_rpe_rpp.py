@@ -19,7 +19,13 @@ def euclidian_distance_rpe_rpp(sess):
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
     quan = EuclidianQuantification()
-    quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "fig-eucdist", quan=quan, use_cached=cache)
+
+    rpperi = sess.rp_peri_units().shape[1]
+    rpextra = len(sess.trial_filter_rp_extra().idxs())
+    prop = rpperi / rpextra
+
+
+    quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), "fig-eucdist", prop, quan=quan, use_cached=cache)
     dist_arr, rpe_means, rpe_uppers, rpe_lowers = distance_errorbars(
         ax,
         rp_extra,

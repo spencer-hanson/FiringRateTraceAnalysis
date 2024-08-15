@@ -65,7 +65,7 @@ def debug_latency_dists(sess, confidence_val, filename):
                 ax.plot(get_xaxis_vals(), uppers, color="orange", linestyle="dotted")
                 ax.plot(get_xaxis_vals(), lowers, color="orange", linestyle="dotted")
                 ax.title.set_text(latency_key)
-                if i != 0 and j == 1:
+                if i != 0 and j != 1:
                     ax.set_yticks([])
 
             save_fn = save_fn_fmt.format(latency_key)
@@ -86,7 +86,9 @@ def debug_latency_dists(sess, confidence_val, filename):
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
     confidence_val = 0.95
     if not os.path.exists("latency_debug"):
         os.mkdir("latency_debug")
