@@ -12,6 +12,9 @@ from population_analysis.plotting.figures.frac_sig_euc_dist_bars_max_vals import
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
+# DISTANCES_LOCATION = "../distance"
+DISTANCES_LOCATION = "E:\PopulationAnalysisDists"
+
 
 def debug_latency_dists(sess, confidence_val, filename):
     sess_dir = os.path.join("latency_debug", f"{filename}-dir")
@@ -24,14 +27,15 @@ def debug_latency_dists(sess, confidence_val, filename):
     motdir = 1
 
     rpextra_error_distribution_fn = f"{filename}-{quan.get_name()}{motdir}.pickle"
-    os.chdir("../distance")
+    olddir = os.getcwd()
+    os.chdir(DISTANCES_LOCATION)
 
     rp_extra_exists, ex = ensure_rpextra_exists(rpextra_error_distribution_fn, sess, filename, quan)
     if not rp_extra_exists:
         print(f"Error calculating RpExtra distance distribution for '{filename}'!")
-        raise ex
-        # os.chdir("../debugging")
-        # return  # TODO?
+        # raise ex
+        os.chdir(olddir)
+        return  # TODO?
     mmax = 10
 
     allfig, allax = plt.subplots(ncols=mmax, sharey=True, sharex=True, figsize=(16, 4))
@@ -72,14 +76,14 @@ def debug_latency_dists(sess, confidence_val, filename):
 
             save_fn = save_fn_fmt.format(latency_key)
             print(f"Saving {save_fn}")
-            os.chdir("../debugging")
+            os.chdir(olddir)
             fig.savefig(save_fn)
-            os.chdir("../distance")
+            os.chdir(DISTANCES_LOCATION)
             plt.close(fig)
         else:
             raise ValueError("Distances not precalculated, use frac_sig_euc_dist_bars_max_vals.py")
 
-    os.chdir("../debugging")
+    os.chdir(olddir)
     print("Saving allfig..")
     allfig.savefig(save_fn_fmt.format("all"))
     tw = 2
@@ -89,7 +93,7 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
     confidence_val = 0.95
     if not os.path.exists("latency_debug"):
