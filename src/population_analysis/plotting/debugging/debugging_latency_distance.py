@@ -30,6 +30,8 @@ def debug_latency_dists(sess, confidence_val, filename):
     if not rp_extra_exists:
         print(f"Error calculating RpExtra distance distribution for '{filename}'!")
         raise ex
+        # os.chdir("../debugging")
+        # return  # TODO?
     mmax = 10
 
     allfig, allax = plt.subplots(ncols=mmax, sharey=True, sharex=True, figsize=(16, 4))
@@ -87,13 +89,14 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
     confidence_val = 0.95
     if not os.path.exists("latency_debug"):
         os.mkdir("latency_debug")
 
     for filename, sess in grp.session_iter():
+        print(f"Processing latency for '{filename}'")
         debug_latency_dists(sess, confidence_val, filename)
 
     all_files = glob.glob("latency_debug/**/*all*.png")

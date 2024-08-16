@@ -42,8 +42,11 @@ def debug_rpe_baseline(sess: NWBSession, use_cached):
         # ax.plot(np.mean(quan_dist_motdir_dict[1], axis=0))
         # plt.show()
     except Exception as e:
-        raise e
+        # raise e
         print(f"Error in session '{sess.filename_no_ext}' Error: '{str(e)}'")
+        with open(f"{sess.filename_no_ext}-error.log", "w") as f:
+            f.write(str(e))
+
         return
 
 
@@ -116,16 +119,16 @@ def rpp_distance(sess: NWBSession):
 def main():
     # print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
-    filename, sess = next(grp.session_iter())
+    # grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    # filename, sess = next(grp.session_iter())
     # debug_rpe_baseline(sess, False)
-    rpp_distance(sess)
+    # rpp_distance(sess)
     # dist_compare()
     # testing()
 
-    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    # for filename, sess in grp.session_iter():
-    #     debug_rpe_baseline(sess, False)
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    for filename, sess in grp.session_iter():
+        debug_rpe_baseline(sess, False)
 
 
 if __name__ == "__main__":
