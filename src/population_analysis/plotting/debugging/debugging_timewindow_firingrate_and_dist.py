@@ -87,7 +87,7 @@ def sess_summary(sess: NWBSession, filename, quan, motdir, confidence_val, use_c
         sess_distance(rpp, rpe, quan, motdir, confidence_val, allax[1][i], sess, use_cached)
 
     allax[0][0].set_ylabel("Avg. Firing Rate")
-    allax[0][1].set_ylabel("Distance")
+    allax[1][0].set_ylabel("Distance")
     allfig.savefig(f"sess_debug/{filename}.png")
     plt.show()
     tw = 2
