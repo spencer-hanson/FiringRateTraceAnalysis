@@ -37,7 +37,8 @@ def all_firingrates(sess: NWBSession):
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    # grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     filename, sess = next(grp.session_iter())
     all_firingrates(sess)
 

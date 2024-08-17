@@ -1,9 +1,14 @@
+import os
+
 import numpy as np
 
 from population_analysis.processors.experiments.saccadic_modulation.trials import ModulationTrial, ModulationTrialGroup
+import pickle
 
 
 class SaccadicModulationTrialProcessor(object):
+    CACHE_FILENAME = "saccadic-trials.pickle"
+
     def __init__(self, firing_rate_bins, events_data):
         # events_data should look like this
         # {
@@ -63,7 +68,8 @@ class SaccadicModulationTrialProcessor(object):
             for sac_idx, sac_tr in enumerate(saccade_trials):
                 sac_ev = sac_tr.event_idx
 
-                if abs(sac_ev - probe_tr.event_idx) <= 35:  # indexes by bin so x*20ms, 35->700 before and after the probe
+                # if abs(sac_ev - probe_tr.event_idx) <= 30: # indexes by bin so x*20ms
+                if abs(sac_tr.event_time - probe_tr.event_time) <= .51:
                     num_collisions = num_collisions + 1
                     found_sac[sac_idx] = True
                     mixed_tr = ModulationTrial(
@@ -77,7 +83,7 @@ class SaccadicModulationTrialProcessor(object):
                             "saccade_end": sac_tr.end_idx,
                             "saccade_time": sac_tr.event_time
                         })
-                    if num_collisions > 1:
+                    if num_collisions >= 1:
                         break
 
             # end sac trials loop
@@ -99,9 +105,14 @@ class SaccadicModulationTrialProcessor(object):
         return sort
 
     def calculate(self):
+        if os.path.exists(SaccadicModulationTrialProcessor.CACHE_FILENAME):
+            print("Precalculated ModulationTrialGroup found, skipping..")
+            with open(SaccadicModulationTrialProcessor.CACHE_FILENAME, "rb") as f:
+                return pickle.load(f)
+
         # Will return [{"start": start_idx, "event": event_idx, "stop": stop_idx}, ..]
         # The indexes are the value of the bin that the timestamps fall into, so indexed into the firing rates
-        trials = []
+
         # indexes are into the firing rate
         print("Processing saccade timings..")
         saccade_trials = self._process_timings(self.saccade_timings, self.saccade_motions, self.saccade_blocks, "saccade")
@@ -116,5 +127,9 @@ class SaccadicModulationTrialProcessor(object):
         print("Sorting trials by event time..")
         demixed_trials = self._sort_trials(demixed_trials)
         group = ModulationTrialGroup(demixed_trials)
+
+        print("Dumping trialgroup data to cached file..")
+        with open(SaccadicModulationTrialProcessor.CACHE_FILENAME, "wb") as f:
+            pickle.dump(group, f)
 
         return group

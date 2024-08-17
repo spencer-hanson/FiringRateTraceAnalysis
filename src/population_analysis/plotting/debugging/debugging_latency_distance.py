@@ -13,8 +13,8 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
 # DISTANCES_LOCATION = "../distance"
-DISTANCES_LOCATION = "E:\PopulationAnalysisDists"
-
+# DISTANCES_LOCATION = "E:\PopulationAnalysisDists"
+DISTANCES_LOCATION = "C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\population_analysis\\plotting\\debugging"
 
 def debug_latency_dists(sess, confidence_val, filename):
     sess_dir = os.path.join("latency_debug", f"{filename}-dir")
@@ -93,7 +93,8 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
     confidence_val = 0.95
     if not os.path.exists("latency_debug"):

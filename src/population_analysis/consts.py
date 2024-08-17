@@ -21,7 +21,25 @@ MIXED_THRESHOLD = .2  # any saccade/probe within 200ms of another probe/saccade 
 UNIT_ZETA_P_VALUE = 0.01  # p-value of a unit using the zeta test must be lower than this threshold
 
 MOUSE_DETAILS = {
+    "mlati6": {  # TODO Correct these values
+        "birthday": pendulum.parse("5/2/22", strict=False),
+        "strain": "mouse",
+        "description": "this is a mouse",
+        "sex": "M"
+    },
     "mlati7": {  # TODO Correct these values
+        "birthday": pendulum.parse("5/2/22", strict=False),
+        "strain": "mouse",
+        "description": "this is a mouse",
+        "sex": "M"
+    },
+    "mlati9": {  # TODO Correct these values
+        "birthday": pendulum.parse("5/2/22", strict=False),
+        "strain": "mouse",
+        "description": "this is a mouse",
+        "sex": "M"
+    },
+    "mlati10": {  # TODO Correct these values
         "birthday": pendulum.parse("5/2/22", strict=False),
         "strain": "mouse",
         "description": "this is a mouse",
@@ -33,7 +51,9 @@ SESSION_DESCRIPTION = "sess desc"  # TODO change me
 EXPERIMENT_DESCRIPTION = "TODO"  # TODO Change me
 EXPERIMENT_KEYWORDS = ["mouse", "neuropixels"]
 EXPERIMENTERS = [
-    "Hunt, Josh"
+    "Hunt, Josh",
+    "Buteau, Anna",
+    "Hanson, Spencer"
 ]
 
 DEVICE_NAME = "neuropixels-probe"

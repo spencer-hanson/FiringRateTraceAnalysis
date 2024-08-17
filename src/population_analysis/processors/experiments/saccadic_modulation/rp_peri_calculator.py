@@ -13,20 +13,26 @@ class RpPeriCalculator(object):
         self.mix_idxs = mixed_idxs
         self.trialgroup = trialgroup
 
-    # def calculate(self):
-    #     saccade_unit_trial_waveforms = self.fr[:, self.sac_idxs][:, :, 35:35+35]  # (units, trials, t))
-    #
-    #     # average is now units x t
-    #     saccade_unit_average_waveforms = np.average(saccade_unit_trial_waveforms, axis=1)  # Average over saccade trials for each unit
-    #     # Get mixed waveform unit-trials
-    #     mixed_unit_trial_waveforms = self.fr[:, self.mix_idxs][:, :, 35:35+35]  # (units, trials, t)
-    #
-    #     # Reshape saccade_unit_average_waveforms to (units, 1, t) and broadcast against (units, trials, t)
-    #     # to subtract saccade avg from all units in all trials
-    #     saccade_unit_average_waveforms = saccade_unit_average_waveforms[:, None]
-    #     mixed_peri_waveforms = mixed_unit_trial_waveforms - saccade_unit_average_waveforms
-    #
-    #     return mixed_peri_waveforms
+    def calculate_static(self):
+        # Index is 35:35+35 because the window is |--A35--|--B35--|--C35--|
+        # where A is 700ms + 200ms before the probe, B is the 700ms around the probe, centered at 200ms in
+        # and C is 700ms + 500ms after the probe
+
+        saccade_unit_trial_waveforms = self.fr[:, self.sac_idxs][:, :, 35:35+35]  # (units, trials, t))
+
+        # average is now (units, t)
+        saccade_unit_average_waveforms = np.average(saccade_unit_trial_waveforms, axis=1)  # Average over saccade trials for each unit
+        # Get mixed waveform unit-trials
+        mixed_unit_trial_waveforms = self.fr[:, self.mix_idxs][:, :, 35:35+35]  # (units, trials, t)
+
+        # Reshape saccade_unit_average_waveforms to (units, 1, t) and broadcast against (units, trials, t)
+        # to subtract saccade avg from all units in all trials
+        saccade_unit_average_waveforms = saccade_unit_average_waveforms[:, None]
+        mixed_peri_waveforms = mixed_unit_trial_waveforms - saccade_unit_average_waveforms
+
+        return mixed_peri_waveforms
+
+    # def calculate_timeshifted_rp_peri(self):
     def calculate(self):
         saccade_unit_trial_waveforms = self.fr[:, self.sac_idxs]  # (units, trials, t))
 

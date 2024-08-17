@@ -47,7 +47,7 @@ class KilosortProcessor(object):
         print(f"Calculating firingrate of {len(self.unique_units)} Units and {len(self.spike_timings)} spikes, using a bin size of {bin_size_ms} ms")
         firing_rates = np.empty((self.num_units, len(time_bins) - 1))  # Subtract one to account for end bin edge
         for idx, unit_num in enumerate(self.unique_units):
-            print(f"Processing Unit {idx}/{self.num_units}")
+            print(f"Processing Firingrate of Unit {idx}/{self.num_units}")
             firing_rates[idx, :] = self._unit_firingrate(unit_num, time_bins, bin_size_ms)
 
         print(f"Finished, writing to file '{KilosortProcessor.FIRING_RATE_PRECALCULATE_FILENAME}'..")

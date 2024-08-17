@@ -126,7 +126,8 @@ def main():
     # dist_compare()
     # testing()
 
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     for filename, sess in grp.session_iter():
         debug_rpe_baseline(sess, False)
 

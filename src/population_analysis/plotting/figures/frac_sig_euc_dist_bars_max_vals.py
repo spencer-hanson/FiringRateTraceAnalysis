@@ -12,6 +12,8 @@ from population_analysis.plotting.distance.fraction_distance_significant import 
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
+DISTANCES_LOCATION = "C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\population_analysis\\plotting\\debugging"
+
 
 def ensure_rpextra_exists(fn, sess, cache_filename, quan):
     if os.path.exists(fn):
@@ -30,7 +32,8 @@ def ensure_rpextra_exists(fn, sess, cache_filename, quan):
 
 
 def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
-    os.chdir("../distance")
+    olddir = os.getcwd()
+    os.chdir(DISTANCES_LOCATION)
     quan = EuclidianQuantification()
 
     num_sessions = 0
@@ -122,7 +125,7 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
     # ax.plot(get_xaxis_vals(), session_counts/num_sessions)
     # ax.set_ylabel("% of total sessions")
     # ax.set_xlabel("Time (ms)")
-    os.chdir("../figures")
+    os.chdir(olddir)
     # plt.savefig("euclidian-significance.svg")
     # plt.show()
 
@@ -146,7 +149,8 @@ def main():
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
 
     confidence_val = 0.99
     frac_sig_dist_euc_max_vals_bars(grp, confidence_val)

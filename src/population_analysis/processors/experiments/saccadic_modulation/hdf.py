@@ -11,7 +11,7 @@ from population_analysis.consts import MOUSE_DETAILS, METRIC_NAMES, UNIT_ZETA_P_
     EXPERIMENTERS, EXPERIMENT_DESCRIPTION, EXPERIMENT_KEYWORDS, DEVICE_NAME, DEVICE_DESCRIPTION, DEVICE_MANUFACTURER, \
     TOTAL_TRIAL_MS, NUM_BASELINE_POINTS, SPIKE_BIN_MS
 from population_analysis.processors.experiments.saccadic_modulation import SaccadicModulationTrialProcessor
-from population_analysis.processors.experiments.saccadic_modulation.firing_rates import FiringRateCalculator
+from population_analysis.processors.experiments.saccadic_modulation.firing_rate_normalizer import FiringRateNormalizer
 from population_analysis.processors.experiments.saccadic_modulation.spikes import SpikeTrialOrganizer
 from population_analysis.processors.kilosort import KilosortProcessor
 
@@ -37,22 +37,31 @@ class HDFSessionProcessor(object):
         self.metrics = self._extract_metrics(self.raw_data)
         self.p_value_truth = self._calc_p_value_truth(self.probe_zeta, self.saccade_zeta)
 
+        # Make sure the file has the right fields before attempting processing
+        assert self.raw_data["stimuli"]["dg"]["grating"]["timestamps"]
+        assert self.raw_data["stimuli"]["dg"]["grating"]["motion"]
+        assert self.raw_data["stimuli"]["dg"]["iti"]["timestamps"]
+        assert self.raw_data["stimuli"]["dg"]["probe"]["timestamps"]
+        assert self.raw_data["saccades"]["predicted"]["left"]["timestamps"]
+        assert self.raw_data["saccades"]["predicted"]["left"]["labels"]
+
     def save_to_nwb(self, nwb_filename, load_precalculated=True):
         kp = KilosortProcessor(self.spike_clusters, self.spike_timings)
 
-        raw_firing_rates, fr_bins = kp.calculate_firingrates(SPIKE_BIN_MS, load_precalculated)
         raw_spike_times = kp.calculate_spikes(load_precalculated)
+        raw_firing_rates, fr_bins = kp.calculate_firingrates(SPIKE_BIN_MS, load_precalculated)
+
         grating_windows = self._calc_grating_windows(self.raw_data)
         # Grab the trials for the events
-        events = self._event_timings(self.raw_data, grating_windows)
+        events = self._event_timings(grating_windows)
 
         # Separate the trials into Rs, RpExtra and Rmixed
         smp = SaccadicModulationTrialProcessor(fr_bins, events)
         trialgroup = smp.calculate()
         trial_spike_duration_idxs = self._calc_trial_spike_duration_idxs(trialgroup)
-        # debug check offset aa = [tr.events["saccade_time"] - tr.events["probe_time"] for tr in trialgroup.get_trials_by_type("mixed")]
-        tfrc = FiringRateCalculator(raw_firing_rates, trialgroup)
-        all_firing_rates = tfrc.calculate(load_precalculated)
+
+        trial_firing_rates = FiringRateNormalizer(raw_firing_rates, trialgroup)
+        all_firing_rates = trial_firing_rates.calculate(load_precalculated)
 
         spike_organizer = SpikeTrialOrganizer(raw_spike_times, trialgroup)
         trial_spike_times = spike_organizer.calculate(load_precalculated)
@@ -86,7 +95,7 @@ class HDFSessionProcessor(object):
     def _calc_trial_spike_duration_idxs(self, trialgroup):
         dur = []
         for tr in trialgroup.all_trials():
-            dur.append([tr.start_idx*SPIKE_BIN_MS, tr.end_idx*SPIKE_BIN_MS])  # TODO more precisely calculate start and stop times for the trials
+            dur.append([tr.start_idx*SPIKE_BIN_MS, tr.end_idx*SPIKE_BIN_MS])
         return np.array(dur)
 
     def _add_rates_nwb(self, nwb, all_firing_rates, trial_spike_times, trial_spike_duration_idxs):
@@ -142,18 +151,6 @@ class HDFSessionProcessor(object):
             ts = TimeSeries(name=f"metric-{metric_name}", data=metric_data, unit="num", rate=1.0, description=f"Quality metric {metric_name}")
             event_module.add(ts)
 
-    def _add_units_nwb(self, nwb, all_spike_times, all_firing_rates, trial_spike_times):
-        for unit_idx, unit_num in enumerate(self.unique_unit_nums):
-            print(f"Adding unit {unit_idx}/{len(self.unique_unit_nums)}..")
-            nwb.add_unit(
-                spike_times=all_spike_times[unit_idx, :],
-                trial_spike_times=trial_spike_times,
-                probe_zeta_scores=self.probe_zeta[unit_idx],
-                saccade_zeta_scores=self.saccade_zeta[unit_idx],
-                cluster_num=unit_num
-            )
-            tw = 2
-
     def _initialize_nwb(self):
         birthday_diff = pendulum.now().diff(self.mouse_birthday)
 
@@ -184,31 +181,6 @@ class HDFSessionProcessor(object):
         nwb.create_device(
             name=DEVICE_NAME, description=DEVICE_DESCRIPTION, manufacturer=DEVICE_MANUFACTURER
         )
-
-        # Add units
-        # nwb.add_unit_column(name="trial_spike_times", description=f"Arr of the units spikes in the trial duration ({TOTAL_TRIAL_MS}ms)")
-        #
-        # nwb.add_unit_column(name="saccade_zeta_scores", description="zeta score for this unit, if this unit is a saccade responding unit")
-        # nwb.add_unit_column(name="probe_zeta_scores", description="zeta score for this unit, if this unit is a probe responding unit")
-        #
-        # nwb.add_unit_column(name="cluster_num", description="Cluster ID for the unit")
-
-
-        #
-        # firing_rate_description = f"trials x response time length array for each unit"
-        # nwb.add_unit_column(name="trial_response_firing_rates", description=firing_rate_description)
-        # nwb.add_unit_column(name="normalized_trial_response_firing_rates", description=firing_rate_description + ", normalized by subtracting a baseline and dividing by the standard deviation of the baseline")
-        # nwb.add_unit_column(name="trial_rp_peri_response_firing_rates",
-        #                     description="Normalized responses of each unit in each trial for mixed (perisaccadic) trials. "
-        #                 + "Probe waveform responses have been subtracted by the average saccadic response for that unit"
-        #                 + " (average across all saccadic trials)")
-        #
-        # nwb.add_unit_column(name="normalized_trial_rp_peri_response_firing_rates",
-        #                     description="Normalized responses of each unit in each trial for mixed (perisaccadic) trials. "
-        #                                 + "Probe waveform responses have been subtracted by the average saccadic response for that unit"
-        #                                 + " (average across all saccadic trials)")
-        #
-
         return nwb
 
     def _calc_p_value_truth(self, probe_zeta, saccade_zeta):
@@ -242,16 +214,16 @@ class HDFSessionProcessor(object):
             "inter_grating_timestamps": inter_grating_timestamps
         }
 
-    def _event_timings(self, raw_data, grating_windows):
+    def _event_timings(self, grating_windows):
         # Cutoff timing is to ignore any events before given time
         cutoff_time = grating_windows["grating_timestamps"][0][0]
 
         # Probe and Saccade timestamps
-        probe_timestamps = np.array(raw_data["stimuli"]["dg"]["probe"]["timestamps"])
+        probe_timestamps = np.array(self.raw_data["stimuli"]["dg"]["probe"]["timestamps"])
 
         # Saccades from the left eye TODO other eyes?
-        saccade_timestamps = np.array(raw_data["saccades"]["predicted"]["left"]["timestamps"])
-        saccade_directions = np.array(raw_data["saccades"]["predicted"]["left"]["labels"])
+        saccade_timestamps = np.array(self.raw_data["saccades"]["predicted"]["left"]["timestamps"])
+        saccade_directions = np.array(self.raw_data["saccades"]["predicted"]["left"]["labels"])
         direction_idxs = np.where(saccade_directions != 0)[0]
 
         saccade_timestamps = saccade_timestamps[direction_idxs][:, 0]  # Use the start of the saccade time window as 'saccade event time'
@@ -260,7 +232,7 @@ class HDFSessionProcessor(object):
         probe_timestamps = probe_timestamps[np.where(probe_timestamps >= cutoff_time)[0]]
         saccade_timestamps = saccade_timestamps[np.where(saccade_timestamps >= cutoff_time)[0]]
 
-        grating_motion_directions = np.array(raw_data["stimuli"]["dg"]["grating"]["motion"])
+        grating_motion_directions = np.array(self.raw_data["stimuli"]["dg"]["grating"]["motion"])
         grating_windows = grating_windows["grating_timestamps"]
 
         probe_timestamps, probe_motions, probe_blocks = self._calc_motions(probe_timestamps, grating_windows,
@@ -272,7 +244,6 @@ class HDFSessionProcessor(object):
             "saccade_timestamps": saccade_timestamps,
             "saccade_motions": saccade_motions,
             "saccade_blocks": saccade_blocks,
-
             "probe_timestamps": probe_timestamps,
             "probe_motions": probe_motions,
             "probe_blocks": probe_blocks,
