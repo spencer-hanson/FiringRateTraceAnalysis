@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 
+from population_analysis.consts import BASELINE_IDXS
 from population_analysis.processors.experiments.saccadic_modulation import ModulationTrialGroup
 from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calculator import RpPeriCalculator
 
@@ -12,7 +13,6 @@ class FiringRateNormalizer(object):
     RP_PERI_FIRING_RATE = "calc_rpperi_firingrates.npy"
     RP_PERI_NORMALIZED = "calc_rpperi_norm_firingrates.npy"
     LARGE_NORMALIZED = "calc_large_norm_firingrates.npy"
-    BASELINE_IDXS = [0, 10]  # Baseline is 0:10
 
     def __init__(self, firing_rates, trial_group: ModulationTrialGroup):
         self.firing_rates = firing_rates
@@ -61,7 +61,7 @@ class FiringRateNormalizer(object):
     def _subtract_baseline_rp_peri(self, rp_peri):
         # rp_peri is (units, trials, t)
         # start and end are the indexes into the arr where the baseline mean should be taken
-        baseline = np.mean(rp_peri[:, :, FiringRateNormalizer.BASELINE_IDXS[0]:FiringRateNormalizer.BASELINE_IDXS[1]], axis=2)  # Baseline is the first 200ms before the probe
+        baseline = np.mean(rp_peri[:, :, BASELINE_IDXS[0]:BASELINE_IDXS[1]], axis=2)  # Baseline is the first 200ms before the probe
         normalized = rp_peri - baseline[:, :, None]
         return normalized
 
@@ -121,7 +121,7 @@ class FiringRateNormalizer(object):
                 trial_firing_rates.append(response)
 
                 # normalized firing rates
-                baseline = self.firing_rates[unit_num, trial_start_idx + FiringRateNormalizer.BASELINE_IDXS[0]:trial_start_idx + FiringRateNormalizer.BASELINE_IDXS[1]]  # Mean firing rate from -200, 0ms (relative to probe)
+                baseline = self.firing_rates[unit_num, trial_start_idx + BASELINE_IDXS[0]:trial_start_idx + BASELINE_IDXS[1]]  # Mean firing rate from -200, 0ms (relative to probe)
                 assert len(baseline) > 0
                 baseline = np.mean(baseline)
                 trial_normalized_firing_rates.append(response - baseline)  # Will be adding on firingrates
@@ -194,7 +194,7 @@ class FiringRateNormalizer(object):
         # Re-normalize the baseline since the subtracted RpPeri will have a different baseline (after zscoring from above)
         all_normalized_rp_peri_firing_rates = self._subtract_baseline_rp_peri(all_normalized_rp_peri_firing_rates)
 
-        print("Saving normalized & normalized RpPeri firing rates to file..")
+        print("Saving firing rates to cache file..")
         np.save(FiringRateNormalizer.NORMALIZED_FILENAME, all_normalized_firing_rates)
         np.save(FiringRateNormalizer.RP_PERI_NORMALIZED, all_normalized_rp_peri_firing_rates)
         np.save(FiringRateNormalizer.LARGE_NORMALIZED, all_largerange_normalized_firing_rates)

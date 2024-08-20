@@ -4,6 +4,7 @@ import pickle
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import get_xaxis_vals, confidence_interval
 from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
+from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
@@ -18,6 +19,10 @@ def rnd(x):
 def sess_firingrate(rpp, rpe, ax):
     ax.plot(np.mean(np.mean(rpe, axis=1), axis=0), color="orange", label="RpExtra")
     ax.plot(np.mean(np.mean(rpp, axis=1), axis=0), color="blue", label="RpPeri")
+    # fig, ax2 = plt.subplots(nrows=2)
+    # [ax2[0].plot(r) for r in np.mean(rpe, axis=1)]
+    # [ax2[1].plot(r) for r in np.mean(rpp, axis=1)]
+    # fig.show()
 
 
 def calc_rpextra_error_distribution(sess, use_cached, motdir):
@@ -68,7 +73,8 @@ def sess_distance(rpp, rpe, quan, motdir, confidence_val, ax, sess, use_cached):
 def sess_summary(sess: NWBSession, filename, quan, motdir, confidence_val, use_cached):
     mmax = 10
     allfig, allax = plt.subplots(ncols=mmax, nrows=2, sharey="row", sharex="row", figsize=(16, 4))
-    ufilt = sess.unit_filter_premade()
+    # ufilt = sess.unit_filter_premade()
+    ufilt = BasicFilter.empty(sess.num_units)
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
 
@@ -96,7 +102,7 @@ def sess_summary(sess: NWBSession, filename, quan, motdir, confidence_val, use_c
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
+    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\tmp")
     if not os.path.exists("sess_debug"):
         os.mkdir("sess_debug")
 

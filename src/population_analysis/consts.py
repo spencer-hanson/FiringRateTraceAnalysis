@@ -9,7 +9,8 @@ PROBE_IDX = int(PRE_TRIAL_MS / SPIKE_BIN_MS)  # we want to know how many idxs in
 
 # Baseline consts
 NUM_FIRINGRATE_SAMPLES = int(TOTAL_TRIAL_MS / SPIKE_BIN_MS)  # Should be 35
-NUM_BASELINE_POINTS = 8  # First 8 points in a waveform will be used for z-scoring / baselining the waveform
+NUM_BASELINE_POINTS = 10  # First 8 points in a waveform will be used for z-scoring / baselining the waveform
+BASELINE_IDXS = [0, 10]  # Baseline is 0:10
 
 # Mixed threshold
 MIXED_THRESHOLD = .2  # any saccade/probe within 200ms of another probe/saccade will be counted as mixed

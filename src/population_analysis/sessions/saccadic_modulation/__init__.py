@@ -141,7 +141,7 @@ class NWBSession(object):
         andd = np.logical_and(lt, gt)
         rp_peri_trial_idxs = np.where(andd)[0]
 
-        return RelativeTrialFilter(additional_filters, rp_peri_trial_idxs)
+        return RelativeTrialFilter(additional_filters, self.mixed_trial_idxs).append(BasicFilter(rp_peri_trial_idxs, len(self.mixed_trial_idxs)))
 
     def trial_filter_rp_extra(self):
         return BasicFilter(self.probe_trial_idxs, self.num_trials)

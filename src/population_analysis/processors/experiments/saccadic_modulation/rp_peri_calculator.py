@@ -38,8 +38,6 @@ class RpPeriCalculator(object):
 
         # average is now units x t
         saccade_unit_average_waveforms = np.average(saccade_unit_trial_waveforms, axis=1)  # Average over saccade trials for each unit
-        # Get mixed waveform unit-trials
-        # mixed_unit_trial_waveforms = self.fr[:, self.mix_idxs]  # (units, trials, t)
         all_mixed_peri_waveforms = []  # Will end up being (trials, units, t) will swapaxes to (units, trials, t)
 
         for tr_idx, tr in enumerate(self.trialgroup.get_trials_by_type("mixed")):
@@ -54,13 +52,6 @@ class RpPeriCalculator(object):
                 unit_trial_fr = self.fr[unit_num, self.mix_idxs[tr_idx], 35:35 + 35]  # actually is 0-35 but offset for neg
                 rpperi = unit_trial_fr - sac_wv[unit_num, :]  # Subtract off each RpPeri for each trial specific to the offset of the saccade from the probe
                 mixed_peri_wavs.append(rpperi)
-                # if unit_num == 167:
-                #     import matplotlib.pyplot as plt
-                #     plt.plot(unit_trial_fr, color="orange")
-                #     plt.plot(sac_wv[unit_num, :], color="blue")
-                #     plt.plot(rpperi, color="green")
-                #     plt.show()
-                #     tw = 2
 
             all_mixed_peri_waveforms.append(mixed_peri_wavs)
         all_mixed_peri_waveforms = np.array(all_mixed_peri_waveforms).swapaxes(0, 1)  # Swap units trials so its (units, trials, t)

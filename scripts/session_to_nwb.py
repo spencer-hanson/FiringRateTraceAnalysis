@@ -36,12 +36,12 @@ def main():
     sessions_path = "E:\\PopulationAnalysisRawHDF\\google_drive"  # NEEDS TO BE AN ABSOLUTE PATH
     sessions_output_path = "nwbs"
 
-    data_files = check_for_data(sessions_path)
+    # data_files = check_for_data(sessions_path)
     force = False
 
     # dd = dictify_hd5(h5py.File("output.hdf"))
     # data_files = "mlati9-2023-07-14-output.hdf": "E:\\PopulationAnalysisRawHDF\\google_drive\\mlati9-2023-07-14-output.hdf"}
-    data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\google_drive\\mlati7-2023-05-15-output.hdf"}
+    data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\split1\\mlati7-2023-05-15-output.hdf"}
     # force = True
     # data_files = {"generated.hdf-nwb": "generated.hdf"}
 
@@ -52,6 +52,8 @@ def main():
                 print(f"Processing '{filename}'")
                 name = ".".join(filename.split(".")[:-1])
                 name = os.path.join(sessions_output_path, name)
+                if not os.path.exists(name):
+                    os.mkdir(name)
                 os.chdir(name)
 
                 nwb_filename = f"{filename}.nwb"
@@ -65,7 +67,7 @@ def main():
                 raw = HDFSessionProcessor(filepath, mouse_name, session_id)
                 raw.save_to_nwb(nwb_filename, load_precalculated=True)
                 del raw
-                to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy", "calc_large_norm_firingrates.npy"]
+                to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy", "calc_large_norm_firingrates.npy", "saccadic-trials.pickle"]
                 for fn in to_remove:
                     print(f"Removing {fn}..")
                     try:

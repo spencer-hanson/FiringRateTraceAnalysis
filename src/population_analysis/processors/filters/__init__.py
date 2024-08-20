@@ -2,17 +2,17 @@ import numpy as np
 
 
 class Filter(object):
-    def __init__(self, func, num_units):
+    def __init__(self, func, num_elements):
         self._funcs = [func]  # list of funcs like func(absolute_unit_num) -> bool passes filter
         self._idxs = None
-        self.num_units = num_units
+        self.num_elements = num_elements
         self.names = [self.get_basename()]
 
     def get_basename(self):
         return "empty"
 
     def copy(self):
-        f = Filter(self._funcs[0], self.num_units)
+        f = Filter(self._funcs[0], self.num_elements)
         for func in self._funcs[1:]:
             f._funcs.append(func)
         f.names = self.names
@@ -29,7 +29,7 @@ class Filter(object):
         # return a list of indexes into the full list that pass the filter
         if self._idxs is None:
             passing = []
-            for num in range(self.num_units):
+            for num in range(self.num_elements):
                 if self.passes_abs(num):
                     passing.append(num)
             self._idxs = np.array(passing)
@@ -47,9 +47,9 @@ class Filter(object):
         return True
 
     def append(self, filt: 'Filter') -> 'Filter':
-        if filt.num_units != self.num_units:
+        if filt.num_elements != self.num_elements:
             raise ValueError(
-                f"Cannot append filter, element numbers don't match! self != other {self.num_units} != {filt.num_units}")
+                f"Cannot append filter, element numbers don't match! self != other {self.num_elements} != {filt.num_elements}")
 
         self._funcs.extend(filt._funcs)
         self.names.extend(filt.names)
