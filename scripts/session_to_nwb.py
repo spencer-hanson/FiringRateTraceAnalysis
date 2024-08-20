@@ -33,15 +33,15 @@ def check_for_data(folder_path):
 
 def main():
     # sessions_path = "google_drive/"  # Same folder lol
-    sessions_path = "E:\\PopulationAnalysisRawHDF\\google_drive"  # NEEDS TO BE AN ABSOLUTE PATH
+    sessions_path = "E:\\PopulationAnalysisRawHDF"  # NEEDS TO BE AN ABSOLUTE PATH
     sessions_output_path = "nwbs"
 
-    # data_files = check_for_data(sessions_path)
+    data_files = check_for_data(sessions_path)
     force = False
 
     # dd = dictify_hd5(h5py.File("output.hdf"))
     # data_files = "mlati9-2023-07-14-output.hdf": "E:\\PopulationAnalysisRawHDF\\google_drive\\mlati9-2023-07-14-output.hdf"}
-    data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\split1\\mlati7-2023-05-15-output.hdf"}
+    # data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\split1\\mlati7-2023-05-15-output.hdf"}
     # force = True
     # data_files = {"generated.hdf-nwb": "generated.hdf"}
 
@@ -77,8 +77,8 @@ def main():
 
                 os.chdir("../")
             except Exception as e2:
-                # os.chdir("../")
-                raise e2
+                os.chdir("../")
+                # raise e2
                 print(f"Error with file {filename} Skipping, Exception {e2}")
                 fppp = open(f"error-{filename}.txt", "w")
                 fppp.write(str(e2))

@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import get_xaxis_vals, confidence_interval
@@ -37,8 +38,8 @@ def calc_rpextra_error_distribution(sess, use_cached, motdir):
     rpperi = sess.rp_peri_units().shape[1]
     rpextra = len(sess.trial_filter_rp_extra().idxs())
     prop = rpperi / rpextra
-    prop = prop / 10  # divide by 10 since we have 10 latencies
-    prop = prop / 2  # divide by 2 since we have 2 directions
+    prop = prop / 10  # divide by 10 since we have 10 latencies (probe delivery was random, so it's uniformly distrib'd)
+    prop = prop / 2  # divide by 2 since we have 2 motion directions
 
     motions = [motdir]
     quan_dist_motdir_dict = calc_quandist(sess, ufilt, sess.trial_filter_rp_extra(), sess.filename_no_ext, quan=quan, use_cached=use_cached, base_prop=prop, motions=motions)
@@ -71,10 +72,15 @@ def sess_distance(rpp, rpe, quan, motdir, confidence_val, ax, sess, use_cached):
 
 
 def sess_summary(sess: NWBSession, filename, quan, motdir, confidence_val, use_cached):
+    save_fn = f"sess_debug/{filename}.png"
+    if os.path.exists(save_fn):
+        print(f"Session summary already exists at '{save_fn}' skipping..")
+        return
+
     mmax = 10
     allfig, allax = plt.subplots(ncols=mmax, nrows=2, sharey="row", sharex="row", figsize=(16, 4))
-    # ufilt = sess.unit_filter_premade()
-    ufilt = BasicFilter.empty(sess.num_units)
+    ufilt = sess.unit_filter_premade()
+    # ufilt = BasicFilter.empty(sess.num_units)
     rp_extra = sess.units()[ufilt.idxs()]
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
 
@@ -94,25 +100,29 @@ def sess_summary(sess: NWBSession, filename, quan, motdir, confidence_val, use_c
 
     allax[0][0].set_ylabel("Avg. Firing Rate")
     allax[1][0].set_ylabel("Distance")
-    allfig.savefig(f"sess_debug/{filename}.png")
-    plt.show()
+    allfig.savefig(save_fn)
+    # plt.show()
     tw = 2
 
 
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\tmp")
-    if not os.path.exists("sess_debug"):
-        os.mkdir("sess_debug")
+    while True:
+        grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
+        if not os.path.exists("sess_debug"):
+            os.mkdir("sess_debug")
 
-    quan = EuclidianQuantification()
-    motdir = 1
-    confidence_val = 0.99
-    use_cached = True
+        quan = EuclidianQuantification()
+        motdir = 1
+        confidence_val = 0.99
+        use_cached = True
 
-    for filename, sess in grp.session_iter():
-        sess_summary(sess, filename, quan, motdir, confidence_val, use_cached)
+        for filename, sess in grp.session_iter():
+            sess_summary(sess, filename, quan, motdir, confidence_val, use_cached)
+
+        print("Sleeping 5 minutes before checking new sessions..")
+        time.sleep(60*5)
 
 
 if __name__ == "__main__":
