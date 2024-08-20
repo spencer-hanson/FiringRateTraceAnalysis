@@ -25,7 +25,7 @@ def ensure_rpextra_exists(fn, sess, cache_filename, quan):
         prop = prop / 10  # divide by 10 since we have 10 latencies
         prop = prop / 2  # divide by 2 since we have 2 directions  TODO find proportion of directions
 
-        calc_quandist(sess, sess.unit_filter_premade(), sess.trial_filter_rp_extra(), cache_filename, prop, quan=quan, use_cached=True)
+        calc_quandist(sess, sess.unit_filter_premade(), sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=True, base_prop=prop, motions=motions)
         return True, 1
     except Exception as e:
         return False, e
@@ -149,8 +149,8 @@ def main():
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
-    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
 
     confidence_val = 0.99
     frac_sig_dist_euc_max_vals_bars(grp, confidence_val)

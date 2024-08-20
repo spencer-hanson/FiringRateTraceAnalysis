@@ -34,7 +34,7 @@ def check_for_data(folder_path):
 def main():
     # sessions_path = "google_drive/"  # Same folder lol
     sessions_path = "E:\\PopulationAnalysisRawHDF"  # NEEDS TO BE AN ABSOLUTE PATH
-    sessions_output_path = "nwbs"
+    sessions_output_path = "E:\\PopulationAnalysisNWBs"
 
     data_files = check_for_data(sessions_path)
     force = False
@@ -44,11 +44,13 @@ def main():
     # data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\split1\\mlati7-2023-05-15-output.hdf"}
     # force = True
     # data_files = {"generated.hdf-nwb": "generated.hdf"}
+    olddir = os.getcwd()
 
     while True:
         print("Scanning for files to process..")
         for filename, filepath in data_files.items():
             try:
+                os.chdir(olddir)
                 print(f"Processing '{filename}'")
                 name = ".".join(filename.split(".")[:-1])
                 name = os.path.join(sessions_output_path, name)
@@ -59,7 +61,6 @@ def main():
                 nwb_filename = f"{filename}.nwb"
                 if os.path.exists(nwb_filename) and not force:
                     print("Already processed, skipping..")
-                    os.chdir("../")
                     continue
                 mouse_name = filename.split("-")[0]
                 session_id = filename[len(mouse_name) + 1:-len("-output.hdf")]  # Chop off 'mlati8-' and '-output.hdf'
@@ -74,11 +75,8 @@ def main():
                         os.remove(fn)
                     except Exception as e:
                         print(f"Couldn't remove '{fn}' Error: '{str(e)}'")
-
-                os.chdir("../")
             except Exception as e2:
-                os.chdir("../")
-                # raise e2
+                raise e2
                 print(f"Error with file {filename} Skipping, Exception {e2}")
                 fppp = open(f"error-{filename}.txt", "w")
                 fppp.write(str(e2))
@@ -86,6 +84,7 @@ def main():
                 continue
 
         print("Sleeping for 5 minutes before re-scanning..")
+        raise ValueError("done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         time.sleep(60*5)  # Sleep for 5 minutes
 
 

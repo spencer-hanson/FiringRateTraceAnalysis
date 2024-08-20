@@ -109,7 +109,8 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
     while True:
-        grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
+        # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
+        grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
         if not os.path.exists("sess_debug"):
             os.mkdir("sess_debug")
 
