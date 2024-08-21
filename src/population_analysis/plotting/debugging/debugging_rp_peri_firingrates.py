@@ -60,7 +60,6 @@ def all_firingrates(sess: NWBSession):
     plt.show()
 
 
-
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")

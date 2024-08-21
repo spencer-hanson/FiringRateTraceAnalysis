@@ -12,6 +12,8 @@ from population_analysis.sessions.saccadic_modulation.group import NWBSessionGro
 import matplotlib.pyplot as plt
 import numpy as np
 
+DISTANCES_LOCATION = "D:\\PopulationAnalysisDists"
+
 
 def rnd(x):
     return int(x*1000)
@@ -27,12 +29,16 @@ def sess_firingrate(rpp, rpe, ax):
 
 
 def calc_rpextra_error_distribution(sess, use_cached, motdir):
+    olddir = os.getcwd()
+    os.chdir(DISTANCES_LOCATION)
     quan = EuclidianQuantification()
     tmp_fn = f"debugging_timewindow-{sess.filename_no_ext}.pickle"
     if os.path.exists(tmp_fn):
         with open(tmp_fn, "rb") as f:
             print("LOADING PRECALCULATED RPEXTRA DISTRIBUTION!")
-            return pickle.load(f)
+            d = pickle.load(f)
+            os.chdir(olddir)
+            return d
 
     ufilt = sess.unit_filter_premade()
     rpperi = sess.rp_peri_units().shape[1]
@@ -46,6 +52,7 @@ def calc_rpextra_error_distribution(sess, use_cached, motdir):
     data = quan_dist_motdir_dict[motions[0]]
     with open(tmp_fn, "wb") as f:
         pickle.dump(data, f)
+    os.chdir(olddir)
     return data
 
 

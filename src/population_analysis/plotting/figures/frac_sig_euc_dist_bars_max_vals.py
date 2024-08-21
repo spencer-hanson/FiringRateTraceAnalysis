@@ -123,6 +123,9 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
             max_dist, timpt = sorted(list(zip(np.array(distances)[start:stop], range(start, stop))), key=lambda x: x[0])[-1]  # Find the maximum distance between timepoints 8-18
 
             lower, upper = confidence_interval(rpextra_error_distribution[:, timpt], confidence_val)
+            if latency_key not in latencies:
+                latencies[latency_key] = 0
+
             if max_dist > upper:
                 add_to_dict(latencies, latency_key)
 
@@ -144,6 +147,7 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
     ax.bar(vals[:, 0], yvals)
     plt.xticks(rotation=90)
     plt.subplots_adjust(bottom=.2)
+    plt.title(f"Fraction of significant sessions >{confidence_val}")
     plt.show()
     with open("fraction-significant-distances-latency.pickle", "wb") as f:
         pickle.dump(yvals, f)
@@ -158,7 +162,7 @@ def main():
     grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
 
-    confidence_val = 0.99
+    confidence_val = 0.50
     frac_sig_dist_euc_max_vals_bars(grp, confidence_val)
 
 
