@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 
 from population_analysis.sessions.saccadic_modulation import NWBSession
@@ -46,8 +48,6 @@ def main():
 
     rpe = sess.units()[ufilt.idxs()][:, sess.trial_filter_rp_extra().idxs()]
 
-    fig, axs = plt.subplots(nrows=2, ncols=4, sharey=True, sharex=True)
-
     # plot_unit_firingrates(rpp, axs)
     # plot_unit_firingrates(rmixed, axs)
     largest_unit_idxs = get_largest_unit_idxs(rs)
@@ -56,11 +56,23 @@ def main():
     rpp = rpp[largest_unit_idxs]
     rpe = rpe[largest_unit_idxs]
 
-    plot_unit_firingrates(rmixed, [axs[0][0], axs[1][0]], "Rmixed")
-    plot_unit_firingrates(rs, [axs[0][1], axs[1][1]], "Rs")
-    plot_unit_firingrates(rpp, [axs[0][2], axs[1][2]], "RpPeri")
-    plot_unit_firingrates(rpe, [axs[0][3], axs[1][3]], "RpExtra")
+    with open(f"newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
+        rpp_recalculated = pickle.load(f)
+    rpprc = rpp_recalculated[ufilt.idxs()][largest_unit_idxs]
+    rpprc = rpprc[:, None, :]  # Add trials axis since we averaged it out in the recalculation
+    units_to_plot = [
+        (rmixed, "Rmixed"),
+        (rs, "Rs"),
+        (rpp, "RpPeri"),
+        (rpprc, "RpPeriRC"),
+        (rpe, "RpExtra")
+    ]
 
+    fig, axs = plt.subplots(nrows=2, ncols=len(units_to_plot), sharey=False, sharex=True)
+    fig.tight_layout()
+    for i, unitdata in enumerate(units_to_plot):
+        unitgroup, name = unitdata
+        plot_unit_firingrates(unitgroup, [axs[0][i], axs[1][i]], name)
 
     # fig, axs = plt.subplots(nrows=4, ncols=3)
     # for motdir in [-1, None, 1]:
