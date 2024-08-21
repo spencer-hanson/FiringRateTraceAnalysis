@@ -12,22 +12,26 @@ from population_analysis.plotting.distance.fraction_distance_significant import 
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
-DISTANCES_LOCATION = "C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\population_analysis\\plotting\\debugging"
+DISTANCES_LOCATION = "D:\\PopulationAnalysisDists"
 
 
 def ensure_rpextra_exists(fn, sess, cache_filename, quan):
     if os.path.exists(fn):
+        print(f"Loading precalculated rpextra dist '{fn}'..")
         return True, 1
     try:
+        print(f"No precalculated dist exists for '{fn}' calculating..")
         rpperi = sess.rp_peri_units().shape[1]
         rpextra = len(sess.trial_filter_rp_extra().idxs())
         prop = rpperi / rpextra
         prop = prop / 10  # divide by 10 since we have 10 latencies
         prop = prop / 2  # divide by 2 since we have 2 directions  TODO find proportion of directions
 
+        motions = [1]
         calc_quandist(sess, sess.unit_filter_premade(), sess.trial_filter_rp_extra(), cache_filename, quan=quan, use_cached=True, base_prop=prop, motions=motions)
         return True, 1
     except Exception as e:
+        print(f"Error ensuring rpextra dist exists! Error: '{str(e)}'")
         return False, e
 
 
@@ -50,8 +54,10 @@ def frac_sig_dist_euc_max_vals_bars(sess_group, confidence_val):
             tw = 2
             continue
         rpextra_error_distribution_fn = f"{filename}-{quan.get_name()}{motdir}.pickle"
-        if not ensure_rpextra_exists(rpextra_error_distribution_fn, sess, filename, quan)[0]:
+        res = ensure_rpextra_exists(rpextra_error_distribution_fn, sess, filename, quan)
+        if not res[0]:
             print(f"Error calculating RpExtra distance distribution for '{filename}'.. Skipping..")
+            raise res[1]
             time.sleep(2)
             continue
         num_sessions = num_sessions + 1

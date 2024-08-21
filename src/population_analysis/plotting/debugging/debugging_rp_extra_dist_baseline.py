@@ -1,3 +1,4 @@
+import os
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,11 +9,26 @@ from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
+DISTANCES_LOCATION = "D:\\PopulationAnalysisDists"
 
-def debug_rpe_baseline(sess: NWBSession, use_cached):
+
+def debug_rpe_baseline(folder, filename, use_cached):
+    olddir = os.getcwd()
+    os.chdir(DISTANCES_LOCATION)
+    motdir = 1
+    quan = EuclidianQuantification()
+
+    if use_cached and os.path.exists(f"{filename}-{quan.get_name()}{motdir}.pickle"):
+        print(f"Distance file already exists for '{filename}' skipping!")
+        os.chdir(olddir)
+        return
+
     try:
+        print(f"Distance not found for session '{filename}', generating..")
+        sess = NWBSession(folder, filename)
+
         ufilt = sess.unit_filter_premade()
-        quan = EuclidianQuantification()
+
         rpperi = sess.rp_peri_units().shape[1]
         rpextra = len(sess.trial_filter_rp_extra().idxs())
         prop = rpperi / rpextra
@@ -48,6 +64,8 @@ def debug_rpe_baseline(sess: NWBSession, use_cached):
             f.write(str(e))
 
         return
+    finally:
+        os.chdir(olddir)
 
 
 def testing():
@@ -126,10 +144,10 @@ def main():
     # dist_compare()
     # testing()
 
-    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
-    for filename, sess in grp.session_iter():
-        debug_rpe_baseline(sess, False)
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
+    for folder, filename in grp.session_names_iter():
+        debug_rpe_baseline(folder, filename, True)
 
 
 if __name__ == "__main__":

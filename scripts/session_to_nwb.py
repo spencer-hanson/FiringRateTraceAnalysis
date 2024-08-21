@@ -33,8 +33,8 @@ def check_for_data(folder_path):
 
 def main():
     # sessions_path = "google_drive/"  # Same folder lol
-    sessions_path = "E:\\PopulationAnalysisRawHDF"  # NEEDS TO BE AN ABSOLUTE PATH
-    sessions_output_path = "E:\\PopulationAnalysisNWBs"
+    sessions_path = "D:\\PopulationAnalysisRawHDF"  # NEEDS TO BE AN ABSOLUTE PATH
+    sessions_output_path = "D:\\PopulationAnalysisNWBs"
 
     data_files = check_for_data(sessions_path)
     force = False
