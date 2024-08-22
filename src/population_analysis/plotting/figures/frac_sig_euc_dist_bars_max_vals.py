@@ -159,7 +159,8 @@ def main():
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs\\mlati10*07-06*")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
     # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
 
     confidence_val = 0.50

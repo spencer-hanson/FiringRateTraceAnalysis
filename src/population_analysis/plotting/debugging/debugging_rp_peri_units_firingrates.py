@@ -20,7 +20,7 @@ def get_largest_unit_idxs(units):
     maxs = np.max(means, axis=1)
     vals = zip(range(maxs.shape[0]), maxs)
     srt = sorted(vals, key=lambda x: x[1])
-    return np.array(srt[::-1][:5])[:, 0].astype(int)
+    return np.array(srt[::-1][:])[:, 0].astype(int)
 
 
 def main():
@@ -59,6 +59,7 @@ def main():
     with open(f"newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
         rpp_recalculated = pickle.load(f)
     rpprc = rpp_recalculated[ufilt.idxs()][largest_unit_idxs]
+    # rpprc = rpprc[:, rpp_filt.idxs()]
     rpprc = rpprc[:, None, :]  # Add trials axis since we averaged it out in the recalculation
     units_to_plot = [
         (rmixed, "Rmixed"),
@@ -68,7 +69,7 @@ def main():
         (rpe, "RpExtra")
     ]
 
-    fig, axs = plt.subplots(nrows=2, ncols=len(units_to_plot), sharey=False, sharex=True)
+    fig, axs = plt.subplots(nrows=2, ncols=len(units_to_plot), sharey="row", sharex=True)
     fig.tight_layout()
     for i, unitdata in enumerate(units_to_plot):
         unitgroup, name = unitdata

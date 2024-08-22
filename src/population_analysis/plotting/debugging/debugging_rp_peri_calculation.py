@@ -1,7 +1,7 @@
 import pickle
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 from population_analysis.sessions.saccadic_modulation import NWBSession
 from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
 
@@ -14,41 +14,103 @@ def latency_to_index_offset(latency):
     return rounded
 
 
+def reset_baseline(units):
+    # units is (units, t)
+    baseline = np.mean(units[:, 0:10], axis=1)  # baseline is the 200ms before the event
+    normalized = units - baseline[:, None]
+    return normalized
+
+
 def recalc_rp_peri(sess: NWBSession):
     print(f"Recalculating RpPeri for session '{sess.filename_no_ext}'..")
     # Get the firing rates in the shape (units, trials, 105)
     # 105 is (-35, [0, 35], 70) where 0 is the probe/saccade so the length is 35+35+35 (in 20ms bins)
     # so we can have the firing rate 700ms before and after our 700ms window
     print("Grabbing firing rates and filtering by trial type..")
+    # firing_rates = sess.units()
     firing_rates = sess.nwb.processing["behavior"]["large_range_normalized_firing_rates"].data[:]
-    rs = firing_rates[:, sess.trial_filter_rs().idxs()]
-    rmixed = firing_rates[:, sess.trial_filter_rmixed().idxs()]
+    # ufilt = sess.unit_filter_premade()
+    # firing_rates = firing_rates[ufilt.idxs()]
+    rs = np.copy(firing_rates[:, sess.trial_filter_rs().idxs()])
+    rmixed_trfilt = sess.trial_filter_rmixed()
 
-    rs_mean = np.mean(rs, axis=1)  # Average over trials
+    # Only grab the response during the duration of the saccade
+    # sac_start = 0
+    # sac_end = 15
+    # sac_diff = sac_end - sac_start
+    # window_len = 35
+    # sac_pad_right = window_len-sac_diff-sac_start + window_len
+    # sac_pad_left = sac_start + window_len  # Add window buffer around padding
+    rs_mean = np.mean(rs, axis=1)
+    # rs_mean = rs_mean[:, sac_start:sac_end]  # Average over trials
+    # rs_mean = np.pad(rs_mean, [(0,0),(sac_pad_left, sac_pad_right)])  # Pad zeros around
+    # fig2, axs2 = plt.subplots(ncols=2)
+    # [axs2[0].plot(v) for v in rs_mean]
+    # axs2[1].plot(np.mean(rs_mean, axis=0))
+    # plt.show()
 
     trial_latencies = sess.mixed_rel_timestamps  # "mixed relative timestamps" in seconds, relative to the probe (negative means saccade before probe, need to fix TODO)
-    trial_latencies = trial_latencies * -1  # Flip sign so that the trial latencies are relative to the saccade (negative means probe before saccade)
+
+    latency_start = -.3
+    latency_end = -.2
+    lt = trial_latencies >= latency_start
+    gt = trial_latencies <= latency_end
+    andd = np.logical_and(lt, gt)
+    idxs = np.where(andd)[0]
+    trial_latencies = trial_latencies[idxs]
+    tr_idxs = rmixed_trfilt.idxs()[idxs]
+    rmixed = firing_rates[:, tr_idxs][:, :, 35:35+35]
 
     num_mixed_trials = rmixed.shape[1]
 
-    # Make a copy of Rmixed for rp_peri
-    new_rp_peri = np.copy(firing_rates[:, sess.trial_filter_rmixed().idxs()][:, :, 35:35+35])
+    new_rp_peri = np.copy(rmixed)
     new_rp_peri = np.mean(new_rp_peri, axis=1)  # Average over trials
+
+    rs_cumulatives = []
+    do_plot = False
+    do_plot2 = False
 
     for unit_num in range(rmixed.shape[0]):  # Iterate over units
         print(f"Calculating unit {unit_num}/{rmixed.shape[0]}..")
         rs_cumulative = np.zeros((35,))  # We add different latency-shifted rs_means to account for each trial
+        shifts = []
+
         for trial_num in range(num_mixed_trials):  # Iterate over rmixed's trials
             trial_latency = trial_latencies[trial_num]
             offset = latency_to_index_offset(trial_latency)  # how far away the probe is from the saccade in 20ms bins (neg is probe before sacc)
+            # offset = offset * -1
             # Window starts at 35, then we add offset. Negative means probe before saccade, so a negative offset will
             # make the window move 'left' effectively moving the saccade 'right' and therefore positive to align with the probe
             window_start = 35 + offset  # 35 is the start of the regular window
             window_end = 35 + 35 + offset  # 35 + 35 is the end of the regular window
             shifted_rs = rs_mean[unit_num, window_start:window_end]
+            shifts.append(shifted_rs)
             rs_cumulative = rs_cumulative + shifted_rs  # Add our shifted rs_mean to our sum list (not added yet
+            if do_plot2:
+                fig4, ax4 = plt.subplots(nrows=3) #, figsize=(64, 4))
+                ax4[0].plot(rs_mean[unit_num])
+                ax4[0].vlines(35+offset, np.min(rs_mean[unit_num]), np.max(rs_mean[unit_num]))
+                ax4[0].vlines(35+35+offset, np.min(rs_mean[unit_num]), np.max(rs_mean[unit_num]))
+                ax4[1].plot(new_rp_peri[unit_num, :])
+                ax4[2].plot(shifted_rs)
+                plt.show()
+                tw = 2
+
         # Since we are adding multiple rs_means, we need to average by dividing by the number of trials we just added
         rs_cumulative = rs_cumulative / num_mixed_trials
+        rs_cumulatives.append(np.copy(rs_cumulative))
+
+        if do_plot:
+            fig3, axs3 = plt.subplots(nrows=2)
+            ax3 = axs3[0]
+            ax3.plot(new_rp_peri[unit_num, :], color="red")
+            ax3.plot(rs_cumulative, color="blue")
+            ax3.plot(new_rp_peri[unit_num, :] - rs_cumulative, color="green")
+            [axs3[1].plot(s, color="blue") for s in shifts]
+            axs3[1].plot(np.mean(shifts, axis=0), color="red")
+            plt.show()
+            tw = 2
+
         new_rp_peri[unit_num, :] -= rs_cumulative  # Subtract rs from the mean rmixed
 
     save_fn = f"newcalc_rp_peri-{sess.filename_no_ext}.pickle"
@@ -56,7 +118,36 @@ def recalc_rp_peri(sess: NWBSession):
 
     with open(save_fn, "wb") as f:
         pickle.dump(new_rp_peri, f)
+    new_rp_peri = reset_baseline(new_rp_peri)
 
+    # rpextra = sess.units()[:, sess.trial_filter_rp_extra().idxs()]
+    rp_peri2 = np.mean(np.mean(rmixed, axis=1), axis=0) - np.mean(np.array(rs_cumulatives), axis=0)
+    ufilt = sess.unit_filter_premade()
+    things_to_plot = [
+        (np.mean(rmixed, axis=1), "Rmixed"),
+        (new_rp_peri, "RppRC"),
+        (rs_cumulatives, "Rsc"),
+        (np.broadcast_to(rp_peri2[None, :], (new_rp_peri.shape[0], 35)), "RppRC2")
+        # (np.mean(rpextra, axis=1), "RpExtra")
+    ]
+
+    extra_count = 0
+    sidx = len(things_to_plot)+extra_count  # start idx
+    fig, axs = plt.subplots(nrows=2, ncols=len(things_to_plot)+extra_count, sharex=True, sharey=False)
+
+
+    for idx, element in enumerate(things_to_plot):
+        data, name = element
+
+        for uidx in ufilt.idxs():
+            axs[0][idx].plot(data[uidx])
+
+        axs[1][idx].plot(np.mean(data, axis=0))
+        axs[0][idx].title.set_text(name)
+
+    # for unum in range(num_units):
+    #     axs[1][sidx].plot(rs_mean[unum])
+    plt.show()
     print("Done!")
 
 
@@ -70,6 +161,66 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# def recalc_rp_peri(sess: NWBSession):
+#     print(f"Recalculating RpPeri for session '{sess.filename_no_ext}'..")
+#     # Get the firing rates in the shape (units, trials, 105)
+#     # 105 is (-35, [0, 35], 70) where 0 is the probe/saccade so the length is 35+35+35 (in 20ms bins)
+#     # so we can have the firing rate 700ms before and after our 700ms window
+#     print("Grabbing firing rates and filtering by trial type..")
+#     firing_rates = sess.nwb.processing["behavior"]["large_range_normalized_firing_rates"].data[:]
+#     rs = firing_rates[:, sess.trial_filter_rs().idxs()]
+#     rmixed = firing_rates[:, sess.trial_filter_rmixed().idxs()]
+#
+#     rs_mean = np.mean(rs, axis=1)  # Average over trials
+#
+#     trial_latencies = sess.mixed_rel_timestamps  # "mixed relative timestamps" in seconds, relative to the probe (negative means saccade before probe, need to fix TODO)
+#     trial_latencies = trial_latencies * -1  # Flip sign so that the trial latencies are relative to the saccade (negative means probe before saccade)
+#
+#     num_mixed_trials = rmixed.shape[1]
+#
+#     # Make a copy of Rmixed for rp_peri
+#     new_rp_peri = np.copy(firing_rates[:, sess.trial_filter_rmixed().idxs()][:, :, 35:35+35])
+#     new_rp_peri = np.mean(new_rp_peri, axis=1)  # Average over trials
+#
+#     for unit_num in range(rmixed.shape[0]):  # Iterate over units
+#         print(f"Calculating unit {unit_num}/{rmixed.shape[0]}..")
+#         rs_cumulative = np.zeros((35,))  # We add different latency-shifted rs_means to account for each trial
+#         for trial_num in range(num_mixed_trials):  # Iterate over rmixed's trials
+#             trial_latency = trial_latencies[trial_num]
+#             offset = latency_to_index_offset(trial_latency)  # how far away the probe is from the saccade in 20ms bins (neg is probe before sacc)
+#             # offset = offset * -1
+#             # Window starts at 35, then we add offset. Negative means probe before saccade, so a negative offset will
+#             # make the window move 'left' effectively moving the saccade 'right' and therefore positive to align with the probe
+#             window_start = 35 + offset  # 35 is the start of the regular window
+#             window_end = 35 + 35 + offset  # 35 + 35 is the end of the regular window
+#             shifted_rs = rs_mean[unit_num, window_start:window_end]
+#             # new_rp_peri[unit_num, trial_num, :] -= shifted_rs
+#             rs_cumulative = rs_cumulative + shifted_rs  # Add our shifted rs_mean to our sum list (not added yet
+#         # Since we are adding multiple rs_means, we need to average by dividing by the number of trials we just added
+#         rs_cumulative = rs_cumulative / num_mixed_trials
+#         new_rp_peri[unit_num, :] -= rs_cumulative  # Subtract rs from the mean rmixed
+#
+#     save_fn = f"newcalc_rp_peri-{sess.filename_no_ext}.pickle"
+#     print(f"Saving to file '{save_fn}'..")
+#
+#     with open(save_fn, "wb") as f:
+#         pickle.dump(new_rp_peri, f)
+#
+#     print("Done!")
+#
+#
+# def main():
+#     print("Loading group..")
+#     # grp = NWBSessionGroup("../../../../scripts")
+#     grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
+#     filename, sess = next(grp.session_iter())
+#     recalc_rp_peri(sess)
+#
+#
+# if __name__ == "__main__":
+#     main()
 
 
 # Half-implemented code pls ignore

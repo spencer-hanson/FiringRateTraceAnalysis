@@ -92,7 +92,8 @@ def debug_latency_dists(sess, confidence_val, filename):
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")

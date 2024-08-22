@@ -54,6 +54,7 @@ class NWBSession(object):
 
         self.num_trials = self.nwb.processing["behavior"]["trial_motion_directions"].data[:].shape[0]
         self.num_units = self.nwb.processing["behavior"]["unit_labels"].data[:].shape[0]
+        self._tmp_rpp_recalc = None
         tw = 2
         print("done")
 
@@ -96,7 +97,14 @@ class NWBSession(object):
         return self.units()[:, self.mixed_trial_idxs]
 
     def rp_peri_units(self):
+
         if self.use_normalized_units:
+
+            # if self._tmp_rpp_recalc is None:
+                # import pickle
+                # with open(f"C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\population_analysis\\plotting\\debugging\\newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
+                #     self._tmp_rpp_recalc = pickle.load(f)
+                # return self._tmp_rpp_recalc
             return self.nwb.processing["behavior"]["normalized_trial_rp_peri_response_firing_rates"].data[:]
         else:
             return self.nwb.processing["behavior"]["trial_rp_peri_response_firing_rates"].data[:]
@@ -109,7 +117,7 @@ class NWBSession(object):
 
     def unit_filter_premade(self) -> UnitFilter:
         return self.unit_filter_qm().append(
-            self.unit_filter_probe_zeta().append(self.unit_filter_custom(5, .2, 1, 1, .9, .7))
+            self.unit_filter_probe_zeta().append(self.unit_filter_custom(5, .3, 1, 1, .5, .5))
         )
 
     def unit_filter_qm(self) -> UnitFilter:
