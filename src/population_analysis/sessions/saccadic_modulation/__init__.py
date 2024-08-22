@@ -144,11 +144,7 @@ class NWBSession(object):
         return MotionDirectionTrialFilter(motion_direction, self.trial_motion_directions())
 
     def trial_filter_rp_peri(self, latency_start, latency_end, additional_filters=None):
-        lt = self.mixed_rel_timestamps >= latency_start
-        gt = self.mixed_rel_timestamps <= latency_end
-        andd = np.logical_and(lt, gt)
-        rp_peri_trial_idxs = np.where(andd)[0]
-
+        rp_peri_trial_idxs = self.get_latency_idxs(latency_start, latency_end)
         return RelativeTrialFilter(additional_filters, self.mixed_trial_idxs).append(BasicFilter(rp_peri_trial_idxs, len(self.mixed_trial_idxs)))
 
     def trial_filter_rp_extra(self):
@@ -157,6 +153,28 @@ class NWBSession(object):
     def trial_filter_rs(self):
         return BasicFilter(self.saccade_trial_idxs, self.num_trials)
 
-    def trial_filter_rmixed(self):
-        return BasicFilter(self.mixed_trial_idxs, self.num_trials)
+    def trial_filter_rmixed(self, latency_start, latency_end, addtl_filts=None):
+        latency_idxs = self.get_latency_idxs(latency_start, latency_end)
 
+        if addtl_filts is None:
+            addtl_filts = TrialFilter.empty(self.num_trials)
+
+        rmixed_mot_trfilt = RelativeTrialFilter(
+            BasicFilter(
+                self.mixed_trial_idxs,
+                self.num_trials
+            ).append(addtl_filts),
+            self.mixed_trial_idxs).append(
+            BasicFilter(
+                latency_idxs,
+                len(self.mixed_rel_timestamps)
+            )
+        )
+        return rmixed_mot_trfilt
+
+    def get_latency_idxs(self, latency_start, latency_end):
+        lt = self.mixed_rel_timestamps >= latency_start
+        gt = self.mixed_rel_timestamps <= latency_end
+        andd = np.logical_and(lt, gt)
+        idxs = np.where(andd)[0]
+        return idxs

@@ -41,8 +41,9 @@ def main():
 
     # dd = dictify_hd5(h5py.File("output.hdf"))
     # data_files = "mlati9-2023-07-14-output.hdf": "E:\\PopulationAnalysisRawHDF\\google_drive\\mlati9-2023-07-14-output.hdf"}
-    # data_files = {"mlati7-2023-05-15-output.hdf": "E:\\PopulationAnalysisRawHDF\\split1\\mlati7-2023-05-15-output.hdf"}
+    data_files = {"mlati10-2023-07-25-output.hdf": "D:\\PopulationAnalysisRawHDF\\mlati10-2023-07-25-output.hdf"}
     # force = True
+
     # data_files = {"generated.hdf-nwb": "generated.hdf"}
     olddir = os.getcwd()
 

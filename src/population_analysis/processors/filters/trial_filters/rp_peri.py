@@ -1,8 +1,9 @@
+from population_analysis.processors.filters import BasicFilter
 from population_analysis.processors.filters.trial_filters import TrialFilter
 
 
 class RelativeTrialFilter(TrialFilter):
-    def __init__(self, regular_filter: TrialFilter, abs_idx_mappings):
+    def __init__(self, regular_filter: BasicFilter, abs_idx_mappings):
         if regular_filter is None:
             regular_filter = TrialFilter.empty(9999)
 

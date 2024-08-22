@@ -2,6 +2,8 @@ import pickle
 
 import numpy as np
 
+from population_analysis.processors.filters import BasicFilter
+from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
 from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
 
@@ -20,45 +22,74 @@ def get_largest_unit_idxs(units):
     maxs = np.max(means, axis=1)
     vals = zip(range(maxs.shape[0]), maxs)
     srt = sorted(vals, key=lambda x: x[1])
-    return np.array(srt[::-1][:])[:, 0].astype(int)
+    return np.array(srt[::-1][:5])[:, 0].astype(int)
 
 
-def main():
-    fn = "mlati7-2023-05-12-output.hdf"
-    fpath = "D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output"
-
-    sess = NWBSession(fpath, fn)
-    ufilt = sess.unit_filter_premade()
-
+def get_rpp(sess: NWBSession, latency_start, latency_end, ufilt):
+    # add_flt = None
+    add_flt = sess.trial_motion_filter(1)
     rp_peri = sess.rp_peri_units()[ufilt.idxs()]
-    add_flt = None
-    latency_start = -.3
-    latency_end = -.2
     rpp_filt = sess.trial_filter_rp_peri(latency_start, latency_end, add_flt)
     rpp = rp_peri[:, rpp_filt.idxs()]
+    return rpp
 
+
+def get_rmixed(sess, latency_start, latency_end, ufilt):
     lt = sess.mixed_rel_timestamps >= latency_start
     gt = sess.mixed_rel_timestamps <= latency_end
     andd = np.logical_and(lt, gt)
     idxs = np.where(andd)[0]
-    tr_idxs = sess.trial_filter_rmixed().idxs()[idxs]
+    rmixed_mot_trfilt = RelativeTrialFilter(sess.trial_filter_rmixed().append(sess.trial_motion_filter(1)), sess.mixed_trial_idxs).append(BasicFilter(idxs, len(sess.mixed_rel_timestamps)))
+    tr_idxs = rmixed_mot_trfilt.idxs()
     rmixed = sess.units()[ufilt.idxs(), :][:, tr_idxs]
+    return rmixed
 
-    rs = sess.units()[ufilt.idxs()][:, sess.trial_filter_rs().idxs()]
 
-    rpe = sess.units()[ufilt.idxs()][:, sess.trial_filter_rp_extra().idxs()]
+def get_rs(sess: NWBSession, ufilt):
+    trfilt = sess.trial_filter_rs().append(sess.trial_motion_filter(1))
+    rs = sess.units()[ufilt.idxs()][:, trfilt.idxs()]
+    return rs
+
+
+def get_rpe(sess, ufilt):
+    rpe_trfilt = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(1))
+    rpe = sess.units()[ufilt.idxs()][:, rpe_trfilt.idxs()]
+    return rpe
+
+
+def main():
+    # fn = "mlati7-2023-05-12-output.hdf"
+    fn = "mlati10-2023-07-25-output.hdf"
+    # fpath = "D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output"
+    fpath = "D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output"
+
+    sess = NWBSession(fpath, fn)
+    ufilt = sess.unit_filter_premade()
+    ufilt_idxs = ufilt.idxs()
+
+    latency_start = -.3
+    latency_end = -.2
+    rpp = get_rpp(sess, latency_start, latency_end, ufilt)
+    rmixed = get_rmixed(sess, latency_start, latency_end, ufilt)
+    rs = get_rs(sess, ufilt)
+    rpe = get_rpe(sess, ufilt)
 
     # plot_unit_firingrates(rpp, axs)
     # plot_unit_firingrates(rmixed, axs)
+
     largest_unit_idxs = get_largest_unit_idxs(rs)
+    largest_labels = sess.nwb.processing["behavior"]["unit_labels"].data[:][ufilt.idxs()[largest_unit_idxs]]
+
     rmixed = rmixed[largest_unit_idxs]
     rs = rs[largest_unit_idxs]
     rpp = rpp[largest_unit_idxs]
     rpe = rpe[largest_unit_idxs]
 
-    with open(f"newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
+    # with open(f"newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
+    with open(f"newcalc_rp_peri-mlati10-2023-07-25-output.hdf.pickle", "rb") as f:
         rpp_recalculated = pickle.load(f)
-    rpprc = rpp_recalculated[ufilt.idxs()][largest_unit_idxs]
+
+    rpprc = rpp_recalculated[ufilt_idxs][largest_unit_idxs]
     # rpprc = rpprc[:, rpp_filt.idxs()]
     rpprc = rpprc[:, None, :]  # Add trials axis since we averaged it out in the recalculation
     units_to_plot = [

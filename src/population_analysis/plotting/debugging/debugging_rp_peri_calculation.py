@@ -31,44 +31,41 @@ def recalc_rp_peri(sess: NWBSession):
     firing_rates = sess.nwb.processing["behavior"]["large_range_normalized_firing_rates"].data[:]
     # ufilt = sess.unit_filter_premade()
     # firing_rates = firing_rates[ufilt.idxs()]
-    rs = np.copy(firing_rates[:, sess.trial_filter_rs().idxs()])
-    rmixed_trfilt = sess.trial_filter_rmixed()
-
-    # Only grab the response during the duration of the saccade
-    # sac_start = 0
-    # sac_end = 15
-    # sac_diff = sac_end - sac_start
-    # window_len = 35
-    # sac_pad_right = window_len-sac_diff-sac_start + window_len
-    # sac_pad_left = sac_start + window_len  # Add window buffer around padding
-    rs_mean = np.mean(rs, axis=1)
-    # rs_mean = rs_mean[:, sac_start:sac_end]  # Average over trials
-    # rs_mean = np.pad(rs_mean, [(0,0),(sac_pad_left, sac_pad_right)])  # Pad zeros around
-    # fig2, axs2 = plt.subplots(ncols=2)
-    # [axs2[0].plot(v) for v in rs_mean]
-    # axs2[1].plot(np.mean(rs_mean, axis=0))
-    # plt.show()
-
-    trial_latencies = sess.mixed_rel_timestamps  # "mixed relative timestamps" in seconds, relative to the probe (negative means saccade before probe, need to fix TODO)
 
     latency_start = -.3
     latency_end = -.2
-    lt = trial_latencies >= latency_start
-    gt = trial_latencies <= latency_end
-    andd = np.logical_and(lt, gt)
-    idxs = np.where(andd)[0]
-    trial_latencies = trial_latencies[idxs]
-    tr_idxs = rmixed_trfilt.idxs()[idxs]
-    rmixed = firing_rates[:, tr_idxs][:, :, 35:35+35]
 
-    num_mixed_trials = rmixed.shape[1]
+    rs_trfilt = sess.trial_filter_rs().append(sess.trial_motion_filter(1))
+    rs = np.copy(firing_rates[:, rs_trfilt.idxs()])
+    rs_mean = np.mean(rs, axis=1)
+
+    rmixed_trfilt = sess.trial_filter_rmixed(latency_start, latency_end, sess.trial_motion_filter(1))
+    trial_latencies = sess.mixed_rel_timestamps[rmixed_trfilt.idxs()]
+    rmixed = firing_rates[:, rmixed_trfilt.idxs()][:, :, 35:35 + 35]
 
     new_rp_peri = np.copy(rmixed)
     new_rp_peri = np.mean(new_rp_peri, axis=1)  # Average over trials
 
+    # Only grab the response during the duration of the saccade
+    sac_start = 0
+    sac_end = 35
+    sac_diff = sac_end - sac_start
+    window_len = 35
+    sac_pad_right = window_len-sac_diff-sac_start + window_len
+    sac_pad_left = sac_start + window_len  # Add window buffer around padding
+
+    rs_mean = rs_mean[:, sac_start:sac_end]  # Average over trials
+    rs_mean = np.pad(rs_mean, [(0,0),(sac_pad_left, sac_pad_right)])  # Pad zeros around
+    fig2, axs2 = plt.subplots(ncols=2)
+    [axs2[0].plot(v) for v in rs_mean]
+    axs2[1].plot(np.mean(rs_mean[35:35+35], axis=0))
+    plt.show()
+
+    num_mixed_trials = rmixed.shape[1]
+
     rs_cumulatives = []
-    do_plot = False
-    do_plot2 = False
+    do_plot = True
+    do_plot2 = True
 
     for unit_num in range(rmixed.shape[0]):  # Iterate over units
         print(f"Calculating unit {unit_num}/{rmixed.shape[0]}..")
@@ -154,7 +151,8 @@ def recalc_rp_peri(sess: NWBSession):
 def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
+    # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
+    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
     filename, sess = next(grp.session_iter())
     recalc_rp_peri(sess)
 
