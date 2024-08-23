@@ -28,7 +28,7 @@ def plot_unit(sess: NWBSession, unit_num):
 
     rpe_trfilt = sess.trial_filter_rp_extra().append(sess.trial_motion_filter(1))
     rpp_trfilt = sess.trial_filter_rp_peri(latency_start, latency_end, sess.trial_motion_filter(1))
-    rmixed_idxs = sess.trial_filter_rmixed().idxs()[rpp_trfilt.idxs()]
+    rmixed_idxs = sess.trial_filter_rmixed(latency_start, latency_end).idxs()[rpp_trfilt.idxs()]
 
     unit = unit[0]
     rmixed = unit[rmixed_idxs]

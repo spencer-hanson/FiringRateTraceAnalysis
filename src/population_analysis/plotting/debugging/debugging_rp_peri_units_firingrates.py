@@ -22,7 +22,7 @@ def get_largest_unit_idxs(units):
     maxs = np.max(means, axis=1)
     vals = zip(range(maxs.shape[0]), maxs)
     srt = sorted(vals, key=lambda x: x[1])
-    return np.array(srt[::-1][:5])[:, 0].astype(int)
+    return np.array(srt[::-1][:])[:, 0].astype(int)
 
 
 def get_rpp(sess: NWBSession, latency_start, latency_end, ufilt):
@@ -35,13 +35,7 @@ def get_rpp(sess: NWBSession, latency_start, latency_end, ufilt):
 
 
 def get_rmixed(sess, latency_start, latency_end, ufilt):
-    lt = sess.mixed_rel_timestamps >= latency_start
-    gt = sess.mixed_rel_timestamps <= latency_end
-    andd = np.logical_and(lt, gt)
-    idxs = np.where(andd)[0]
-    rmixed_mot_trfilt = RelativeTrialFilter(sess.trial_filter_rmixed().append(sess.trial_motion_filter(1)), sess.mixed_trial_idxs).append(BasicFilter(idxs, len(sess.mixed_rel_timestamps)))
-    tr_idxs = rmixed_mot_trfilt.idxs()
-    rmixed = sess.units()[ufilt.idxs(), :][:, tr_idxs]
+    rmixed = sess.units()[ufilt.idxs(), :][:, sess.trial_filter_rmixed(latency_start, latency_end, sess.trial_motion_filter(1)).idxs()]
     return rmixed
 
 
@@ -61,14 +55,22 @@ def main():
     # fn = "mlati7-2023-05-12-output.hdf"
     fn = "mlati10-2023-07-25-output.hdf"
     # fpath = "D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output"
-    fpath = "D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output"
+    # fpath = "D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output"
+    fpath = "D:\\tmp"
 
     sess = NWBSession(fpath, fn)
-    ufilt = sess.unit_filter_premade()
+    # ufilt = sess.unit_filter_premade()
+    ufilt = BasicFilter.empty(sess.num_units)
+    # ufilt = sess.unit_filter_probe_zeta()
     ufilt_idxs = ufilt.idxs()
 
     latency_start = -.3
     latency_end = -.2
+    # latency_start = -.5
+    # latency_end = .5
+    # latency_start = .2
+    # latency_end = .3
+
     rpp = get_rpp(sess, latency_start, latency_end, ufilt)
     rmixed = get_rmixed(sess, latency_start, latency_end, ufilt)
     rs = get_rs(sess, ufilt)
@@ -78,7 +80,10 @@ def main():
     # plot_unit_firingrates(rmixed, axs)
 
     largest_unit_idxs = get_largest_unit_idxs(rs)
-    largest_labels = sess.nwb.processing["behavior"]["unit_labels"].data[:][ufilt.idxs()[largest_unit_idxs]]
+    labels = sess.nwb.processing["behavior"]["unit_labels"].data[:]
+    largest_labels = labels[ufilt.idxs()[largest_unit_idxs]]
+    unit_num = np.where(labels == 406)[0][0]
+    largest_unit_idxs = [unit_num]
 
     rmixed = rmixed[largest_unit_idxs]
     rs = rs[largest_unit_idxs]
@@ -86,7 +91,7 @@ def main():
     rpe = rpe[largest_unit_idxs]
 
     # with open(f"newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
-    with open(f"newcalc_rp_peri-mlati10-2023-07-25-output.hdf.pickle", "rb") as f:
+    with open(f"newcalc_rp_peri-{fn}.pickle", "rb") as f:
         rpp_recalculated = pickle.load(f)
 
     rpprc = rpp_recalculated[ufilt_idxs][largest_unit_idxs]
@@ -101,6 +106,7 @@ def main():
     ]
 
     fig, axs = plt.subplots(nrows=2, ncols=len(units_to_plot), sharey="row", sharex=True)
+    # fig, axs = plt.subplots(nrows=2, ncols=len(units_to_plot), sharey=False, sharex=True)
     fig.tight_layout()
     for i, unitdata in enumerate(units_to_plot):
         unitgroup, name = unitdata

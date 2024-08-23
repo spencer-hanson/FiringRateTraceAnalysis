@@ -60,14 +60,15 @@ def main():
                 os.chdir(name)
 
                 nwb_filename = f"{filename}.nwb"
-                if os.path.exists(nwb_filename) and not force:
-                    print("Already processed, skipping..")
-                    continue
+                # if os.path.exists(nwb_filename) and not force:
+                #     print("Already processed, skipping..")
+                #     continue
                 mouse_name = filename.split("-")[0]
                 session_id = filename[len(mouse_name) + 1:-len("-output.hdf")]  # Chop off 'mlati8-' and '-output.hdf'
 
                 raw = HDFSessionProcessor(filepath, mouse_name, session_id)
                 raw.save_to_nwb(nwb_filename, load_precalculated=True)
+                asdasdafasfasd
                 del raw
                 to_remove = ["calc_firingrates.npy", "calc_norm_firingrates.npy", "calc_rpperi_firingrates.npy", "calc_rpperi_norm_firingrates.npy", "calc_spike_trials.npy", "kilosort_firingrates.npy", "kilosort_spikes.npy", "calc_large_norm_firingrates.npy", "saccadic-trials.pickle"]
                 for fn in to_remove:

@@ -34,6 +34,8 @@ def recalc_rp_peri(sess: NWBSession):
 
     latency_start = -.3
     latency_end = -.2
+    # latency_start = .2
+    # latency_end = .3
 
     rs_trfilt = sess.trial_filter_rs().append(sess.trial_motion_filter(1))
     rs = np.copy(firing_rates[:, rs_trfilt.idxs()])
@@ -47,25 +49,27 @@ def recalc_rp_peri(sess: NWBSession):
     new_rp_peri = np.mean(new_rp_peri, axis=1)  # Average over trials
 
     # Only grab the response during the duration of the saccade
-    sac_start = 0
-    sac_end = 35
-    sac_diff = sac_end - sac_start
-    window_len = 35
-    sac_pad_right = window_len-sac_diff-sac_start + window_len
-    sac_pad_left = sac_start + window_len  # Add window buffer around padding
-
+    sac_start = 35
+    sac_end = 35+35
     rs_mean = rs_mean[:, sac_start:sac_end]  # Average over trials
-    rs_mean = np.pad(rs_mean, [(0,0),(sac_pad_left, sac_pad_right)])  # Pad zeros around
-    fig2, axs2 = plt.subplots(ncols=2)
-    [axs2[0].plot(v) for v in rs_mean]
-    axs2[1].plot(np.mean(rs_mean[35:35+35], axis=0))
-    plt.show()
-
+    rs_mean = np.pad(rs_mean, [(0,0),(35, 35)])  # Pad zeros around
+    #fig2, axs2 = plt.subplots(ncols=4)
+    # axsrs = []
+    # for i in range(4):
+    #     tfig, tax = plt.subplots()
+    #     axsrs.append(tax)
+    # axs2 = axsrs
+    # [axs2[0].plot(v) for v in rs_mean[:, 35:35+35]]
+    # axs2[1].plot(np.mean(rs_mean[:, 35:35+35], axis=0))
+    # [axs2[2].plot(v) for v in rs_mean]
+    # axs2[3].plot(np.mean(rs_mean, axis=0))
+    # plt.show()
+    #plt.plot(np.mean(rs_mean[uufilt.idxs()][:, 35:35 + 35], axis=0))
     num_mixed_trials = rmixed.shape[1]
 
     rs_cumulatives = []
-    do_plot = True
-    do_plot2 = True
+    do_plot = False
+    do_plot2 = False
 
     for unit_num in range(rmixed.shape[0]):  # Iterate over units
         print(f"Calculating unit {unit_num}/{rmixed.shape[0]}..")
@@ -132,10 +136,8 @@ def recalc_rp_peri(sess: NWBSession):
     sidx = len(things_to_plot)+extra_count  # start idx
     fig, axs = plt.subplots(nrows=2, ncols=len(things_to_plot)+extra_count, sharex=True, sharey=False)
 
-
     for idx, element in enumerate(things_to_plot):
         data, name = element
-
         for uidx in ufilt.idxs():
             axs[0][idx].plot(data[uidx])
 
@@ -152,6 +154,7 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
+    # grp = NWBSessionGroup("D:\\tmp")
     grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
     filename, sess = next(grp.session_iter())
     recalc_rp_peri(sess)

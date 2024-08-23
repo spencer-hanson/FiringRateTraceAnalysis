@@ -99,12 +99,6 @@ class NWBSession(object):
     def rp_peri_units(self):
 
         if self.use_normalized_units:
-
-            # if self._tmp_rpp_recalc is None:
-                # import pickle
-                # with open(f"C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\src\\population_analysis\\plotting\\debugging\\newcalc_rp_peri-mlati7-2023-05-12-output.hdf.pickle", "rb") as f:
-                #     self._tmp_rpp_recalc = pickle.load(f)
-                # return self._tmp_rpp_recalc
             return self.nwb.processing["behavior"]["normalized_trial_rp_peri_response_firing_rates"].data[:]
         else:
             return self.nwb.processing["behavior"]["trial_rp_peri_response_firing_rates"].data[:]
@@ -153,17 +147,17 @@ class NWBSession(object):
     def trial_filter_rs(self):
         return BasicFilter(self.saccade_trial_idxs, self.num_trials)
 
-    def trial_filter_rmixed(self, latency_start, latency_end, addtl_filts=None):
+    def trial_filter_rmixed(self, latency_start, latency_end, addtl_filt=None):
         latency_idxs = self.get_latency_idxs(latency_start, latency_end)
 
-        if addtl_filts is None:
-            addtl_filts = TrialFilter.empty(self.num_trials)
+        if addtl_filt is None:
+            addtl_filt = TrialFilter.empty(self.num_trials)
 
         rmixed_mot_trfilt = RelativeTrialFilter(
             BasicFilter(
                 self.mixed_trial_idxs,
                 self.num_trials
-            ).append(addtl_filts),
+            ).append(addtl_filt),
             self.mixed_trial_idxs).append(
             BasicFilter(
                 latency_idxs,
