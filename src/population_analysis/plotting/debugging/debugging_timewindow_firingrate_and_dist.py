@@ -5,10 +5,9 @@ import time
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import get_xaxis_vals, confidence_interval
 from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
-from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -117,7 +116,7 @@ def main():
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
     while True:
         # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs")
-        grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+        grp = SessionGroup("D:\\PopulationAnalysisNWBs")
         if not os.path.exists("sess_debug"):
             os.mkdir("sess_debug")
 

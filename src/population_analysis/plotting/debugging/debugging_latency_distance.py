@@ -10,7 +10,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import confidence_interval, get_xaxis_vals
 from population_analysis.plotting.figures.frac_sig_euc_dist_bars_max_vals import ensure_rpextra_exists
 from population_analysis.quantification.euclidian import EuclidianQuantification
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 # DISTANCES_LOCATION = "../distance"
 DISTANCES_LOCATION = "D:\PopulationAnalysisDists"
@@ -93,7 +93,7 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
+    grp = SessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
     # grp = NWBSessionGroup("E:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     # grp = NWBSessionGroup("../../../../scripts/mlati10*07-06*")

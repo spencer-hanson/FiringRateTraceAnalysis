@@ -1,15 +1,10 @@
-import glob
-import os
 import pickle
 
 from matplotlib import pyplot as plt
 
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import distance_errorbars
-from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
-from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
-from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 
 def euclidian_distance_rpe_rpp(sess):
@@ -73,7 +68,7 @@ def main():
     # nwbfiles = glob.glob("../../../../scripts/*/*-04-14*.nwb")
     # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*04-14*.nwb")
     # nwbfiles = glob.glob("C:\\Users\\Matrix\\Downloads\\tmp\\*05-15*.nwb")
-    grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
+    grp = SessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
     _, sess = next(grp.session_iter())
     euclidian_distance_rpe_rpp(sess)
 

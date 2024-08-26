@@ -1,21 +1,16 @@
-import math
 import os
 import pickle
 from typing import Union
 
 import numpy as np
 from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
-from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import plot_verif_rpe_v_rpe, \
-    calc_quandist
-from population_analysis.processors.filters import BasicFilter
-from population_analysis.processors.filters.trial_filters.rp_peri import RelativeTrialFilter
+from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
 from population_analysis.quantification.angle import AngleQuantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
 import matplotlib.pyplot as plt
-import scipy.stats as st
 
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 
 def confidence_interval(data, confidence_val, plot=False):
@@ -120,7 +115,7 @@ def main():
     confidence = 0.95
 
     print("Loading group..")
-    grp = NWBSessionGroup("../../../../scripts")
+    grp = SessionGroup("../../../../scripts")
     for name, sess in grp.session_iter():  # TODO Theres a memory leak somewhere in this shit, fuck python
         use_cached = False
         # use_cached = True

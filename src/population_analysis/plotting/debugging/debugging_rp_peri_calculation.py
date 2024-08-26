@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 
 def latency_to_index_offset(latency):
@@ -155,7 +155,7 @@ def main():
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati7-2023-05-12-output*")
     # grp = NWBSessionGroup("D:\\tmp")
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
+    grp = SessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
     filename, sess = next(grp.session_iter())
     recalc_rp_peri(sess)
 

@@ -2,14 +2,19 @@ import glob
 import os
 import re
 
-from population_analysis.sessions.saccadic_modulation import NWBSession
 
-
-class NWBSessionGroup(object):
-    def __init__(self, search_directory=None, nwb_session_kwargs={}):
+class SessionGroup(object):
+    def __init__(self, search_directory=None, nwb_session_kwargs={}, session_cls=None, file_ext=".nwb"):
         # self._loaded_sessions = {}
         self._sessions = []
         self.nwb_session_kwargs = nwb_session_kwargs
+        self._file_ext = file_ext
+        if session_cls is None:
+            from population_analysis.sessions.saccadic_modulation import NWBSession
+            self._sess_cls = NWBSession
+        else:
+            self._sess_cls = session_cls
+
         if search_directory is not None:
             self.find_sessions(search_directory)
 
@@ -19,21 +24,21 @@ class NWBSessionGroup(object):
         return date
 
     def find_sessions(self, direc):
-        found = glob.glob(os.path.join(direc, "**/*.nwb"), recursive=True)
+        found = glob.glob(os.path.join(direc, f"**/*{self._file_ext"), recursive=True)
         for filename in found:
             self._sessions.append(filename)
 
     def _get_file_details(self, sess_name):
         split = re.split(r"(\\|/)", sess_name)[::2]
         folder = "/".join(split[:-1])
-        filename = split[-1][:-len(".nwb")]
+        filename = split[-1][:-len(self._file_ext)]
         return folder, filename
 
     def session_iter(self):
         for sess in self._sessions:
             folder, filename = self._get_file_details(sess)
             try:
-                sess = NWBSession(folder, filename, **self.nwb_session_kwargs)
+                sess = self._sess_cls(folder, filename, **self.nwb_session_kwargs)
                 yield filename, sess
             except Exception as e:
                 yield (filename, e), None

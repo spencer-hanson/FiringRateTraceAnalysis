@@ -4,10 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from population_analysis.plotting.distance.distance_verifiation_by_density_rpe_v_rpe_plots import calc_quandist
-from population_analysis.processors.filters import BasicFilter
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 DISTANCES_LOCATION = "D:\\PopulationAnalysisDists"
 
@@ -144,7 +143,7 @@ def main():
     # dist_compare()
     # testing()
 
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs")
+    grp = SessionGroup("D:\\PopulationAnalysisNWBs")
     # grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\mlati7-2023-05-15-output")
     for folder, filename in grp.session_names_iter():
         debug_rpe_baseline(folder, filename, True)

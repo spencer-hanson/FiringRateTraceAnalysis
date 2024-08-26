@@ -1,6 +1,5 @@
-from population_analysis.processors.filters import BasicFilter
 from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -64,7 +63,7 @@ def main():
     print("Loading group..")
     # grp = NWBSessionGroup("../../../../scripts")
     # grp = NWBSessionGroup("F:\\PopulationAnalysisNWBs\\mlati10*07-06*")
-    grp = NWBSessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\tmp")
+    grp = SessionGroup("C:\\Users\\Matrix\\Documents\\GitHub\\SaccadePopulationAnalysis\\scripts\\nwbs\\tmp")
     filename, sess = next(grp.session_iter())
     all_firingrates(sess)
 

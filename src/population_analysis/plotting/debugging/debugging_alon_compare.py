@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from population_analysis.sessions.saccadic_modulation import NWBSession
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 
 def get_rpp_recalc():
@@ -55,7 +55,7 @@ def debug_compare(sess: NWBSession):
 
 
 def main():
-    grp = NWBSessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
+    grp = SessionGroup("D:\\PopulationAnalysisNWBs\\mlati10-2023-07-25-output*")
     filename, sess = next(grp.session_iter())
     debug_compare(sess)
     tw = 2

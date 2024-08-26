@@ -4,7 +4,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import confidence_interval, get_xaxis_vals
 from population_analysis.quantification.angle import AngleQuantification
 from population_analysis.quantification.euclidian import EuclidianQuantification
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -73,7 +73,7 @@ def plot_fraction_dist(sess_group, confidence_val):
 
 def main():
     print("Loading group..")
-    grp = NWBSessionGroup("../../../../scripts")
+    grp = SessionGroup("../../../../scripts")
 
     confidence_val = 0.95
     plot_fraction_dist(grp, confidence_val)

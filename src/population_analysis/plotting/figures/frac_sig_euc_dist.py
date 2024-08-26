@@ -7,7 +7,7 @@ from population_analysis.consts import NUM_FIRINGRATE_SAMPLES
 from population_analysis.plotting.distance.distance_rpp_rpe_errorbars_plots import get_xaxis_vals
 from population_analysis.plotting.distance.fraction_distance_significant import get_session_significant_timepoint_list
 from population_analysis.quantification.euclidian import EuclidianQuantification
-from population_analysis.sessions.saccadic_modulation.group import NWBSessionGroup
+from population_analysis.sessions.group import SessionGroup
 
 
 def frac_sig_dist_euc(sess_group, confidence_val):
@@ -39,7 +39,7 @@ def frac_sig_dist_euc(sess_group, confidence_val):
 
 def main():
     print("Loading group..")
-    grp = NWBSessionGroup("../../../../scripts")
+    grp = SessionGroup("../../../../scripts")
 
     confidence_val = 0.99
     frac_sig_dist_euc(grp, confidence_val)
