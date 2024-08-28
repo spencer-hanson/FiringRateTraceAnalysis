@@ -10,21 +10,27 @@ from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
 
 
-def get_rpe_quantification_distribution(rp_extra_units, proportion, cache_filename):
+def get_rpe_quantification_distribution(rp_extra_units, base_prop, cache_filename):
     # Expects rp_extra_units in (units, trials, t)
     quan = EuclidianQuantification()
     if os.path.exists(cache_filename):
         with open(cache_filename, "rb") as f:
             print(f"Loading precalculated RpExtra QuanDistrib '{cache_filename}'..")
             return pickle.load(f)
-    print(f"Calculating RpExtra QuanDistrib for '{cache_filename}'..")
+
+    if base_prop > 1 or base_prop < 0:
+        raise ValueError("Cannot split proportion > 1 or < 0!")
+    proportion = int(rp_extra_units.shape[1] * base_prop)
+    proportion = proportion if proportion > 0 else 1
+
+    print(f"Calculating RpExtra QuanDistrib for '{cache_filename}' with a {proportion}/{rp_extra_units.shape[1]-proportion} split..")
+    if base_prop == 1:
+        proportion = None
     quan_dist = QuanDistribution(
-        # units,
-        # sess.rp_peri_units()[ufilt.idxs()],
         rp_extra_units[:, :proportion],
         rp_extra_units[:, proportion:],
         quan
-    )
+    ).calculate()
 
     with open(cache_filename, "wb") as f:
         pickle.dump(quan_dist, f)
@@ -35,35 +41,22 @@ def get_latencies():
     return np.arange(-.5, .6, .1)  # size 11
 
 
-def get_rp_peri(hdfdata):
-    return np.array([])  # TODO return (units, trials, t)
-
-
-def get_rp_extra(hdfdata):
-    return np.array([])  # TODO
-
-
 def slice_rp_peri_by_latency(rp_peri, latency_start, latency_end):
-    return rp_peri  # TODO
-
-
-def get_proportion(rp_peri, rp_extra, latency_start, latency_end):
-    # should be in (units, trials, t)
-    rp_peri = slice_rp_peri_by_latency(rp_peri, latency_start, latency_end)
-    rpp = rp_peri.shape[1]
-    rpe = rp_extra.shape[1]
-    prop = rpp / rpe
-    return prop
+    # rp peri is (units, trials, latencies)
+    # where latencies are the values at (-.5,-.4),(-.4,-.3),...
+    latency_idx = np.where(get_latencies() == latency_start)[0][0]
+    return rp_peri[:, :, latency_idx][:, :, None]
 
 
 def get_avg_proportion(rp_peri, rp_extra, latencies):
     # Average the proportion for all latencies
-    prop = 0
-    for idx in range(len(latencies) - 1):
-        prop = prop + get_proportion(rp_peri, rp_extra, latencies[idx], latencies[idx + 1])
-
-    prop = prop / len(latencies)
-    return prop
+    # prop = 0
+    # for idx in range(len(latencies) - 1):
+    #     prop = prop + get_proportion(rp_peri, rp_extra, latencies[idx], latencies[idx + 1])
+    #
+    # prop = prop / (len(latencies) - 1)
+    # return prop
+    return 50/100
 
 
 def get_largest_distance(rp_peri, rp_extra):
@@ -71,12 +64,12 @@ def get_largest_distance(rp_peri, rp_extra):
     quan = EuclidianQuantification()
 
     all_dists = []
-    for t in range(35):
+    for t in range(rp_peri.shape[2]):
         all_dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, t]))
 
-    all_dists = np.array(all_dists)[8:12]  # timepoint range to check largest dist in
-    zipped = np.array(enumerate(all_dists))
-    sort = sorted(zipped, key=lambda x: x[1])   # Sort by value
+    all_dists = np.array(all_dists)
+    zipped = np.array(list(enumerate(all_dists)))
+    sort = sorted(list(zipped), key=lambda x: x[1])   # Sort by value
     largest = sort[-1]
 
     timepoint = largest[0]
@@ -129,14 +122,23 @@ def get_latency_passing_counts(rp_extra, rp_peri, confidence_interval, cache_fil
 
 
 def iter_hdfdata(hdfdata):
-    # TODO Iterate over the hdfdata obj for each session
-    data = {
-        "uniquename": "05-15-2023",
-        "rp_extra": get_rp_extra(hdfdata),
-        "rp_peri": get_rp_peri(hdfdata)
-    }
-    yield data
-    return  # TODO
+    all_rpp = np.array(hdfdata["ppths"]["pref"]["real"]["peri"])  # units, tr, 100ms latencies
+    all_rpe = np.array(hdfdata["ppths"]["pref"]["real"]["extra"])  # units, tr
+    alldates = hdfdata["ukeys"]["date"][:, 0]
+    unique_dates = np.unique(alldates)
+    datas = []
+    for name in unique_dates:
+        unit_idxs = np.where(alldates == name)[0]
+        sess_rpp = all_rpp[unit_idxs]
+        sess_rpe = all_rpe[unit_idxs][:, :, None]
+
+        datas.append({
+            "uniquename": str(name.astype(str)),
+            "rp_extra": sess_rpe,  # (units, tr, 10x100ms latencies)
+            "rp_peri": sess_rpp  # (units, tr, 1)
+        })
+
+    return datas
 
 
 def get_passing_fractions(hdfdata, confidence_interval):
@@ -158,34 +160,30 @@ def get_passing_fractions(hdfdata, confidence_interval):
 
 
 def plot_fraction_significant(hdfdata, confidence_interval):
+    olddir = os.getcwd()
     if not os.path.exists("frac_sig"):
         os.mkdir("frac_sig")
     os.chdir("frac_sig")
 
-    pass_fn = "passing_fractions.pickle"
-    if os.path.exists(pass_fn):
-        with open(pass_fn, "rb") as f:
-            print("Found precalculated fractions, loading..")
-            passing_fractions = pickle.load(f)
-    else:
-        print("Have to calculate fraction of sessions..")
-        passing_fractions = get_passing_fractions(hdfdata, confidence_interval)
+    print("Calculating fraction of sessions..")
+    passing_fractions = get_passing_fractions(hdfdata, confidence_interval)
 
     fix, ax = plt.subplots()
-    ax.bar(get_latencies(), passing_fractions)
+    ax.bar(get_latencies()[:-1], passing_fractions, width=0.05)
     plt.xticks(rotation=90)
     plt.subplots_adjust(bottom=.2)
     plt.title(f"Fraction of significant sessions >{confidence_interval}")
     plt.show()
 
+    os.chdir(olddir)
     with open("fraction-significant-distances-latency.pickle", "wb") as f:
         pickle.dump(passing_fractions, f)
     tw = 2
 
 
 def main():
-    hdf_fn = "E:\\myfile.hdf"
-    confidence_interval = 0.99
+    hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
+    confidence_interval = 0.90
     plot_fraction_significant(h5py.File(hdf_fn), confidence_interval)
 
 
