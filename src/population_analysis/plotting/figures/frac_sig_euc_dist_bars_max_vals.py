@@ -1,6 +1,7 @@
 import glob
 import os
 import pickle
+import re
 
 import h5py
 import numpy as np
@@ -10,7 +11,18 @@ from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
 
 
-def get_rpe_quantification_distribution(rp_extra_units, base_prop, cache_filename):
+def get_rpextra_from_nwb(nwb_filename, cluster_ids):
+    # TODO
+    return np.array([])
+
+
+def upsample_rpextra_distrib(rpextra_distrib):
+    # rpextra_distrib is going to be (10000, 35) we want (10000, 70)
+    # TODO
+    return rpextra_distrib
+
+
+def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
     # Expects rp_extra_units in (units, trials, t)
     quan = EuclidianQuantification()
     if os.path.exists(cache_filename):
@@ -20,17 +32,21 @@ def get_rpe_quantification_distribution(rp_extra_units, base_prop, cache_filenam
 
     if base_prop > 1 or base_prop < 0:
         raise ValueError("Cannot split proportion > 1 or < 0!")
+
+    rp_extra_units = get_rpextra_from_nwb(data_dict["nwb"], data_dict["clusters"])
+
     proportion = int(rp_extra_units.shape[1] * base_prop)
     proportion = proportion if proportion > 0 else 1
 
     print(f"Calculating RpExtra QuanDistrib for '{cache_filename}' with a {proportion}/{rp_extra_units.shape[1]-proportion} split..")
     if base_prop == 1:
-        proportion = None
+        proportion = None  # Use the same with no split
     quan_dist = QuanDistribution(
         rp_extra_units[:, :proportion],
         rp_extra_units[:, proportion:],
         quan
     ).calculate()
+    quan_dist = upsample_rpextra_distrib(quan_dist)
 
     with open(cache_filename, "wb") as f:
         pickle.dump(quan_dist, f)
@@ -45,7 +61,7 @@ def slice_rp_peri_by_latency(rp_peri, latency_start, latency_end):
     # rp peri is (units, trials, latencies)
     # where latencies are the values at (-.5,-.4),(-.4,-.3),...
     latency_idx = np.where(get_latencies() == latency_start)[0][0]
-    return rp_peri[:, :, latency_idx][:, :, None]
+    return rp_peri[:, :, :, latency_idx]
 
 
 def get_avg_proportion(rp_peri, rp_extra, latencies):
@@ -56,7 +72,8 @@ def get_avg_proportion(rp_peri, rp_extra, latencies):
     #
     # prop = prop / (len(latencies) - 1)
     # return prop
-    return 50/100
+    # return 3/100
+    return 1
 
 
 def get_largest_distance(rp_peri, rp_extra):
@@ -69,6 +86,7 @@ def get_largest_distance(rp_peri, rp_extra):
 
     all_dists = np.array(all_dists)
     zipped = np.array(list(enumerate(all_dists)))
+    zipped = zipped[16:24]  # Only consider values from -40ms to +40ms around the probe
     sort = sorted(list(zipped), key=lambda x: x[1])   # Sort by value
     largest = sort[-1]
 
@@ -99,12 +117,15 @@ def calc_confidence_interval(data, confidence_val):
     return lower, mean, upper
 
 
-def get_latency_passing_counts(rp_extra, rp_peri, confidence_interval, cache_filename):
+def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     latencies = get_latencies()
     num_latencies = len(latencies)
 
+    rp_extra = data_dict["rp_extra"]  # (units, 1trial, t, latencies)
+    rp_peri = data_dict["rp_peri"]  # (units, 1trial, t)
+
     proportion = get_avg_proportion(rp_peri, rp_extra, latencies)
-    rpe_null_dist = get_rpe_quantification_distribution(rp_extra, proportion, cache_filename)
+    rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, cache_filename)
     counts = []
     for idx in range(num_latencies-1):
         start = latencies[idx]
@@ -121,52 +142,74 @@ def get_latency_passing_counts(rp_extra, rp_peri, confidence_interval, cache_fil
     return counts
 
 
-def iter_hdfdata(hdfdata):
-    all_rpp = np.array(hdfdata["ppths"]["pref"]["real"]["peri"])  # units, tr, 100ms latencies
-    all_rpe = np.array(hdfdata["ppths"]["pref"]["real"]["extra"])  # units, tr
-    alldates = hdfdata["ukeys"]["date"][:, 0]
+def get_name_to_nwbfilepath_dict(nwbs_location, unique_dates):
+    mapping = {}
+    found_nwbs = glob.glob(os.path.join(nwbs_location, "**/*.nwb"), recursive=True)
+    for date in unique_dates:
+        found = False
+        pat = re.compile(f".*{date}.*")
+        for nwbpath in found_nwbs:
+            nwbfn = os.path.basename(nwbpath)
+            match = pat.match(nwbfn)
+            if match:
+                mapping[date] = nwbpath
+                found = True
+                break
+        if not found:
+            raise ValueError(f"Cannot find matching NWB for session date '{date}' in NWB location '{nwbs_location}'")
+
+    return mapping
+
+
+def iter_hdfdata(hdfdata, nwbs_location):
+    all_rpp = np.array(hdfdata["ppths"]["pref"]["real"]["peri"])  # units, time, latencies
+    all_rpe = np.array(hdfdata["ppths"]["pref"]["real"]["extra"])  # units, time
+    alldates = hdfdata["ukeys"]["date"][:, 0].astype(str)
+    allclusters = hdfdata["ukeys"]["cluster"][:, 0].astype(int)
     unique_dates = np.unique(alldates)
+    nwb_mapping = get_name_to_nwbfilepath_dict(nwbs_location, unique_dates)
+
     datas = []
     for name in unique_dates:
         unit_idxs = np.where(alldates == name)[0]
-        sess_rpp = all_rpp[unit_idxs]
-        sess_rpe = all_rpe[unit_idxs][:, :, None]
+        sess_rpp = all_rpp[unit_idxs][:, None, :, :]
+        sess_rpe = all_rpe[unit_idxs][:, None, :]
+        sess_clusts = allclusters[unit_idxs]
 
         datas.append({
-            "uniquename": str(name.astype(str)),
-            "rp_extra": sess_rpe,  # (units, tr, 10x100ms latencies)
-            "rp_peri": sess_rpp  # (units, tr, 1)
+            "uniquename": name,
+            "rp_extra": sess_rpe,  # (units, 1trial, time, 10x100ms latencies) already trial averaged
+            "rp_peri": sess_rpp  # (units, 1, t)
+            "nwb": nwb_mapping[name],
+            "clusters": sess_clusts
         })
 
     return datas
 
 
-def get_passing_fractions(hdfdata, confidence_interval):
+def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
     passing_counts = np.zeros((10,))  # 10 latencies from -.5 to .5 in .1 increments
 
     num_sessions = 0
-    for data_dict in iter_hdfdata(hdfdata):
+    for data_dict in iter_hdfdata(hdfdata, nwbs_location):
         num_sessions = num_sessions + 1
         cache_filename = f"rpextra-quandistrib-{data_dict['uniquename']}.pickle"
 
-        rp_extra = data_dict["rp_extra"]  # (units, trials, t)
-        rp_peri = data_dict["rp_peri"]
-
-        session_counts = get_latency_passing_counts(rp_extra, rp_peri, confidence_interval, cache_filename)
+        session_counts = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
         passing_counts = passing_counts + session_counts
 
     passing_fractions = passing_counts / num_sessions
     return passing_fractions
 
 
-def plot_fraction_significant(hdfdata, confidence_interval):
+def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
     olddir = os.getcwd()
     if not os.path.exists("frac_sig"):
         os.mkdir("frac_sig")
     os.chdir("frac_sig")
 
     print("Calculating fraction of sessions..")
-    passing_fractions = get_passing_fractions(hdfdata, confidence_interval)
+    passing_fractions = get_passing_fractions(hdfdata, nwbs_location, confidence_interval)
 
     fix, ax = plt.subplots()
     ax.bar(get_latencies()[:-1], passing_fractions, width=0.05)
@@ -183,8 +226,9 @@ def plot_fraction_significant(hdfdata, confidence_interval):
 
 def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
+    nwbs_location = "E:\\PopulationAnalysisNWBs"
     confidence_interval = 0.90
-    plot_fraction_significant(h5py.File(hdf_fn), confidence_interval)
+    plot_fraction_significant(h5py.File(hdf_fn), nwbs_location, confidence_interval)
 
 
 if __name__ == "__main__":

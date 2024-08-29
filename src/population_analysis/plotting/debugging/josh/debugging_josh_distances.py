@@ -14,18 +14,20 @@ def calc_dists(rp_peri, rp_extra):
     dists = []
     quan = EuclidianQuantification()
     for t in range(rp_peri.shape[-1]):
-        dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, 0]))  # Dist is between rp extra vs latencies as t
+        dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, t]))  # Dist is between rp extra vs latencies as t
 
     return dists
 
 
 def get_rp_extra_dists(name, confidence_interval):
-    cache_filename = os.path.join("frac_sig", f"rpextra-quandistrib-{name}.pickle")
-    cache_filename = "../../figures./" + cache_filename
-    with open(cache_filename, "rb") as f:
-        dist_distrib = pickle.load(f)
-    lower, mean, upper = calc_confidence_interval(dist_distrib, confidence_interval)
-    return lower, mean, upper
+    # cache_filename = os.path.join("frac_sig", f"rpextra-quandistrib-{name}.pickle")
+    # cache_filename = "../../figures./" + cache_filename
+    # with open(cache_filename, "rb") as f:
+    #     dist_distrib = pickle.load(f)
+    # lower, mean, upper = calc_confidence_interval(dist_distrib, confidence_interval)
+    # return lower, mean, upper
+    zeros = np.zeros((70,))  # TODO get null distribution
+    return zeros, zeros, zeros
 
 
 def plot_session(sessdict, confidence_interval):
@@ -34,25 +36,28 @@ def plot_session(sessdict, confidence_interval):
     #     "rp_extra": sess_rpe,  # (units, tr, 10x100ms latencies)
     #     "rp_peri": sess_rpp  # (units, tr, 1)
     # })
-    fig, ax = plt.subplots()
+    xvals = np.arange(0, 700, 10) - 200
     latencies = np.arange(-.5, .6, .1)
-    rpp = sessdict["rp_peri"]  # (units, trials, latencies)
-    rpe = sessdict["rp_extra"]
+    fig, axs = plt.subplots(ncols=len(latencies)-1, figsize=(24, 4))
 
-    rpp_dists = calc_dists(rpp, rpe)
-    lower, rpe_dists, upper = get_rp_extra_dists(sessdict["uniquename"], confidence_interval)
+    for latency_idx in range(len(latencies)-1):
+        ax = axs[latency_idx]
+        rpp = sessdict["rp_peri"][:, :, :, latency_idx]  # (units, trials, time)
+        rpe = sessdict["rp_extra"]  # (units, trials, time)
 
-    ax.plot(latencies[:-1], rpp_dists, label="RpPeri vs RpExtra", color="blue")
-    ax.plot(latencies[:-1], np.broadcast_to(rpe_dists, (rpp.shape[-1],)), label="RpExtra vs RpExtra", color="orange")
-    ax.plot(latencies[:-1], np.broadcast_to(lower, (rpp.shape[-1],)), color="orange", linestyle="dotted")
-    ax.plot(latencies[:-1], np.broadcast_to(upper, (rpp.shape[-1],)), color="orange", linestyle="dotted")
+        rpp_dists = calc_dists(rpp, rpe)
+        lower, rpe_dists, upper = get_rp_extra_dists(sessdict["uniquename"], confidence_interval)
 
-    ax.title.set_text(f"Session {sessdict['uniquename']} >{confidence_interval}")
-    ax.set_ylabel("Euclidian Distance")
-    ax.set_xlabel("Saccade-Probe Latency")
+        ax.plot(xvals, rpp_dists, label="RpPeri vs RpExtra", color="blue")
+        ax.plot(xvals, rpe_dists, label="RpExtra vs RpExtra", color="orange")
+        ax.plot(xvals, lower, color="orange", linestyle="dotted")
+        ax.plot(xvals, upper, color="orange", linestyle="dotted")
+        ax.title.set_text(f"({round(latencies[latency_idx], 2)},{round(latencies[latency_idx + 1], 2)})")
+        ax.set_xlabel("Time from probe (ms)")
 
+    axs[0].set_ylabel(f"Euclidian Distance of {sessdict['uniquename']} >{confidence_interval}")
     plt.legend()
-    # plt.show()
+    plt.show()
     if not os.path.exists("dist_graphs"):
         os.mkdir("dist_graphs")
     print("Saving to png..")
@@ -61,7 +66,8 @@ def plot_session(sessdict, confidence_interval):
 
 def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
-    sessions = iter_hdfdata(h5py.File(hdf_fn))
+    nwb_location = "E:\\PopulationAnalysisNWBs"
+    sessions = iter_hdfdata(h5py.File(hdf_fn), nwb_location)
     # sess = sessions[0]
     confidence_interval = 0.99
     for sess in sessions:
