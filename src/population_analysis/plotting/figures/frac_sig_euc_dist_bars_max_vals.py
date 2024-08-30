@@ -9,17 +9,28 @@ import matplotlib.pyplot as plt
 
 from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
+from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def get_rpextra_from_nwb(nwb_filename, cluster_ids):
-    # TODO
-    return np.array([])
+    sess = NWBSession(nwb_filename)
+    cluster_map = sess.nwb.processing["behavior"]["unit_labels"].data[:]
+    unit_idxs = []
+    for clust in cluster_ids:
+        unit_idxs.append(np.where(cluster_map == clust)[0][0])
+    unit_idxs = np.array(unit_idxs)
+    rpextra = sess.units()[unit_idxs][:, sess.trial_filter_rp_extra().idxs()]
+    return rpextra
 
 
 def upsample_rpextra_distrib(rpextra_distrib):
     # rpextra_distrib is going to be (10000, 35) we want (10000, 70)
-    # TODO
-    return rpextra_distrib
+    new_rpextra = []
+    for rpe in rpextra_distrib:
+        interp = np.interp(np.arange(0, 70), np.arange(0, 35)*2, rpe)
+        new_rpextra.append(interp)
+    new_rpextra = np.array(new_rpextra)
+    return new_rpextra
 
 
 def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
@@ -38,6 +49,7 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
     proportion = int(rp_extra_units.shape[1] * base_prop)
     proportion = proportion if proportion > 0 else 1
 
+    # TODO test remove me
     print(f"Calculating RpExtra QuanDistrib for '{cache_filename}' with a {proportion}/{rp_extra_units.shape[1]-proportion} split..")
     if base_prop == 1:
         proportion = None  # Use the same with no split
@@ -72,8 +84,8 @@ def get_avg_proportion(rp_peri, rp_extra, latencies):
     #
     # prop = prop / (len(latencies) - 1)
     # return prop
-    # return 3/100
-    return 1
+    return 3/100
+    # return 1
 
 
 def get_largest_distance(rp_peri, rp_extra):
@@ -179,7 +191,7 @@ def iter_hdfdata(hdfdata, nwbs_location):
         datas.append({
             "uniquename": name,
             "rp_extra": sess_rpe,  # (units, 1trial, time, 10x100ms latencies) already trial averaged
-            "rp_peri": sess_rpp  # (units, 1, t)
+            "rp_peri": sess_rpp,  # (units, 1, t)
             "nwb": nwb_mapping[name],
             "clusters": sess_clusts
         })

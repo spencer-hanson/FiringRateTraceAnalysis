@@ -1,3 +1,5 @@
+import os
+
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -5,36 +7,45 @@ import numpy as np
 from population_analysis.plotting.figures.frac_sig_euc_dist_bars_max_vals import iter_hdfdata, slice_rp_peri_by_latency
 
 
-def plot_session(sessdict, ax):
-    # datas.append({  # TODO Fix naming thing
-    #     "uniquename": str(name.astype(str)),
-    #     "rp_extra": sess_rpe,  # (units, tr, 10x100ms latencies)
-    #     "rp_peri": sess_rpp  # (units, tr, 1)
-    # })
-    if ax is None:
-        fig, ax = plt.subplots()
+def plot_session(sessdict):
     latencies = np.arange(-.5, .6, .1)
-    rpp = sessdict["rp_peri"]
+    fig, axs = plt.subplots(ncols=len(latencies)-1, figsize=(24, 2))
+    xvals = np.arange(0, 700, 10) - 200
     rpe = sessdict["rp_extra"]
+    print(f"Plotting '{sessdict['uniquename']}'..")
+    for latency_idx in range(len(latencies)-1):
+        rpp = sessdict["rp_peri"][:, :, :, latency_idx]
+        ax = axs[latency_idx]
 
-    ax.plot(latencies[:-1], np.mean(np.mean(rpp, axis=1), axis=0), color="blue", label="RpPeri")
-    ax.plot(latencies[:-1], np.broadcast_to(np.mean(np.mean(rpe, axis=1), axis=0), (10,)), color="orange", label="RpExtra")
-    ax.set_xlabel("Saccade-Probe Latency")
-    ax.set_ylabel("Mean firing rate at probe (normalized)")
+        ax.plot(xvals, np.mean(np.mean(rpp, axis=1), axis=0), color="blue", label="RpPeri")
+        ax.plot(xvals, np.mean(np.mean(rpe, axis=1), axis=0), color="orange", label="RpExtra")
+        ax.set_xlabel("Time from Probe (ms)")
+        titletext = f"({round(latencies[latency_idx],2)},{round(latencies[latency_idx+1],2)})"
+        if latency_idx == 0:
+            ax.set_ylabel(f"Mean firing rate at probe (normalized)")
+            titletext = f"{titletext} {sessdict['uniquename']}"
 
-    # ax.legend()
+        ax.title.set_text(titletext)
+
+    axs[-1].legend()
+    if not os.path.exists("fr_graphs"):
+        os.mkdir("fr_graphs")
+
+    plt.savefig(os.path.join("fr_graphs", sessdict["uniquename"] + ".png"))
     # plt.show()
+    tw = 2
 
 
 def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
-    sessions = iter_hdfdata(h5py.File(hdf_fn))
-    # sess = sessions[0]
-    fig, ax = plt.subplots()
+    nwb_location = "E:\\PopulationAnalysisNWBs"
+    sessions = iter_hdfdata(h5py.File(hdf_fn), nwb_location)
 
     for sess in sessions:
-        plot_session(sess, ax)
-    plt.show()
+        plot_session(sess)
+
+    # sess = sessions[0]
+    # plot_session(sess)
 
 
 if __name__ == "__main__":

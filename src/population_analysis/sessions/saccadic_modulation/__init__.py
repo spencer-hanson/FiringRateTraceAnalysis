@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from pynwb import NWBHDF5IO
 
@@ -15,31 +17,25 @@ from population_analysis.processors.experiments.saccadic_modulation.rp_peri_calc
 
 
 class NWBSession(object):
-    def __init__(self, filepath_prefix_no_ext, filename, graph_folderpath=None, filter_mixed=True, use_normalized_units=True, mixed_probe_range=0.02):
-        filepath = f"{filepath_prefix_no_ext}/{filename}.nwb"
-        self.filename_no_ext = filename
-        self.filepath_prefix_no_ext = filepath_prefix_no_ext
-        graph_prefix = f"{graph_folderpath}/{filename}"
-        print(f"Loading session file '{self.filename_no_ext}'..", end="")
-        if filename.endswith(".nwb"):
-            print("FILENAME SHOULD NOT END WITH .nwb in args (on disk todo fix this) remove in str")
-        # if not os.path.exists(graph_prefix):  # TODO
-        #     os.makedirs(graph_prefix)
+    def __init__(self, filepath, use_normalized_units=True):
+        self.filename_no_ext = os.path.basename(filepath)[:-len(".nwb")]
+        self.filepath_prefix_no_ext = os.path.dirname(filepath)
 
-        nwbio = NWBHDF5IO(filepath)
-        self.nwbio_fp = nwbio
-        nwb = nwbio.read()
+        print(f"Loading session file '{self.filename_no_ext}'..", end="")
+
+        self.nwbio_fp = NWBHDF5IO(filepath)
+        self.nwb = self.nwbio_fp.read()
 
         self.use_normalized_units = use_normalized_units
         self._normalized_rp_peri = None
-        self.probe_trial_idxs = nwb.processing["behavior"]["unit-trial-probe"].data[:]
-        self.saccade_trial_idxs = nwb.processing["behavior"]["unit-trial-saccade"].data[:]
-        self.mixed_trial_idxs = nwb.processing["behavior"]["unit-trial-mixed"].data[:]
+        self.probe_trial_idxs = self.nwb.processing["behavior"]["unit-trial-probe"].data[:]
+        self.saccade_trial_idxs = self.nwb.processing["behavior"]["unit-trial-saccade"].data[:]
+        self.mixed_trial_idxs = self.nwb.processing["behavior"]["unit-trial-mixed"].data[:]
 
-        self.quality_metrics = self._extract_quality_metrics(nwb)
+        self.quality_metrics = self._extract_quality_metrics(self.nwb)
 
         # Filter out mixed trials that saccades are more than 20ms away from the probe
-        self.mixed_rel_timestamps = nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
+        self.mixed_rel_timestamps = self.nwb.processing["behavior"]["mixed-trial-saccade-relative-timestamps"].data[:]
 
         # TODO UN-INVERT ME BY PROCESSING TIMESTAMPS DIFFERENT
         self.mixed_rel_timestamps = self.mixed_rel_timestamps * -1
@@ -49,8 +45,6 @@ class NWBSession(object):
         #     self.mixed_filtered_idxs = np.where(mixed_filtered_idxs)[0]  # These indexes are into mixed NOT units()
         # else:
         #     self.mixed_filtered_idxs = np.array([True] * len(self.mixed_rel_timestamps))
-
-        self.nwb = nwb
 
         self.num_trials = self.nwb.processing["behavior"]["trial_motion_directions"].data[:].shape[0]
         self.num_units = self.nwb.processing["behavior"]["unit_labels"].data[:].shape[0]
