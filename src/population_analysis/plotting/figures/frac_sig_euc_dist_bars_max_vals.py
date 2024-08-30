@@ -46,7 +46,8 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
     josh_rp_extra = data_dict["rp_extra"]  # (units, 1, t)
     rp_extra_units = get_rpextra_from_nwb(data_dict["nwb"], data_dict["clusters"])
     upsampled_rpextra = upsample_rpextra_distrib(np.mean(rp_extra_units, axis=1))
-    scaling_factor = np.mean(np.mean(josh_rp_extra[:, 0] / upsampled_rpextra, axis=0))
+    div = np.clip(np.nan_to_num(josh_rp_extra[:, 0] / upsampled_rpextra, nan=1, posinf=1, neginf=1), a_min=-100, a_max=100)  # Clip division to a reasonable range
+    scaling_factor = np.mean(np.mean(div, axis=0))
     upsampled_rpextra *= scaling_factor  # Approximate across datasets with a scale factor to get it on the same log scale
 
     rp_extra_units *= scaling_factor
@@ -214,7 +215,12 @@ def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
         num_sessions = num_sessions + 1
         cache_filename = f"rpextra-quandistrib-{data_dict['uniquename']}.pickle"
 
-        session_counts = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
+        try:
+            session_counts = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
+        except Exception as e:
+            print(f"Error with session {data_dict['uniquename']} Error: {str(e)} Skipping..")
+            num_sessions -= 1
+            continue
         passing_counts = passing_counts + session_counts
 
     passing_fractions = passing_counts / num_sessions
