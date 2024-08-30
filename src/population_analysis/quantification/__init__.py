@@ -46,13 +46,15 @@ class QuanDistribution(object):
     """
 
     NUM_SAMPLES = 10000
-    # NUM_SAMPLES = 7
+    # NUM_SAMPLES = 7  # TODO Fix me
 
     def __init__(self, class_1_data, class_2_data, quan: Quantification):
         # Expects data in (units, trials, t)
         self.quan: Quantification = quan
         self.class_1_data = class_1_data
         self.class_2_data = class_2_data
+        assert len(self.class_1_data.shape) == 3  # Make sure input is (units, trials, t)
+        assert len(self.class_2_data.shape) == 3
         self._progress = 0
 
     def get_name(self):
@@ -108,9 +110,18 @@ class QuanDistribution(object):
 
     def calculate(self):
         num_pools = 4
+        calc_args = self._calc_sample_args(num_pools)
+
+        # Uncomment me for a single-threaded version for debugging
+        # vals = []
+        # for arg in calc_args:
+        #     vals.extend(self._calculate(arg))
+        # vals = np.array(vals)
+        # return vals
+
         print(f"Setting up {num_pools} pools for multiprocessing..")
         with Pool(num_pools + 1) as p:
-            results = p.map(self._calculate, [*self._calc_sample_args(num_pools)])
+            results = p.map(self._calculate, calc_args)
             print("\nDone")
             dists = []
             for r in results:

@@ -43,8 +43,13 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
 
     if base_prop > 1 or base_prop < 0:
         raise ValueError("Cannot split proportion > 1 or < 0!")
-
+    josh_rp_extra = data_dict["rp_extra"]  # (units, 1, t)
     rp_extra_units = get_rpextra_from_nwb(data_dict["nwb"], data_dict["clusters"])
+    upsampled_rpextra = upsample_rpextra_distrib(np.mean(rp_extra_units, axis=1))
+    scaling_factor = np.mean(np.mean(josh_rp_extra[:, 0] / upsampled_rpextra, axis=0))
+    upsampled_rpextra *= scaling_factor  # Approximate across datasets with a scale factor to get it on the same log scale
+
+    rp_extra_units *= scaling_factor
 
     proportion = int(rp_extra_units.shape[1] * base_prop)
     proportion = proportion if proportion > 0 else 1
@@ -58,6 +63,7 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
         rp_extra_units[:, proportion:],
         quan
     ).calculate()
+
     quan_dist = upsample_rpextra_distrib(quan_dist)
 
     with open(cache_filename, "wb") as f:
@@ -182,6 +188,7 @@ def iter_hdfdata(hdfdata, nwbs_location):
     nwb_mapping = get_name_to_nwbfilepath_dict(nwbs_location, unique_dates)
 
     datas = []
+    # unique_dates = ['2023-07-18']  # TODO Remove me
     for name in unique_dates:
         unit_idxs = np.where(alldates == name)[0]
         sess_rpp = all_rpp[unit_idxs][:, None, :, :]
@@ -239,7 +246,7 @@ def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
 def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
     nwbs_location = "E:\\PopulationAnalysisNWBs"
-    confidence_interval = 0.90
+    confidence_interval = 0.99
     plot_fraction_significant(h5py.File(hdf_fn), nwbs_location, confidence_interval)
 
 

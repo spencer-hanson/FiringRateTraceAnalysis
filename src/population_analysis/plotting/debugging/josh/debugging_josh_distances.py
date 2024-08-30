@@ -20,14 +20,21 @@ def calc_dists(rp_peri, rp_extra):
 
 
 def get_rp_extra_dists(name, confidence_interval):
-    # cache_filename = os.path.join("frac_sig", f"rpextra-quandistrib-{name}.pickle")
-    # cache_filename = "../../figures./" + cache_filename
-    # with open(cache_filename, "rb") as f:
-    #     dist_distrib = pickle.load(f)
-    # lower, mean, upper = calc_confidence_interval(dist_distrib, confidence_interval)
-    # return lower, mean, upper
-    zeros = np.zeros((70,))  # TODO get null distribution
-    return zeros, zeros, zeros
+    cache_filename = os.path.join("frac_sig", f"rpextra-quandistrib-{name}.pickle")
+    cache_filename = "../../figures/" + cache_filename
+    with open(cache_filename, "rb") as f:
+        dist_distrib = pickle.load(f)
+    lowers = []
+    uppers = []
+    means = []
+    for t in range(dist_distrib.shape[-1]):
+        lower, mean, upper = calc_confidence_interval(dist_distrib[:, t], confidence_interval)
+        lowers.append(lower)
+        uppers.append(upper)
+        means.append(mean)
+    return lowers, means, uppers
+    # zeros = np.zeros((70,))
+    # return zeros, zeros, zeros
 
 
 def plot_session(sessdict, confidence_interval):
@@ -38,7 +45,7 @@ def plot_session(sessdict, confidence_interval):
     # })
     xvals = np.arange(0, 700, 10) - 200
     latencies = np.arange(-.5, .6, .1)
-    fig, axs = plt.subplots(ncols=len(latencies)-1, figsize=(24, 4))
+    fig, axs = plt.subplots(ncols=len(latencies)-1, figsize=(24, 4), sharey=True)
 
     for latency_idx in range(len(latencies)-1):
         ax = axs[latency_idx]
@@ -57,7 +64,7 @@ def plot_session(sessdict, confidence_interval):
 
     axs[0].set_ylabel(f"Euclidian Distance of {sessdict['uniquename']} >{confidence_interval}")
     plt.legend()
-    plt.show()
+    # plt.show()
     if not os.path.exists("dist_graphs"):
         os.mkdir("dist_graphs")
     print("Saving to png..")
@@ -71,6 +78,7 @@ def main():
     # sess = sessions[0]
     confidence_interval = 0.99
     for sess in sessions:
+        print(f"Plotting session '{sess['uniquename']}'..")
         plot_session(sess, confidence_interval)
 
 
