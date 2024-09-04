@@ -33,6 +33,37 @@ def upsample_rpextra_distrib(rpextra_distrib):
     return new_rpextra
 
 
+def calculate_scaling_factor(josh_rp_extra, spenc_rp_extra):
+    # Take in the two arrays and get out (units,) arr for values for each unit
+    # both are (units, 1, t) trial avgd resps
+    assert josh_rp_extra.shape[0] == spenc_rp_extra.shape[0]
+    factors = []
+    response_idx_start = 18  # Get the maximum repsonse between these indexes, and use that as the index to compute the scaling factor
+    response_idx_end = 35
+    response_len = response_idx_end - response_idx_start
+    for unum in range(josh_rp_extra.shape[0]):
+        josh_resp = np.abs(josh_rp_extra[unum][0][response_idx_start:response_idx_end])
+        josh_srt = sorted(zip(range(response_len), josh_resp), key=lambda x: x[1])
+        josh_max_idx, josh_max_val = josh_srt[-1]
+
+        spenc_resp = np.abs(spenc_rp_extra[unum][0][response_idx_start:response_idx_end])
+        spenc_srt = sorted(zip(range(response_len), spenc_resp), key=lambda x: x[1])
+        spenc_max_idx, spenc_max_val = spenc_srt[-1]
+
+        scale_factor = josh_max_val / spenc_max_val
+        factors.append(scale_factor)
+
+        # import matplotlib.pyplot as plt
+        # plt.plot(josh_rp_extra[unum][0], label="josh", color="orange")
+        # plt.plot(spenc_rp_extra[unum][0], label="spencer", color="blue")
+        # plt.plot(spenc_rp_extra[unum][0]*scale_factor, label="scaled")
+        # plt.legend()
+        # plt.show()
+
+    factors = np.array(factors)
+    return factors
+
+
 def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
     # Expects rp_extra_units in (units, trials, t)
     quan = EuclidianQuantification()
@@ -45,13 +76,16 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
         raise ValueError("Cannot split proportion > 1 or < 0!")
     josh_rp_extra = data_dict["rp_extra"]  # (units, 1, t)
     rp_extra_units = get_rpextra_from_nwb(data_dict["nwb"], data_dict["clusters"])
-    upsampled_rpextra = upsample_rpextra_distrib(np.mean(rp_extra_units, axis=1))
-    div = np.clip(np.nan_to_num(josh_rp_extra[:, 0] / upsampled_rpextra, nan=1, posinf=1, neginf=1), a_min=-100, a_max=100)  # Clip division to a reasonable range
-    scaling_factor = np.mean(np.mean(div, axis=0))
-    upsampled_rpextra *= scaling_factor  # Approximate across datasets with a scale factor to get it on the same log scale
+    upsampled_rpextra = upsample_rpextra_distrib(np.mean(rp_extra_units, axis=1))[:, None, :]
+    scaling_factor = calculate_scaling_factor(josh_rp_extra, upsampled_rpextra)
 
-    rp_extra_units *= scaling_factor
+    # Approximate across datasets with a scale factor to get it on the same log scale
+    rp_extra_units *= scaling_factor[:, None, None]
 
+    # Debug plot upscaled vs josh's
+    # plt.plot(np.mean(upsample_rpextra_distrib(np.mean(rp_extra_units, axis=1)), axis=0))
+    # plt.plot(np.mean(np.mean(josh_rp_extra, axis=1), axis=0))
+    # plt.show()
     proportion = int(rp_extra_units.shape[1] * base_prop)
     proportion = proportion if proportion > 0 else 1
 
@@ -220,6 +254,7 @@ def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
         except Exception as e:
             print(f"Error with session {data_dict['uniquename']} Error: {str(e)} Skipping..")
             num_sessions -= 1
+            raise e
             continue
         passing_counts = passing_counts + session_counts
 
