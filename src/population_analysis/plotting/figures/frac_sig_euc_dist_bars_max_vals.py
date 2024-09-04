@@ -287,7 +287,7 @@ def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
 def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
     nwbs_location = "E:\\PopulationAnalysisNWBs"
-    confidence_interval = 0.99
+    confidence_interval = 0.95
     plot_fraction_significant(h5py.File(hdf_fn), nwbs_location, confidence_interval)
 
 
