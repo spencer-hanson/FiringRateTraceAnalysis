@@ -170,6 +170,21 @@ def calc_confidence_interval(data, confidence_val):
     return lower, mean, upper
 
 
+def calc_p_value(value, distrib):
+    # distrib is an arr (10k,)
+    hist = np.histogram(distrib, bins=200)
+
+    pdf = hist[0] / sum(hist[0])
+    cdf = np.cumsum(pdf)
+    bins = hist[1]
+    bin_idx = np.where(value < bins)[0]
+    if len(bin_idx) == 0:
+        return 1.0
+    bin_idx = bin_idx[0]
+    pvalue = cdf[bin_idx]
+    return pvalue
+
+
 def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     latencies = get_latencies()
     num_latencies = len(latencies)
@@ -180,19 +195,21 @@ def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     proportion = get_avg_proportion(rp_peri, rp_extra, latencies)
     rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, cache_filename)
     counts = []
+    pvals = []
     for idx in range(num_latencies-1):
         start = latencies[idx]
         end = latencies[idx + 1]
         rpp = slice_rp_peri_by_latency(rp_peri, start, end)
         timepoint, dist = get_largest_distance(rpp, rp_extra)
         lower, mean, upper = calc_confidence_interval(rpe_null_dist, confidence_interval)
+        pvals.append(calc_p_value(dist, rpe_null_dist))
         if dist > upper:
             counts.append(1)
         else:
             counts.append(0)
     counts = np.array(counts)
 
-    return counts
+    return counts, pvals
 
 
 def get_name_to_nwbfilepath_dict(nwbs_location, unique_dates):
@@ -224,7 +241,25 @@ def iter_hdfdata(hdfdata, nwbs_location):
 
     datas = []
     # unique_dates = ['2023-07-18']  # TODO Remove me
+    noisy_sessions = [
+        "2023-04-11",
+        "2023-04-12",
+        "2023-04-13",
+        "2023-04-14",
+        "2023-04-17",
+        "2023-04-19",
+        "2023-04-20",
+        "2023-04-21"
+        "2023-05-23",
+        "2023-05-29",
+        "2023-05-31",
+        "2023-07-13",
+        "2023-07-26",
+        "2023-08-01"
+    ]
     for name in unique_dates:
+        if name in noisy_sessions:
+            continue
         unit_idxs = np.where(alldates == name)[0]
         sess_rpp = all_rpp[unit_idxs][:, None, :, :]
         sess_rpe = all_rpe[unit_idxs][:, None, :]
@@ -243,14 +278,15 @@ def iter_hdfdata(hdfdata, nwbs_location):
 
 def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
     passing_counts = np.zeros((10,))  # 10 latencies from -.5 to .5 in .1 increments
-
+    pvals = {}
     num_sessions = 0
     for data_dict in iter_hdfdata(hdfdata, nwbs_location):
         num_sessions = num_sessions + 1
         cache_filename = f"rpextra-quandistrib-{data_dict['uniquename']}.pickle"
 
         try:
-            session_counts = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
+            session_counts, pval = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
+            pvals[data_dict["uniquename"]] = pval
         except Exception as e:
             print(f"Error with session {data_dict['uniquename']} Error: {str(e)} Skipping..")
             num_sessions -= 1
@@ -259,7 +295,7 @@ def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
         passing_counts = passing_counts + session_counts
 
     passing_fractions = passing_counts / num_sessions
-    return passing_fractions
+    return passing_fractions, pvals
 
 
 def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
@@ -269,14 +305,22 @@ def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
     os.chdir("frac_sig")
 
     print("Calculating fraction of sessions..")
-    passing_fractions = get_passing_fractions(hdfdata, nwbs_location, confidence_interval)
+    passing_fractions, pvals = get_passing_fractions(hdfdata, nwbs_location, confidence_interval)
 
-    fix, ax = plt.subplots()
+    fig, ax = plt.subplots()
     ax.bar(get_latencies()[:-1], passing_fractions, width=0.05)
     plt.xticks(rotation=90)
     plt.subplots_adjust(bottom=.2)
     plt.title(f"Fraction of significant sessions >{confidence_interval}")
     plt.show()
+    del fig
+    del ax
+
+    for name, pval_list in pvals.items():
+        fig, ax = plt.subplots()
+        ax.bar(get_latencies()[:-1], pval_list, width=0.05)
+        ax.title.set_text(f"p-values for latencies in session {name}")
+        plt.savefig(f"pvals-{name}.png")
 
     os.chdir(olddir)
     with open("fraction-significant-distances-latency.pickle", "wb") as f:
@@ -288,6 +332,8 @@ def main():
     hdf_fn = "E:\\pop_analysis_2024-08-26.hdf"
     nwbs_location = "E:\\PopulationAnalysisNWBs"
     confidence_interval = 0.95
+    # import matplotlib
+    # matplotlib.use("Agg")
     plot_fraction_significant(h5py.File(hdf_fn), nwbs_location, confidence_interval)
 
 
