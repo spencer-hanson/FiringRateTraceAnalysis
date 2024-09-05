@@ -4,12 +4,17 @@ import pickle
 import re
 
 import h5py
+import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 
 from population_analysis.quantification import QuanDistribution
 from population_analysis.quantification.euclidian import EuclidianQuantification
 from population_analysis.sessions.saccadic_modulation import NWBSession
+
+WINDOW_START = 22
+WINDOW_END = 36
 
 
 def get_rpextra_from_nwb(nwb_filename, cluster_ids):
@@ -129,17 +134,29 @@ def get_avg_proportion(rp_peri, rp_extra, latencies):
     # return 1
 
 
-def get_largest_distance(rp_peri, rp_extra):
+def calc_dists(rp_peri, rp_extra, rpe_null_dist):
+    dists = []
+    quan = EuclidianQuantification()
+    for t in range(rp_peri.shape[-1]):
+        dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, t]))  # Dist is between rp extra vs latencies as t
+
+    dists = np.array(dists)
+    rpe_baseline = np.mean(rpe_null_dist[:16], axis=0)  # (70,)
+    rpp_baseline = np.mean(dists[:16])  # (70,)
+    diff = rpe_baseline - rpp_baseline
+    dists = dists + diff
+
+    return dists
+
+
+def get_largest_distance(rp_peri, rp_extra, rpe_null_dist):
     # Args should be (units, trials, t)
     quan = EuclidianQuantification()
 
-    all_dists = []
-    for t in range(rp_peri.shape[2]):
-        all_dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, t]))
+    all_dists = calc_dists(rp_peri, rp_extra, np.mean(rpe_null_dist, axis=0))
 
-    all_dists = np.array(all_dists)
     zipped = np.array(list(enumerate(all_dists)))
-    zipped = zipped[16:24]  # Only consider values from -40ms to +40ms around the probe
+    zipped = zipped[WINDOW_START:WINDOW_END]  # Only consider values from -40ms to +40ms around the probe
     sort = sorted(list(zipped), key=lambda x: x[1])   # Sort by value
     largest = sort[-1]
 
@@ -172,16 +189,27 @@ def calc_confidence_interval(data, confidence_val):
 
 def calc_p_value(value, distrib):
     # distrib is an arr (10k,)
-    hist = np.histogram(distrib, bins=200)
+    # Confidence value code
+    # hist = np.histogram(distrib, bins=200)
+    #
+    # pdf = hist[0] / sum(hist[0])
+    # cdf = np.cumsum(pdf)
+    # bins = hist[1]
+    # bin_idx = np.where(value < bins)[0]
+    # if len(bin_idx) == 0:
+    #     return 1.0
+    # bin_idx = bin_idx[0]
+    # pvalue = cdf[bin_idx]
 
-    pdf = hist[0] / sum(hist[0])
-    cdf = np.cumsum(pdf)
-    bins = hist[1]
-    bin_idx = np.where(value < bins)[0]
-    if len(bin_idx) == 0:
-        return 1.0
-    bin_idx = bin_idx[0]
-    pvalue = cdf[bin_idx]
+    mean = np.mean(distrib)
+    std = np.std(distrib)
+    # zscore = value - mean
+    # zscore = zscore / std
+    pvalue = 1 - scipy.stats.norm(mean, std).cdf(value)
+    pvalue = np.clip(pvalue, 0.00001, a_max=None)
+
+    size = WINDOW_END - WINDOW_START
+    pvalue = pvalue * size
     return pvalue
 
 
@@ -194,21 +222,23 @@ def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
 
     proportion = get_avg_proportion(rp_peri, rp_extra, latencies)
     rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, cache_filename)
+
     counts = []
     pvals = []
     for idx in range(num_latencies-1):
         start = latencies[idx]
         end = latencies[idx + 1]
         rpp = slice_rp_peri_by_latency(rp_peri, start, end)
-        timepoint, dist = get_largest_distance(rpp, rp_extra)
+        timepoint, dist = get_largest_distance(rpp, rp_extra, np.array(rpe_null_dist))
         lower, mean, upper = calc_confidence_interval(rpe_null_dist, confidence_interval)
-        pvals.append(calc_p_value(dist, rpe_null_dist))
+        pval = calc_p_value(dist, rpe_null_dist[:, int(timepoint)])
+        pvals.append(pval)
+
         if dist > upper:
             counts.append(1)
         else:
             counts.append(0)
     counts = np.array(counts)
-
     return counts, pvals
 
 
@@ -240,6 +270,7 @@ def iter_hdfdata(hdfdata, nwbs_location):
     nwb_mapping = get_name_to_nwbfilepath_dict(nwbs_location, unique_dates)
 
     datas = []
+    # unique_dates = ['2023-05-12']  # TODO Remove me
     # unique_dates = ['2023-07-18']  # TODO Remove me
     noisy_sessions = [
         "2023-04-11",
@@ -253,6 +284,7 @@ def iter_hdfdata(hdfdata, nwbs_location):
         "2023-05-23",
         "2023-05-29",
         "2023-05-31",
+        "2023-07-12",  # Has NaN
         "2023-07-13",
         "2023-07-26",
         "2023-08-01"
@@ -307,24 +339,62 @@ def plot_fraction_significant(hdfdata, nwbs_location, confidence_interval):
     print("Calculating fraction of sessions..")
     passing_fractions, pvals = get_passing_fractions(hdfdata, nwbs_location, confidence_interval)
 
+    # Geometric mean of all p-values
     fig, ax = plt.subplots()
-    ax.bar(get_latencies()[:-1], passing_fractions, width=0.05)
-    plt.xticks(rotation=90)
-    plt.subplots_adjust(bottom=.2)
-    plt.title(f"Fraction of significant sessions >{confidence_interval}")
-    plt.show()
-    del fig
-    del ax
+    pval_arr = np.array(list(pvals.values()))
+    geo_mean = [np.log(pval_arr[:, i]).mean() for i in range(pval_arr.shape[1])]
+    geo_mean = np.exp(geo_mean)
+    pvalue_latency_mean = geo_mean
 
-    for name, pval_list in pvals.items():
-        fig, ax = plt.subplots()
-        ax.bar(get_latencies()[:-1], pval_list, width=0.05)
-        ax.title.set_text(f"p-values for latencies in session {name}")
-        plt.savefig(f"pvals-{name}.png")
+    # arr_to_plot = np.mean(pval_arr, axis=0)
+    plt.bar(get_latencies()[:-1], pvalue_latency_mean, width=0.05)
+    plt.yscale("log")
+    rnge = np.arange(1, 4, .5)
+    plt.yticks(1 / np.array([pow(10, i) for i in rnge]), ["10^-" + str(j) for j in rnge])
+    plt.xlabel("Saccade-Probe Latency")
+    plt.ylabel("p-value")
+    plt.title("p-value of saccade-probe latencies for all sessions")
+    # ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    plt.show()
+    tw = 2
+
+    # Significant p-vals
+    testing_p_value = 0.001
+    sigs = []
+    for t in range(len(get_latencies()) - 1):
+        sig = len(np.where(pval_arr[:, t] < testing_p_value)[0])
+        sigs.append(sig)
+    sigs = np.array(sigs) / pval_arr.shape[0]
+    plt.bar(get_latencies()[:-1], sigs, width=0.05)
+    plt.xlabel("Saccade-Probe Latency")
+    plt.title(f"Fraction of sessions with pvalue < {testing_p_value}")
+    plt.show()
+
+    tw = 2
+    # Fraction significant plot
+    # fig, ax = plt.subplots()
+    # ax.bar(get_latencies()[:-1], passing_fractions, width=0.05)
+    # plt.xticks(rotation=90)
+    # plt.subplots_adjust(bottom=.2)
+    # plt.title(f"Fraction of significant sessions >{confidence_interval}")
+    # plt.show()
+    # del fig
+    # del ax
+    # Individual session pvals
+    # for name, pval_list in pvals.items():
+    #     fig, ax = plt.subplots()
+    #     ax.bar(get_latencies()[:-1], pval_list, width=0.05)
+    #     ax.title.set_text(f"p-values for latencies in session {name}")
+    #     plt.savefig(f"pvals-{name}.png")
 
     os.chdir(olddir)
-    with open("fraction-significant-distances-latency.pickle", "wb") as f:
-        pickle.dump(passing_fractions, f)
+    with open("fraction-significant-distances-latency.pickle", "wb") as f1:
+        pickle.dump(passing_fractions, f1)
+    with open("pvalue-distance-latencies.pickle", "wb") as f2:
+        pickle.dump(pvalue_latency_mean, f2)
+    with open("fraction-significant-pvalues-latency.pickle", "wb") as f3:
+        pickle.dump(sigs, f3)
+
     tw = 2
 
 

@@ -5,18 +5,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
-from population_analysis.plotting.figures.frac_sig_euc_dist_bars_max_vals import iter_hdfdata, slice_rp_peri_by_latency, \
-    calc_confidence_interval
-from population_analysis.quantification.euclidian import EuclidianQuantification
-
-
-def calc_dists(rp_peri, rp_extra):
-    dists = []
-    quan = EuclidianQuantification()
-    for t in range(rp_peri.shape[-1]):
-        dists.append(quan.calculate(rp_peri[:, :, t], rp_extra[:, :, t]))  # Dist is between rp extra vs latencies as t
-
-    return dists
+from population_analysis.plotting.figures.frac_sig_euc_dist_bars_max_vals import iter_hdfdata, calc_confidence_interval, calc_dists
 
 
 def get_rp_extra_dists(name, confidence_interval):
@@ -52,8 +41,8 @@ def plot_session(sessdict, confidence_interval):
         rpp = sessdict["rp_peri"][:, :, :, latency_idx]  # (units, trials, time)
         rpe = sessdict["rp_extra"]  # (units, trials, time)
 
-        rpp_dists = calc_dists(rpp, rpe)
         lower, rpe_dists, upper = get_rp_extra_dists(sessdict["uniquename"], confidence_interval)
+        rpp_dists = calc_dists(rpp, rpe, rpe_dists)
 
         ax.plot(xvals, rpp_dists, label="RpPeri vs RpExtra", color="blue")
         ax.plot(xvals, rpe_dists, label="RpExtra vs RpExtra", color="orange")
