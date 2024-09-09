@@ -24,21 +24,21 @@ class SessionGroup(object):
         return date
 
     def find_sessions(self, direc):
-        found = glob.glob(os.path.join(direc, f"**/*{self._file_ext"), recursive=True)
+        found = glob.glob(os.path.join(direc, f"**/*{self._file_ext}"), recursive=True)
         for filename in found:
             self._sessions.append(filename)
 
     def _get_file_details(self, sess_name):
         split = re.split(r"(\\|/)", sess_name)[::2]
         folder = "/".join(split[:-1])
-        filename = split[-1][:-len(self._file_ext)]
+        filename = split[-1]
         return folder, filename
 
     def session_iter(self):
         for sess in self._sessions:
             folder, filename = self._get_file_details(sess)
             try:
-                sess = self._sess_cls(folder, filename, **self.nwb_session_kwargs)
+                sess = self._sess_cls(os.path.join(folder, filename), **self.nwb_session_kwargs)
                 yield filename, sess
             except Exception as e:
                 yield (filename, e), None

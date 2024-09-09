@@ -151,8 +151,6 @@ def calc_dists(rp_peri, rp_extra, rpe_null_dist):
 
 def get_largest_distance(rp_peri, rp_extra, rpe_null_dist):
     # Args should be (units, trials, t)
-    quan = EuclidianQuantification()
-
     all_dists = calc_dists(rp_peri, rp_extra, np.mean(rpe_null_dist, axis=0))
 
     zipped = np.array(list(enumerate(all_dists)))
@@ -223,6 +221,22 @@ def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     proportion = get_avg_proportion(rp_peri, rp_extra, latencies)
     rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, cache_filename)
 
+    # all_dists = calc_dists(rp_peri[:, :, :, 5], rp_extra, np.mean(rpe_null_dist, axis=0))
+    # mean = np.mean(rpe_null_dist, axis=0)
+    # ss = np.std(rpe_null_dist, axis=0)
+    # lower = 2*ss
+    # upper = 2*ss
+    # plt.plot(all_dists)
+    # plt.plot(mean-lower, color="orange", linestyle="dashed")
+    # plt.plot(mean+upper, color="orange", linestyle="dashed")
+    # plt.plot(mean, color="orange")
+    # plt.show()
+    # with open("figure-g-data.pickle", "wb") as f:
+    #     pickle.dump({
+    #         "rpp_rpe_dist": all_dists,
+    #         "rpe_null_distrib": rpe_null_dist
+    #     }, f)
+
     counts = []
     pvals = []
     for idx in range(num_latencies-1):
@@ -271,7 +285,8 @@ def iter_hdfdata(hdfdata, nwbs_location):
 
     datas = []
     # unique_dates = ['2023-05-12']  # TODO Remove me
-    # unique_dates = ['2023-07-18']  # TODO Remove me
+    # unique_dates = ['2023-07-05']  # TODO Remove me
+    unique_dates = ['2023-07-11']  # TODO Remove me
     noisy_sessions = [
         "2023-04-11",
         "2023-04-12",
