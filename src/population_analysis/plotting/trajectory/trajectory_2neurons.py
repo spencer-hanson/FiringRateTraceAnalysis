@@ -46,11 +46,11 @@ def plot_2neuron_trajectory(sess, ufilt):
 
 
 def main():
-    filename = "new_test"
+    filename = "E:\\PopulationAnalysisNWBs\\mlati7-2023-05-15-output\\mlati7-2023-05-15-output.hdf.nwb"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../../../../scripts", filename, "../graphs")
+    sess = NWBSession(filename)
 
-    ufilt = BasicFilter([189, 244], sess.units().shape[1])
+    ufilt = BasicFilter([198, 230], sess.units().shape[1])
     plot_2neuron_trajectory(sess, ufilt)
 
     # ufilt = sess.unit_filter_qm().append(

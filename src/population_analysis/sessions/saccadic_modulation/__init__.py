@@ -104,6 +104,7 @@ class NWBSession(object):
             return self.nwb.processing["behavior"]["trial_response_firing_rates"].data[:]  # units x trials x t
 
     def unit_filter_premade(self) -> UnitFilter:
+        print("Initializing premade unit filter..")
         return self.unit_filter_qm().append(
             self.unit_filter_probe_zeta().append(self.unit_filter_custom(5, .3, 1, 1, .5, .5))
         )

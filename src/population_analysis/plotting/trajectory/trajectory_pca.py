@@ -74,7 +74,6 @@ def plot_trajectory_pca(fig, axs, datas, pca_training_units, pca_training_trial_
 
         p_ax = axs[response_info[1][0]][response_info[1][1]]
 
-
         raw_response_data = unit_data[:, trial_filter.idxs()]
 
         n_units = raw_response_data.shape[0]
@@ -105,14 +104,14 @@ def plot_trajectory_summary(sess, ufilt):
     fig.subplots_adjust(wspace=.5, hspace=.6)
 
     datas = [
-        (sess.trial_motion_filter(-1).append(sess.trial_filter_rp_extra()), [0, 0], "RpExtra motion=-1", sess.units()[ufilt.idxs()], "blue"),  # trial filter, axis [row,col], name, units [units, trials, t], color
-        (sess.trial_motion_filter(1).append(sess.trial_filter_rp_extra()), [1, 0], "RpExtra motion=1", sess.units()[ufilt.idxs()], "blue"),
-        (sess.trial_filter_rp_peri(sess.trial_motion_filter(-1)), [0, 1], "RpPeri motion=-1", sess.rp_peri_units()[ufilt.idxs()], "orange"),
-        (sess.trial_filter_rp_peri(sess.trial_motion_filter(1)), [1, 1], "RpPeri motion=1", sess.rp_peri_units()[ufilt.idxs()], "orange"),
+        (sess.trial_motion_filter(-1).append(sess.trial_filter_rp_extra()), [0, 0], "RpExtra motion=-1", sess.units()[ufilt.idxs()], "orange"),  # trial filter, axis [row,col], name, units [units, trials, t], color
+        (sess.trial_motion_filter(1).append(sess.trial_filter_rp_extra()), [1, 0], "RpExtra motion=1", sess.units()[ufilt.idxs()], "orange"),
+        (sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(-1)), [0, 1], "RpPeri motion=-1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
+        (sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(1)), [1, 1], "RpPeri motion=1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
         # Same plot for both responses
-        (sess.trial_filter_rp_peri(sess.trial_motion_filter(-1)), [0, 2], "Rpp-1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
+        (sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(-1)), [0, 2], "Rpp-1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
         (sess.trial_motion_filter(-1).append(sess.trial_filter_rp_extra()), [0, 2], "Rpe-1", sess.units()[ufilt.idxs()], "orange"),
-        (sess.trial_filter_rp_peri(sess.trial_motion_filter(1)), [1, 2], "Rpp+1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
+        (sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(1)), [1, 2], "Rpp+1", sess.rp_peri_units()[ufilt.idxs()], "blue"),
         (sess.trial_motion_filter(1).append(sess.trial_filter_rp_extra()), [1, 2], "Rpe+1", sess.units()[ufilt.idxs()], "orange"),
     ]
 
@@ -120,8 +119,8 @@ def plot_trajectory_summary(sess, ufilt):
     pcas = plot_trajectory_pca(fig, axs, datas, sess.units()[ufilt.idxs()], [
         sess.trial_motion_filter(-1).append(sess.trial_filter_rp_extra()),  # 4 groups to split data on and train
         sess.trial_motion_filter(1).append(sess.trial_filter_rp_extra()),
-        sess.trial_filter_rp_peri(sess.trial_motion_filter(-1)),
-        sess.trial_filter_rp_peri(sess.trial_motion_filter(1))
+        sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(-1)),
+        sess.trial_filter_rp_peri(-.2, .2, sess.trial_motion_filter(1))
     ])
 
     for idx, response_data in enumerate(datas):  # Plot only first 4
@@ -147,9 +146,9 @@ def plot_trajectory_summary(sess, ufilt):
 
 
 def main():
-    filename = "new_test"
+    filename = "E:\\PopulationAnalysisNWBs\\mlati7-2023-05-15-output\\mlati7-2023-05-15-output.hdf.nwb"
     # matplotlib.use('Agg')  # Uncomment to suppress matplotlib window opening
-    sess = NWBSession("../../../../scripts", filename, "../graphs")
+    sess = NWBSession(filename)
 
     ufilt = BasicFilter([189, 244, 365, 373, 375, 380, 381, 382, 386, 344], sess.units().shape[1])
     # ufilt = sess.unit_filter_qm().append(

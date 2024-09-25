@@ -84,7 +84,7 @@ def unit_summary(sess: NWBSession, unit_num: int, foldername: str, skip_existing
     for rpp_idx, mot in enumerate(motion_trial_filters):
         mot_name, motdir = mot
         mot_filt = sess.trial_motion_filter(motdir)
-        filt = sess.trial_filter_rp_peri(mot_filt)
+        filt = sess.trial_filter_rp_peri(-.2, .2, mot_filt)
         ax = axs[rpp_idx, len(response_trial_filters)]
         units = rp_peri_units[:, filt.idxs()][unit_num]
         avg = np.mean(units, axis=0)
@@ -203,12 +203,11 @@ def multiprocess_func(args):
         unit_summary(sess, unit_num, foldername, skip_existing=skip_existing)
 
 
-def run_unit_summary(filepath, filename, ufilt_generator, skip_existing=False, multiprocess=True):
+def run_unit_summary(file, ufilt_generator, skip_existing=False, multiprocess=True):
 
     # matplotlib.use('Agg')   # Uncomment to suppress matplotlib window opening
-    sess_args = [filepath, filename]
-    sess = NWBSession(*sess_args)
-    ufilt = ufilt_generator(sess.num_units)
+    sess = NWBSession(file)
+    ufilt = ufilt_generator(sess)
 
     if multiprocess:
         num_pools = 3
@@ -247,24 +246,23 @@ def main():
     # time.sleep(150*60)  # Sleep
     print("Starting unit rendering..")
     # nwbfiles = glob.glob("../../../../scripts/*/*.nwb")
-    nwbfiles = ["../../../../scripts/generated/generated.hdf-nwb.nwb"]
+    # nwbfiles = ["../../../../scripts/generated/generated.hdf-nwb.nwb"]
+    nwbfiles = ["E:\\PopulationAnalysisNWBs\\mlati7-2023-05-15-output\\mlati7-2023-05-15-output.hdf.nwb"]
     multiprocess = False
     # multiprocess = True
 
     while True:
         for file in nwbfiles:
-            def ufilt_generator(num_units):
-                sess = NWBSession(filepath, filename)
-                # return BasicFilter.empty(num_units)
-                return sess.unit_filter_premade()
+            def ufilt_generator(sess: NWBSession):
+                # return BasicFilter.empty(sess.num_units)
+                # return sess.unit_filter_premade()
+                return BasicFilter([294], sess.num_units)
 
-            filepath = os.path.dirname(file)
-            filename = os.path.basename(file)[:-len(".nwb")]
-            tw = 2
-            run_unit_summary(filepath, filename, ufilt_generator, skip_existing=True, multiprocess=multiprocess)
+            run_unit_summary(file, ufilt_generator, skip_existing=True, multiprocess=multiprocess)
 
         print("Sleeping 5 mins")
-        time.sleep(60*5)  # Sleep 5 mins
+        # time.sleep(60*5)  # Sleep 5 mins
+        break
 
 
 if __name__ == "__main__":
