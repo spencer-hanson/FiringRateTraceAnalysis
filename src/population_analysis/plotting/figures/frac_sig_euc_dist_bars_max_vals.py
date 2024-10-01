@@ -94,7 +94,6 @@ def get_rpe_quantification_distribution(data_dict, base_prop, cache_filename):
     proportion = int(rp_extra_units.shape[1] * base_prop)
     proportion = proportion if proportion > 0 else 1
 
-    # TODO test remove me
     print(f"Calculating RpExtra QuanDistrib for '{cache_filename}' with a {proportion}/{rp_extra_units.shape[1]-proportion} split..")
     if base_prop == 1:
         proportion = None  # Use the same with no split
@@ -134,7 +133,7 @@ def get_avg_proportion(rp_peri, rp_extra, latencies):
     # return 1
 
 
-def calc_dists(rp_peri, rp_extra, rpe_null_dist):
+def calc_dists(rp_peri, rp_extra, rpe_null_dist, cache_filename):
     dists = []
     quan = EuclidianQuantification()
     for t in range(rp_peri.shape[-1]):
@@ -146,12 +145,15 @@ def calc_dists(rp_peri, rp_extra, rpe_null_dist):
     diff = rpe_baseline - rpp_baseline
     dists = dists + diff
 
+    with open(cache_filename, "wb") as f:
+        pickle.dump(dists, f)
+
     return dists
 
 
-def get_largest_distance(rp_peri, rp_extra, rpe_null_dist):
+def get_largest_distance(rp_peri, rp_extra, rpe_null_dist, cache_filename):
     # Args should be (units, trials, t)
-    all_dists = calc_dists(rp_peri, rp_extra, np.mean(rpe_null_dist, axis=0))
+    all_dists = calc_dists(rp_peri, rp_extra, np.mean(rpe_null_dist, axis=0), cache_filename)
 
     zipped = np.array(list(enumerate(all_dists)))
     zipped = zipped[WINDOW_START:WINDOW_END]  # Only consider values from -40ms to +40ms around the probe
@@ -211,7 +213,7 @@ def calc_p_value(value, distrib):
     return pvalue
 
 
-def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
+def get_latency_passing_counts(data_dict, confidence_interval, null_cache_filename, dist_cache_fn):
     latencies = get_latencies()
     num_latencies = len(latencies)
 
@@ -219,7 +221,8 @@ def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     rp_peri = data_dict["rp_peri"]  # (units, 1trial, t)
 
     proportion = get_avg_proportion(rp_peri, rp_extra, latencies)
-    rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, cache_filename)
+    rpe_null_dist = get_rpe_quantification_distribution(data_dict, proportion, null_cache_filename)
+
 
     # all_dists = calc_dists(rp_peri[:, :, :, 5], rp_extra, np.mean(rpe_null_dist, axis=0))
     # mean = np.mean(rpe_null_dist, axis=0)
@@ -242,9 +245,22 @@ def get_latency_passing_counts(data_dict, confidence_interval, cache_filename):
     for idx in range(num_latencies-1):
         start = latencies[idx]
         end = latencies[idx + 1]
+        latency_str = str(round(start, 2))
+
         rpp = slice_rp_peri_by_latency(rp_peri, start, end)
-        timepoint, dist = get_largest_distance(rpp, rp_extra, np.array(rpe_null_dist))
+        latency_dist_fn = dist_cache_fn[:-len(".pickle")] + latency_str + ".pickle"
+        timepoint, dist = get_largest_distance(rpp, rp_extra, np.array(rpe_null_dist), latency_dist_fn)
         lower, mean, upper = calc_confidence_interval(rpe_null_dist, confidence_interval)
+        fig, ax = plt.subplots()
+        ax.plot(lower, linestyle="dashed", color="orange")
+        ax.plot(upper, linestyle="dashed", color="orange")
+        ax.plot(mean, color="orange")
+        with open(latency_dist_fn, "rb") as f:
+            dists = pickle.load(f)
+        ax.plot(dists, color="blue")
+        ax.title.set_text(latency_str)
+        plt.show()
+
         pval = calc_p_value(dist, rpe_null_dist[:, int(timepoint)])
         pvals.append(pval)
 
@@ -284,8 +300,7 @@ def iter_hdfdata(hdfdata, nwbs_location):
     nwb_mapping = get_name_to_nwbfilepath_dict(nwbs_location, unique_dates)
 
     datas = []
-    # unique_dates = ['2023-05-12']  # TODO Remove me
-    # unique_dates = ['2023-07-05']  # TODO Remove me
+    # unique_dates = ['2023-05-15']  # TODO Remove me
     unique_dates = ['2023-07-11']  # TODO Remove me
     noisy_sessions = [
         "2023-04-11",
@@ -330,9 +345,10 @@ def get_passing_fractions(hdfdata, nwbs_location, confidence_interval):
     for data_dict in iter_hdfdata(hdfdata, nwbs_location):
         num_sessions = num_sessions + 1
         cache_filename = f"rpextra-quandistrib-{data_dict['uniquename']}.pickle"
+        dist_cache_filename = f"euclidian-dist-{data_dict['uniquename']}.pickle"
 
         try:
-            session_counts, pval = get_latency_passing_counts(data_dict, confidence_interval, cache_filename)
+            session_counts, pval = get_latency_passing_counts(data_dict, confidence_interval, cache_filename, dist_cache_filename)
             pvals[data_dict["uniquename"]] = pval
         except Exception as e:
             print(f"Error with session {data_dict['uniquename']} Error: {str(e)} Skipping..")
