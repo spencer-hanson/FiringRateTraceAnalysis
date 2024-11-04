@@ -2,6 +2,7 @@ from population_analysis.sessions.saccadic_modulation import NWBSession
 
 
 def autocorrelations_plot(sess: NWBSession):
+    # plot by plot by time excluding itself and reverses
     tw = 2
 
 
