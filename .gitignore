@@ -10,7 +10,6 @@ testdata/
 *.ipynb_checkpoints
 *.hdf
 ignore_*
-graphs/*
 *.nwb
 *.png
 *.gif
@@ -19,3 +18,4 @@ graphs/*
 *hdf.txt
 token.json
 all_drive_files.json
+!graphs/display/*
