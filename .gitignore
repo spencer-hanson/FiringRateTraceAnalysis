@@ -1,5 +1,10 @@
 venv/
 .idea/
+data/
+*.egg-info
+dist/
+build/
+temp/
 testdata/
 *.pyc
 *.ipynb_checkpoints
@@ -14,4 +19,3 @@ graphs/*
 *hdf.txt
 token.json
 all_drive_files.json
-
