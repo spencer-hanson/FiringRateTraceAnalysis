@@ -1,0 +1,34 @@
+## Repository Structure
+- `graphs/` Output folder for some graphing scripts, some will spit out in their own folder/current working directory
+- `notebooks/` Misc. Jupyter notebooks with some testing code, mostly used for 3d visualizations
+- `population_analysis/plotting/debugging/josh` Code for comparing results from Josh's processed files against mine
+- `population_analysis/plotting/debugging` Misc files for debugging parts of the analysis/processing
+- `population_analysis/plotting/distance` Graphs related to distance
+- `population_analysis/plotting/figures` Graphs for the final manuscript entry
+- `population_analysis/plotting/motor_plotting` Unfinished code for analysis for motor neurons
+- `population_analysis/plotting/poster` Graphs for the 2024 SFN poster
+- `population_analysis/plotting/spikes` Graphs for specifically looking into spikes/timings/firing rates
+- `population_analysis/plotting/trajectory` Graphs for looking at neural trajectories/PCAs of populations/neuron groups
+- `population_analysis/plotting/unit/mean_responses` Graphs looking at the mean responses
+- `population_analysis/plotting/unit` Graphs for analyzing unit data
+- `population_analysis/plotting` Plotting graphs
+- `population_analysis/population/plots` Old plotting code for decomposed PCA work, unused
+- `population_analysis/populations` Old code, unused
+- `population_analysis/processors/experiments/saccadic_modulation` Code to process raw data into a usable format into the NWB for the saccadic_modulation experiment (Josh's experiments)
+- `population_analysis/processors/filters/trial_filters` Code for filtering the unit matrix by different trial-based attributes
+- `population_analysis/processors/filters/unit_filters` Code for filtering the unit matrix by different unit-based attributes, using quality metrics, zeta test, etc
+- `population_analysis/processors/kilosort` Code for processing kilosort output
+- `population_analysis/quantification` Code for creating ways to quantify the differences between populations of neurons, euclidian distance, angle, etc..
+- `population_analysis/sessions/josh_saccadic_modulation` Old unused code for working directly with Josh's data format
+- `population_analysis/sessions/saccadic_modulation` Base class for working with the NWB formatted data from Josh's experiment
+- `population_analysis/sessions` Code for managing different sessions, or groups of sessions
+- `population_analysis/trajectory` Mostly unused code for some neural trajectory stuff
+- `population_analysis/consts.py`  Constant values used in the code, may be some places the constants are not used though
+- `scripts/download_from_drive.py`  Script to download all of josh's sessions from google drive into a local folder
+- `scripts/generate_test_session.py` Script to create a fake file in josh's format to test processing
+- `scripts/normalization_check.py` Old normalization test code, unused
+- `scripts/session_to_nwb.py` Code for converting Josh's HDF file into a NWB, adding and processing the data as well
+- `scripts/time_check.py` Code for visually confirming the drifting grating processing is working correctly
+- `devtesting.py` Misc old plotting code used in development testing
+- `build_package.py` Script to run to build the code to make it ready to publish to PyPi
+- `publish_package.py` Script to take the built code and publish it on PyPi, requires token setup
